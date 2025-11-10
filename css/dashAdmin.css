@@ -13,6 +13,19 @@
     --transition: all 0.3s ease;
 }
 
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 1090;
+    transition: opacity 0.3s ease;
+}
+
+body.sidebar-open {
+    overflow: hidden;
+}
+
 /* Dark Mode Variables */
 body.dark-mode {
     --text-main: #e8eaed;
@@ -176,7 +189,8 @@ body {
     right: 0;
     top: var(--header-height);
     bottom: 0;
-    overflow :hidden
+    overflow: hidden;
+    z-index: 1100;
 }
 
 .sidebar-nav {
@@ -2354,11 +2368,14 @@ textarea.form-input {
 @media (max-width: 992px) {
     .sidebar {
         transform: translateX(100%);
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        pointer-events: none;
     }
 
     .sidebar.mobile-active {
         transform: translateX(0);
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
+        pointer-events: auto;
     }
 
     .main-content {
@@ -2459,6 +2476,34 @@ textarea.form-input {
     .toast {
         min-width: auto;
         width: 100%;
+    }
+
+    /* Hide extra columns in recent orders table */
+    #overviewOrdersBody td:nth-child(2),
+    #overviewOrdersBody td:nth-child(4),
+    #overviewOrdersBody td:nth-child(5),
+    .recent-orders-card thead th:nth-child(2),
+    .recent-orders-card thead th:nth-child(4),
+    .recent-orders-card thead th:nth-child(5) {
+        display: none;
+    }
+
+    #ordersTableBody td:nth-child(2),
+    #ordersTableBody td:nth-child(4),
+    #ordersTableBody td:nth-child(7),
+    #ordersTableBody td:nth-child(8),
+    #orders table.data-table thead th:nth-child(2),
+    #orders table.data-table thead th:nth-child(4),
+    #orders table.data-table thead th:nth-child(7),
+    #orders table.data-table thead th:nth-child(8) {
+        display: none;
+    }
+
+    #customersTableBody td:nth-child(3),
+    #customersTableBody td:nth-child(5),
+    #customers table.data-table thead th:nth-child(3),
+    #customers table.data-table thead th:nth-child(5) {
+        display: none;
     }
 }
 

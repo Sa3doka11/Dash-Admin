@@ -1283,36 +1283,68 @@ async function createBrand(brandData, imageFile = null) {
     }
 }
 
-async function updateBrand(brandId, brandData, imageFile = null) {
-    try {
-        const formData = new FormData();
-        formData.append('name', brandData.name);
-        formData.append('description', brandData.description);
+async function updateBrand(brandId, brandData = {}, imageFile = null) {
+    console.log('✏️ Updating brand:', { brandId, imageProvided: !!imageFile, brandData });
 
-        if (imageFile) {
-            formData.append('image', imageFile);
-        }
-
-        const response = await fetch(`${BRAND_API}/${brandId}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('✅ Brand updated:', data);
-        return data;
-    } catch (error) {
-        console.error(`❌ Failed to update brand ${brandId}:`, error);
-        throw error;
+    if (!brandId) {
+        throw new Error('معرّف العلامة التجارية غير صالح');
     }
+
+    if (!brandData?.name) {
+        throw new Error('يجب إدخال اسم العلامة التجارية');
+    }
+
+    const normalizedData = {
+        name: brandData.name?.trim(),
+        description: brandData.description?.trim() ?? ''
+    };
+
+    const requestOptions = {
+        method: 'PATCH',
+        headers: {
+            Accept: 'application/json'
+        }
+    };
+
+    if (imageFile instanceof File) {
+        const formData = new FormData();
+        Object.entries(normalizedData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        });
+        formData.append('image', imageFile);
+        requestOptions.body = formData;
+    } else {
+        requestOptions.headers['Content-Type'] = 'application/json';
+        requestOptions.body = JSON.stringify(normalizedData);
+    }
+
+    const response = handleUnauthorized(await authorizedFetch(`${BRAND_API}/${encodeURIComponent(brandId)}`, requestOptions));
+
+    const contentType = response.headers.get('content-type') || '';
+    const hasJsonBody = contentType.includes('application/json');
+    const responseBody = hasJsonBody ? await response.json().catch(() => ({})) : {};
+
+    if (!response.ok) {
+        const message = responseBody?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+    }
+
+    const updatedBrand = responseBody?.data || responseBody || null;
+    console.log('✅ Brand updated:', updatedBrand);
+
+    if (Array.isArray(state.brands) && updatedBrand) {
+        const targetId = String(brandId);
+        state.brands = state.brands.map(brand => {
+            const currentId = String(brand._id || brand.id || '');
+            if (currentId !== targetId) return brand;
+            return { ...brand, ...updatedBrand };
+        });
+        renderBrands();
+    }
+
+    return updatedBrand;
 }
 
 async function deleteBrand(brandId) {
@@ -1495,117 +1527,51 @@ function mergeProductWithExtras(product) {
 
 function buildProductPayload(form) {
     const formData = new FormData(form);
-    
-    // Get form values
-    const name = getFormValue(formData, 'name', '').trim();
-    const description = getFormValue(formData, 'description', '').trim();
-    const price = parseFloat(getFormValue(formData, 'price', '0'));
-    const stock = getNumericValue(formData, 'quantity', 0);
-    const sku = getFormValue(formData, 'sku', '').trim();
-    const categoryId = getFormValue(formData, 'category', '');
-    const subCategoryInput = getFormValue(formData, 'subCategory', '');
-    const brandInput = getFormValue(formData, 'brand', '');
-    const status = getFormValue(formData, 'status', 'active');
-    
-    // معالجة حقل العلامة التجارية
-    let brandId = '';
-    let brandName = '';
-    
-    if (brandInput) {
-        // التحقق مما إذا كانت القيمة معرف (ID) أم نص (اسم علامة تجارية جديدة)
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(brandInput);
-        
-        if (isObjectId) {
-            brandId = brandInput;
-            // البحث عن اسم العلامة التجارية باستخدام المعرف
-            const brand = state.brands?.find(b => (b._id === brandInput) || (b.id === brandInput));
-            brandName = brand?.name || '';
-        } else {
-            // إذا كانت قيمة نصية، نستخدمها كاسم علامة تجارية جديدة
-            brandName = brandInput;
-        }
-    }
-    const subCategory = isValidObjectId(subCategoryInput) ? subCategoryInput : undefined;
-    const subCategoryName = !subCategory && subCategoryInput ? subCategoryInput : undefined;
-    
-    // إنشاء كائن المواصفات (Specs) المطلوب
-    const specs = {
-        description: description || 'لا توجد مواصفات متاحة',
-        // يمكنك إضافة المزيد من الحقول هنا إذا كانت مطلوبة
-    };
 
-    const payload = {
-        name,
-        title: name, // استخدام اسم المنتج كعنوان افتراضي
-        description: description || 'لا يوجد وصف',
-        price,
-        quantity: stock || 0,
-        sku: sku || `PROD-${Date.now()}`,
-        status: status || 'active',
-        category: categoryId || null,
-        subCategory: subCategory || null,
-        subCategoryName: subCategoryName || '',
-        specs: {
-            description: description || 'لا يوجد وصف للمواصفات',
-            // يمكنك إضافة المزيد من المواصفات هنا إذا لزم الأمر
-            specifications: [], // Initialize empty array for specifications
-            features: [] // Initialize empty array for features
-        },
-        brand: brandId || null,
-        brandName: brandName || '',
-        images: [], // سيتم إضافة الصور لاحقاً
-        isFeatured: false,
-        isNewArrival: false,
-        isBestSeller: false,
-        isOnSale: false,
-        salePrice: null,
-        saleStartDate: null,
-        saleEndDate: null,
-        weight: 0,
-        dimensions: {
-            length: 0,
-            width: 0,
-            height: 0,
-            unit: 'cm'
-        },
-        tags: [],
-        variations: [],
-        reviews: [],
-        rating: 0,
-        numReviews: 0,
-        metaTitle: name,
-        metaDescription: description || 'لا يوجد وصف',
-        metaKeywords: [],
-        relatedProducts: [],
-        additionalInfo: {},
-        // Add any other required array fields that might be expected by the server
-        categories: categoryId ? [categoryId] : [],
-        attributes: [],
-        options: [],
-        variants: []
-    };
-    
-    // التأكد من أن العلامة التجارية مطلوبة
-    if (!brandId && !brandName) {
+    const name = getFormValue(formData, 'name', '').trim();
+    const title = getFormValue(formData, 'title', '').trim() || name;
+    const description = getFormValue(formData, 'description', '').trim();
+    const priceValue = getFormValue(formData, 'price', '0');
+    const quantityValue = getFormValue(formData, 'quantity', '0');
+    const sku = getFormValue(formData, 'sku', '').trim();
+    const category = getFormValue(formData, 'category', '').trim();
+    const subCategory = getFormValue(formData, 'subCategory', '').trim();
+    const brand = getFormValue(formData, 'brand', '').trim();
+    const specs = getFormValue(formData, 'specs', '').trim();
+    const status = getFormValue(formData, 'status', '').trim();
+
+    const price = parseFloat(priceValue);
+    if (Number.isNaN(price) || price < 0) {
+        throw new Error('يجب إدخال سعر صحيح');
+    }
+
+    const quantity = parseInt(quantityValue, 10);
+    if (Number.isNaN(quantity) || quantity < 0) {
+        throw new Error('يجب إدخال كمية صحيحة');
+    }
+
+    if (!brand) {
         throw new Error('يجب اختيار علامة تجارية');
     }
 
-    // حذف الحقول الفارغة ولكن الحفاظ على المصفوفات الفارغة
-    Object.keys(payload).forEach(key => {
-        const value = payload[key];
-        // لا تحذف المصفوفات حتى لو كانت فارغة
-        if (Array.isArray(value)) {
-            return;
-        }
-        // لا تحذف الكائنات
-        if (typeof value === 'object' && value !== null) {
-            return;
-        }
-        // احذف القيم الفارغة فقط
-        if (value === undefined || value === null || value === '') {
-            delete payload[key];
-        }
-    });
+    const payload = {
+        name,
+        title,
+        description,
+        quantity: String(quantity),
+        price: String(price),
+        category,
+        subCategory,
+        brand,
+        specs,
+    };
+
+    if (sku) {
+        payload.sku = sku;
+    }
+    if (status) {
+        payload.status = status;
+    }
 
     return payload;
 }
@@ -1644,56 +1610,33 @@ function buildProductRequestOptions(payload = {}, imageFiles = []) {
 async function createProduct(payload, imageFiles = []) {
     console.log('➕ Creating product:', payload);
     console.log('📸 Image files:', imageFiles.length);
-    
+
     try {
         const formData = new FormData();
-        
-        // إضافة بيانات المنتج
-        Object.keys(payload).forEach(key => {
-            const value = payload[key];
-            
-            // تخطي الصور لأننا سنضيفها من الملفات
-            if (key === 'images') return;
-            
-            // تحويل الكائنات إلى JSON
-            if (typeof value === 'object' && value !== null) {
-                formData.append(key, JSON.stringify(value));
-            } else if (value !== null && value !== undefined) {
+
+        Object.entries(payload || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
                 formData.append(key, value);
             }
         });
-        
-        // إضافة الصور
+
         if (imageFiles && imageFiles.length > 0) {
             imageFiles.forEach((file, index) => {
                 formData.append('images', file);
                 console.log(`📎 Added image ${index + 1}:`, file.name);
             });
         }
-        
-        const response = await fetch(PRODUCT_ENDPOINT, {
+
+        const response = await authorizedFetch(PRODUCT_ENDPOINT, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-                // لا تضع Content-Type عند استخدام FormData - المتصفح يضيفه تلقائياً
-            },
             body: formData
         });
 
         const data = await response.json();
-        
+
         if (!response.ok) {
             console.error('❌ Create product error response:', data);
-            console.error('❌ Response status:', response.status);
-            console.error('❌ Error stack:', data.stack);
-            
-            let errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
-            
-            // إضافة تفاصيل إضافية من الخطأ إذا كانت متوفرة
-            if (data.stack) {
-                console.error('📋 Full error stack:', data.stack);
-            }
-            
+            const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
             throw new Error(errorMessage);
         }
 
@@ -1701,8 +1644,7 @@ async function createProduct(payload, imageFiles = []) {
         return data;
     } catch (error) {
         console.error('❌ Failed to create product:', error);
-        console.error('❌ Error details:', error.message);
-        throw error; // إعادة رمي الخطأ للتعامل معه في الدالة المستدعية
+        throw error;
     }
 }
 
@@ -1717,20 +1659,8 @@ async function updateProduct(productId, payload, imageFiles = []) {
     try {
         const formData = new FormData();
 
-        Object.keys(payload || {}).forEach(key => {
-            const value = payload[key];
-
-            if (value === undefined || value === null || value === '') {
-                return;
-            }
-
-            if (key === 'images') {
-                return;
-            }
-
-            if (Array.isArray(value) || typeof value === 'object') {
-                formData.append(key, JSON.stringify(value));
-            } else {
+        Object.entries(payload || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
                 formData.append(key, value);
             }
         });
@@ -1744,16 +1674,13 @@ async function updateProduct(productId, payload, imageFiles = []) {
             });
         }
 
-        const response = await fetch(`${PRODUCT_ENDPOINT}/${productId}`, {
+        const response = await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
             method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
             body: formData
         });
 
         const data = await response.json();
-        
+
         if (!response.ok) {
             console.error('❌ Update product error:', data);
             const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
@@ -1761,13 +1688,12 @@ async function updateProduct(productId, payload, imageFiles = []) {
         }
 
         console.log('✅ Product updated successfully:', data);
-        
-        // تحديث حالة التطبيق
+
         const updatedProduct = data.data || data;
 
         if (updatedProduct) {
             upsertProductExtras(productId, {
-                image: updatedProduct.images?.[0]?.url || '',
+                image: updatedProduct.images?.[0] || updatedProduct.image || '',
                 description: updatedProduct.description || ''
             });
         }
@@ -1906,13 +1832,16 @@ function viewProductDetails(productId) {
     });
 }
 
-async function deleteProduct(productId) {
+async function deleteProduct(productId, { productName } = {}) {
     console.log('🗑️ Deleting product:', productId);
 
     if (!productId) return;
-    
-    // تأكيد الحذف
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.')) {
+
+    const confirmationMessage = productName
+        ? `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`
+        : 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.';
+
+    if (!confirm(confirmationMessage)) {
         return;
     }
 
@@ -2794,6 +2723,28 @@ async function handleBrandFormSubmit(event) {
     }
 }
 
+function prepareBrandCreateForm() {
+    const form = document.getElementById('brandForm');
+    if (!form) return;
+
+    form.dataset.mode = 'create';
+    setFieldValue(form, 'id', '');
+    setFieldValue(form, 'name', '');
+    setFieldValue(form, 'description', '');
+
+    const imageInput = form.querySelector('#brandImage');
+    if (imageInput) {
+        imageInput.required = true;
+        imageInput.value = '';
+        delete imageInput.dataset.originalImage;
+    }
+
+    const imagePreview = document.getElementById('brandImagePreview');
+    if (imagePreview) {
+        imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+    }
+}
+
 function handleEditBrand(brandId) {
     const brand = state.brands.find(b => (b._id === brandId || b.id === brandId));
     if (!brand) {
@@ -2801,26 +2752,33 @@ function handleEditBrand(brandId) {
         return;
     }
 
+    openModal('brandModal', 'edit');
+
     const form = document.getElementById('brandForm');
     if (!form) return;
 
     form.dataset.mode = 'edit';
-    form.querySelector('[name="id"]').value = brand._id || brand.id;
-    form.querySelector('[name="name"]').value = brand.name || '';
-    form.querySelector('[name="description"]').value = brand.description || '';
+    setFieldValue(form, 'id', brand._id || brand.id || '');
+    setFieldValue(form, 'name', brand.name || '');
+    setFieldValue(form, 'description', brand.description || '');
 
-    // عرض الصورة الحالية
+    const imageInput = form.querySelector('#brandImage');
+    if (imageInput) {
+        imageInput.required = false;
+        imageInput.value = '';
+        const currentImage = brand.image?.secure_url || brand.image?.url || brand.image || '';
+        imageInput.dataset.originalImage = currentImage;
+    }
+
     const imagePreview = document.getElementById('brandImagePreview');
     if (imagePreview) {
         const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || '';
         if (imageUrl) {
-            imagePreview.innerHTML = `<img src="${imageUrl}" alt="${brand.name}">`;
+            imagePreview.innerHTML = `<img src="${imageUrl}" alt="${escapeHtml(brand.name || 'علامة تجارية')}">`;
         } else {
             imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
         }
     }
-
-    openModal('brandModal');
 }
 
 async function handleDeleteBrand(brandId) {
@@ -3405,7 +3363,19 @@ function getOrderDetails(orderId) {
 }
 
 function getCustomerById(customerId) {
-    return mockData.customers.find(customer => customer.id === customerId);
+    if (!customerId) return null;
+
+    const normalizedId = String(customerId);
+    const customerFromState = (state.customers || []).find(customer => {
+        const id = customer._id ?? customer.id;
+        return id && String(id) === normalizedId;
+    });
+
+    if (customerFromState) {
+        return customerFromState;
+    }
+
+    return mockData.customers.find(customer => String(customer.id) === normalizedId) || null;
 }
 
 function getPaymentMethodById(paymentId) {
@@ -3751,76 +3721,80 @@ function exportOrders() {
 }
 
 function exportCustomers() {
-    const customers = mockData.customers.slice();
+    if (Array.isArray(state.customers) && state.customers.length > 0 && Array.isArray(state.orders)) {
+        updateCustomersOrdersInfo();
+    }
+
+    let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+
+    if ((!customers || customers.length === 0) && state.orders?.length) {
+        createCustomersFromOrders();
+        updateCustomersOrdersInfo();
+        customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    }
 
     if (!customers.length) {
         showToast('info', 'تصدير العملاء', 'لا توجد بيانات عملاء متاحة للتقرير حالياً.');
         return;
     }
 
-    const totalOrders = customers.reduce((sum, customer) => sum + (customer.orders || 0), 0);
-    const totalSpend = customers.reduce((sum, customer) => sum + (customer.spend || 0), 0);
+    const orders = Array.isArray(state.orders) ? state.orders : [];
 
-    const statusCounts = customers.reduce((acc, customer) => {
-        acc[customer.status] = (acc[customer.status] || 0) + 1;
-        return acc;
-    }, {});
+    const customersWithMetrics = customers.map(customer => {
+        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        const ordersCount = relatedOrders.length;
+        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-    const segmentCounts = customers.reduce((acc, customer) => {
-        acc[customer.segment] = (acc[customer.segment] || 0) + 1;
-        return acc;
-    }, {});
+        let lastOrderDisplay = customer.lastOrder || '-';
+        if (relatedOrders.length) {
+            const latestOrder = relatedOrders.reduce((latest, current) => {
+                const latestDate = latest ? getOrderDate(latest) : null;
+                const currentDate = getOrderDate(current);
+                if (!currentDate) return latest;
+                if (!latestDate || currentDate > latestDate) {
+                    return current;
+                }
+                return latest;
+            }, null);
+
+            const latestDate = getOrderDate(latestOrder);
+            if (latestDate) {
+                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
+            }
+        }
+
+        return {
+            ...customer,
+            ordersCount,
+            totalSpent,
+            lastOrderDisplay
+        };
+    });
+
+    const totalCustomers = customersWithMetrics.length;
+    const totalOrders = customersWithMetrics.reduce((sum, customer) => sum + (customer.ordersCount || 0), 0);
+    const totalSpend = customersWithMetrics.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0);
+    const averageSpend = totalCustomers ? totalSpend / totalCustomers : 0;
 
     const summaryContent = `
         <table class="data-table">
             <tbody>
-                <tr><th>عدد العملاء</th><td>${formatNumber(customers.length)}</td></tr>
+                <tr><th>عدد العملاء</th><td>${formatNumber(totalCustomers)}</td></tr>
                 <tr><th>إجمالي عدد الطلبات</th><td>${formatNumber(totalOrders)}</td></tr>
                 <tr><th>إجمالي الإنفاق</th><td>${formatCurrency(totalSpend)}</td></tr>
-                <tr><th>متوسط إنفاق العميل</th><td>${customers.length ? formatCurrency(totalSpend / customers.length) : '0 ريال'}</td></tr>
+                <tr><th>متوسط إنفاق العميل</th><td>${formatCurrency(averageSpend)}</td></tr>
             </tbody>
         </table>
     `;
 
-    const statusTable = Object.keys(statusCounts).length
-        ? `
-            <table class="data-table">
-                <thead>
-                    <tr><th>الحالة</th><th>عدد العملاء</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(statusCounts).map(([status, count]) => `
-                        <tr><td>${getStatusLabel(status)}</td><td>${formatNumber(count)}</td></tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `
-        : '<p class="empty-state">لا تتوفر بيانات للحالات.</p>';
-
-    const segmentTable = Object.keys(segmentCounts).length
-        ? `
-            <table class="data-table">
-                <thead>
-                    <tr><th>التصنيف</th><th>عدد العملاء</th></tr>
-                </thead>
-                <tbody>
-                    ${Object.entries(segmentCounts).map(([segment, count]) => `
-                        <tr><td>${getCustomerSegmentLabel(segment)}</td><td>${formatNumber(count)}</td></tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `
-        : '<p class="empty-state">لا تتوفر بيانات للتصنيفات.</p>';
-
-    const customersRows = customers.map(customer => `
+    const customersRows = customersWithMetrics.map((customer, index) => `
         <tr>
-            <td>${customer.name}</td>
-            <td>${customer.email}</td>
-            <td>${getCustomerSegmentLabel(customer.segment)}</td>
-            <td>${formatNumber(customer.orders)}</td>
-            <td>${formatCurrency(customer.spend)}</td>
-            <td>${getStatusLabel(customer.status)}</td>
-            <td>${customer.lastOrder}</td>
+            <td>${index + 1}</td>
+            <td>${customer.name || '-'}</td>
+            <td>${customer.email || '-'}</td>
+            <td>${customer.phone || '-'}</td>
+            <td>${formatCurrency(customer.totalSpent || 0)}</td>
+            <td>${customer.lastOrderDisplay || '-'}</td>
         </tr>
     `).join('');
 
@@ -3828,12 +3802,11 @@ function exportCustomers() {
         <table class="data-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>الاسم</th>
                     <th>البريد الإلكتروني</th>
-                    <th>التصنيف</th>
-                    <th>عدد الطلبات</th>
+                    <th>رقم الهاتف</th>
                     <th>إجمالي الإنفاق</th>
-                    <th>الحالة</th>
                     <th>آخر طلب</th>
                 </tr>
             </thead>
@@ -3843,10 +3816,6 @@ function exportCustomers() {
 
     const sections = [
         { title: 'ملخص سريع', content: summaryContent },
-        {
-            title: 'الحالات والتصنيفات',
-            content: `<div class="grid-2">${statusTable}${segmentTable}</div>`
-        },
         { title: 'قائمة العملاء', content: customersTable }
     ];
 
@@ -3991,55 +3960,95 @@ async function exportAnalyticsReport() {
         `;
     }).filter(Boolean).join('');
 
-    const metrics = mockData.overviewMetrics;
-    const topProducts = mockData.products
-        .slice()
-        .sort((a, b) => b.sales - a.sales)
-        .slice(0, 5);
-
-    const topCustomers = mockData.customers
-        .slice()
-        .sort((a, b) => b.spend - a.spend)
-        .slice(0, 5);
+    const analyticsData = calculateAnalyticsData();
 
     const metricsRows = `
-        <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(metrics.revenue)}</td></tr>
-        <tr><th>متوسط قيمة الطلب</th><td>${formatCurrency(metrics.avgOrder)}</td></tr>
-        <tr><th>معدل التحويل</th><td>${formatPercent(metrics.conversionRate)}</td></tr>
-        <tr><th>معدل الإرجاع</th><td>${formatPercent(metrics.returnRate)}</td></tr>
-        <tr><th>التغير الأسبوعي في الإيرادات</th><td>${formatChange(metrics.weeklyChange.revenue)}</td></tr>
-        <tr><th>التغير الأسبوعي في متوسط الطلب</th><td>${formatChange(metrics.weeklyChange.avgOrder)}</td></tr>
-        <tr><th>التغير الأسبوعي في معدل التحويل</th><td>${formatChange(metrics.weeklyChange.conversionRate)}</td></tr>
-        <tr><th>التغير الأسبوعي في معدل الإرجاع</th><td>${formatChange(metrics.weeklyChange.returnRate)}</td></tr>
+        <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(analyticsData.totalRevenue)}</td></tr>
+        <tr><th>متوسط قيمة السلة</th><td>${formatCurrency(analyticsData.avgBasket)}</td></tr>
+        <tr><th>عدد الطلبات</th><td>${formatNumber(analyticsData.ordersCount)}</td></tr>
+        <tr><th>إجمالي المنتجات المباعة</th><td>${formatNumber(analyticsData.totalItems)}</td></tr>
     `;
 
-    const topProductsRows = topProducts.map(product => `
+    const topProductsData = (analyticsData.topProducts || []).filter(product => Number(product.quantity) >= 5);
+
+    const topProductsRows = topProductsData.map((product, index) => `
         <tr>
+            <td>${index + 1}</td>
             <td>${product.name}</td>
-            <td>${product.sales}</td>
-            <td>${formatCurrency(product.sales * product.price)}</td>
-            <td>${formatCurrency(product.sales * (product.price * 0.25))}</td>
+            <td>${formatNumber(product.quantity)}</td>
+            <td>${formatCurrency(product.revenue)}</td>
         </tr>
     `).join('');
 
-    const topCustomersRows = topCustomers.map(customer => `
+    const orders = Array.isArray(state.orders) ? state.orders : [];
+    let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+
+    if ((!customers || customers.length === 0) && orders.length) {
+        createCustomersFromOrders();
+        customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    }
+
+    const customersWithMetrics = (customers || []).map(customer => {
+        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        const ordersCount = relatedOrders.length;
+        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+
+        let lastOrderDisplay = customer.lastOrder || '-';
+        if (relatedOrders.length) {
+            const latestOrder = relatedOrders.reduce((latest, current) => {
+                const latestDate = latest ? getOrderDate(latest) : null;
+                const currentDate = getOrderDate(current);
+                if (!currentDate) return latest;
+                if (!latestDate || currentDate > latestDate) {
+                    return current;
+                }
+                return latest;
+            }, null);
+
+            const latestDate = getOrderDate(latestOrder);
+            if (latestDate) {
+                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
+            }
+        }
+
+        const status = customer.status || customer.accountStatus || null;
+        const segment = customer.segment || null;
+
+        return {
+            ...customer,
+            ordersCount,
+            totalSpent,
+            lastOrderDisplay,
+            status,
+            segment
+        };
+    });
+
+    const topCustomersData = customersWithMetrics
+        .filter(customer => (customer.totalSpent || 0) > 0 || (customer.ordersCount || 0) > 0)
+        .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
+        .slice(0, 10);
+
+    const topCustomersRows = topCustomersData.map((customer, index) => `
         <tr>
-            <td>${customer.name}</td>
-            <td>${customer.email}</td>
+            <td>${index + 1}</td>
+            <td>${customer.name || '-'}</td>
+            <td>${customer.email || '-'}</td>
+            <td>${customer.phone || '-'}</td>
             <td>${getCustomerSegmentLabel(customer.segment)}</td>
-            <td>${formatNumber(customer.orders)}</td>
-            <td>${formatCurrency(customer.spend)}</td>
-            <td>${getStatusLabel(customer.status)}</td>
-            <td>${customer.lastOrder || '-'}</td>
+            <td>${formatNumber(customer.ordersCount || 0)}</td>
+            <td>${formatCurrency(customer.totalSpent || 0)}</td>
+            <td>${customer.status ? getStatusLabel(customer.status) : '-'}</td>
+            <td>${customer.lastOrderDisplay || '-'}</td>
         </tr>
     `).join('');
 
     const chartsMarkup = chartCards || '<p class="empty-state">لا تتوفر رسوم بيانية حالياً.</p>';
-    const productsMarkup = topProductsRows
-        ? `<table class="data-table"><thead><tr><th>#</th><th>المنتج</th><th>عدد المبيعات</th><th>سعر الوحدة</th><th>إجمالي الإيراد</th></tr></thead><tbody>${topProductsRows}</tbody></table>`
-        : '<p class="empty-state">لا توجد بيانات منتجات للعرض.</p>';
-    const customersMarkup = topCustomersRows
-        ? `<table class="data-table"><thead><tr><th>#</th><th>العميل</th><th>البريد الإلكتروني</th><th>التصنيف</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th><th>الحالة</th><th>آخر طلب</th></tr></thead><tbody>${topCustomersRows}</tbody></table>`
+    const productsMarkup = topProductsData.length
+        ? `<table class="data-table"><thead><tr><th>#</th><th>اسم المنتج</th><th>المبيعات (الكمية)</th><th>الإيرادات</th></tr></thead><tbody>${topProductsRows}</tbody></table>`
+        : '<p class="empty-state">لا توجد منتجات حققت 5 مبيعات أو أكثر للعرض.</p>';
+    const customersMarkup = topCustomersData.length
+        ? `<table class="data-table"><thead><tr><th>#</th><th>الاسم</th><th>البريد الإلكتروني</th><th>رقم الهاتف</th><th>التصنيف</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th><th>الحالة</th><th>آخر طلب</th></tr></thead><tbody>${topCustomersRows}</tbody></table>`
         : '<p class="empty-state">لا توجد بيانات عملاء للعرض.</p>';
 
     const sections = [
@@ -4170,8 +4179,25 @@ function renderOverview() {
     const body = document.getElementById('overviewOrdersBody');
     if (!body) return;
     
-    // أحدث 5 طلبات
-    const recentOrders = (state.orders || [])
+    const today = new Date();
+    const todaysOrders = (state.orders || []).filter(order => {
+        const orderDate = getOrderDate(order);
+        return isSameDay(orderDate, today);
+    });
+
+    if (todaysOrders.length === 0) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: #95a5a6;">
+                    لا توجد طلبات مسجلة اليوم
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const sortedTodaysOrders = todaysOrders
+        .slice()
         .sort((a, b) => {
             const dateA = getOrderDate(a);
             const dateB = getOrderDate(b);
@@ -4180,30 +4206,34 @@ function renderOverview() {
             return dateB - dateA;
         })
         .slice(0, 5);
-    
-    if (recentOrders.length === 0) {
-        body.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 20px; color: #95a5a6;">
-                    لا توجد طلبات حالياً
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    body.innerHTML = recentOrders.map(order => `
+
+    body.innerHTML = sortedTodaysOrders.map((order, index) => {
+        const orderDateObj = getOrderDate(order);
+        const displayDate = orderDateObj
+            ? orderDateObj.toLocaleString('ar-EG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : (order.date || '-');
+
+        const customerName = order.customer || order.user?.name || '-';
+
+        return `
         <tr data-id="${order.id}">
+            <td>${index + 1}</td>
             <td>${order.id}</td>
-            <td>${order.customer || order.user?.name || '-'}</td>
+            <td>${customerName}</td>
             <td>${formatCurrency(order.total)}</td>
-            <td>${order.date}</td>
+            <td>${displayDate}</td>
             <td>
                 <button class="action-btn view-order" data-order-id="${order.id}" title="عرض التفاصيل"><i class="fas fa-eye"></i></button>
                 <button class="action-btn print-order" data-order-id="${order.id}" title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 }
 
 function renderProducts() {
@@ -4468,7 +4498,7 @@ function renderCustomers() {
     if (state.customersLoading) {
         body.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">
+                <td colspan="7" style="text-align: center; padding: 40px;">
                     <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #e74c3c;"></i>
                     <p style="margin-top: 10px;">جاري تحميل العملاء...</p>
                 </td>
@@ -4480,7 +4510,7 @@ function renderCustomers() {
     if (state.customersError) {
         body.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">
+                <td colspan="7" style="text-align: center; padding: 40px;">
                     <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #f39c12;"></i>
                     <p style="margin-top: 10px; color: #e74c3c;">${state.customersError}</p>
                     <button class="btn-primary" onclick="fetchCustomers()" style="margin-top: 15px;">إعادة المحاولة</button>
@@ -4509,7 +4539,7 @@ function renderCustomers() {
         
         body.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">
+                <td colspan="7" style="text-align: center; padding: 40px;">
                     <i class="fas fa-users" style="font-size: 24px; color: #95a5a6;"></i>
                     <p style="margin-top: 10px;">${message}</p>
                 </td>
@@ -4520,7 +4550,7 @@ function renderCustomers() {
 
     console.log('✅ Rendering', customers.length, 'customers');
     
-    body.innerHTML = customers.map(customer => {
+    body.innerHTML = customers.map((customer, index) => {
         const isFromOrders = customer.isFromOrders;
         const nameWithBadge = isFromOrders 
             ? `${customer.name || '-'} <span style="font-size: 10px; background: #f39c12; color: white; padding: 2px 6px; border-radius: 3px; margin-right: 5px;" title="تم استخراجه من الطلبات">من الطلبات</span>`
@@ -4528,10 +4558,10 @@ function renderCustomers() {
         
         return `
             <tr data-id="${customer._id || customer.id}" ${isFromOrders ? 'style="background-color: rgba(243, 156, 18, 0.05);"' : ''}>
+                <td>${index + 1}</td>
                 <td>${nameWithBadge}</td>
                 <td>${customer.email || '-'}</td>
                 <td>${customer.phone || '-'}</td>
-                <td>${customer.ordersCount || 0}</td>
                 <td>${customer.lastOrder || '-'}</td>
                 <td>
                     <button class="action-btn" onclick="viewCustomerDetails('${customer._id || customer.id}')" title="عرض التفاصيل">
@@ -4547,22 +4577,8 @@ function renderCustomers() {
 }
 
 function renderTopProducts() {
-    const body = document.getElementById('topProductsTableBody');
-    if (!body) return;
-
-    const topProducts = mockData.products
-        .slice()
-        .sort((a, b) => b.sales - a.sales)
-        .slice(0, 5);
-
-    body.innerHTML = topProducts.map(product => `
-        <tr>
-            <td>${product.name}</td>
-            <td>${product.sales}</td>
-            <td>${formatCurrency(product.sales * product.price)}</td>
-            <td>${formatCurrency(product.sales * (product.price * 0.25))}</td>
-        </tr>
-    `).join('');
+    const analyticsData = calculateAnalyticsData();
+    renderTopProductsTable(analyticsData.topProducts || []);
 }
 
 function renderAnalyticsFilters() {
@@ -5008,8 +5024,16 @@ function openModal(modalId, mode = 'create', entity = null) {
 
     const title = modal.querySelector('[data-modal-title]');
     if (title) {
-        const editTitle = title.getAttribute('data-modal-edit-title');
-        title.textContent = mode === 'edit' && editTitle ? editTitle : title.textContent;
+        if (!title.dataset.defaultTitle) {
+            title.dataset.defaultTitle = title.textContent.trim();
+        }
+        const defaultTitle = title.dataset.defaultTitle;
+        const editTitle = title.getAttribute('data-modal-edit-title') || defaultTitle;
+        title.textContent = mode === 'edit' ? editTitle : defaultTitle;
+    }
+
+    if (modalId === 'brandModal' && mode === 'create') {
+        prepareBrandCreateForm();
     }
 }
 
@@ -5277,6 +5301,9 @@ function calculateAnalyticsData() {
     
     // 2. متوسط قيمة السلة
     const avgBasket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+
+    const ordersCount = filteredOrders.length;
+    const totalItems = filteredOrders.reduce((sum, order) => sum + (Number(order.items) || Number(order.totalItems) || 0), 0);
     
     // 3. الإيرادات الشهرية (آخر 8 أشهر)
     const monthlyRevenue = [];
@@ -5346,6 +5373,8 @@ function calculateAnalyticsData() {
     return {
         totalRevenue,
         avgBasket,
+        ordersCount,
+        totalItems,
         monthlyRevenue: { labels: monthLabels, values: monthlyRevenue },
         topProducts
     };
@@ -5380,27 +5409,31 @@ function updateAnalyticsStats() {
 function renderTopProductsTable(products) {
     const tbody = document.getElementById('topProductsTableBody');
     if (!tbody) return;
-    
-    if (products.length === 0) {
+
+    const filteredProducts = products.filter(product => Number(product.quantity) >= 5);
+
+    if (filteredProducts.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" style="text-align: center; padding: 20px; color: #95a5a6;">
-                    لا توجد مبيعات في هذه الفترة
+                <td colspan="4" style="text-align: center; padding: 20px; color: #95a5a6;">
+                    لا توجد منتجات حققت 5 مبيعات أو أكثر في هذه الفترة
                 </td>
             </tr>
         `;
         return;
     }
-    
-    tbody.innerHTML = products.map(product => `
+
+    tbody.innerHTML = filteredProducts.map((product, index) => `
         <tr>
+            <td>${index + 1}</td>
             <td>${product.name}</td>
-            <td>${product.quantity}</td>
+            <td>${formatNumber(product.quantity)}</td>
             <td>${formatCurrency(product.revenue)}</td>
         </tr>
     `).join('');
 }
 
+// ... (rest of the code remains the same)
 function loadAnalyticsCharts() {
     console.log('📊 Loading analytics charts...');
     
@@ -5473,6 +5506,16 @@ function createMobileMenu() {
             `;
             document.body.appendChild(menuBtn);
         }
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
+        }
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('mobile-active');
+        }
+        document.body.classList.remove('sidebar-open');
     } else {
         const menuBtn = document.getElementById('mobileMenuBtn');
         if (menuBtn) {
@@ -5481,6 +5524,12 @@ function createMobileMenu() {
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
             sidebar.classList.remove('mobile-active');
+        }
+        document.body.classList.remove('sidebar-open');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
         }
     }
 }
@@ -5704,9 +5753,7 @@ document.addEventListener('click', function(e) {
             return;
         }
 
-        if (confirm(`هل أنت متأكد من حذف المنتج "${product.name}"؟`)) {
-            deleteProduct(productId);
-        }
+        deleteProduct(productId, { productName: product.name });
         return;
     }
 
@@ -5730,11 +5777,18 @@ document.addEventListener('click', function(e) {
         e.preventDefault();
         const sidebar = document.getElementById('sidebar');
         const menuBtn = document.getElementById('mobileMenuBtn');
+        const overlay = document.getElementById('sidebarOverlay');
         if (sidebar && menuBtn) {
             sidebar.classList.toggle('mobile-active');
+            document.body.classList.toggle('sidebar-open', sidebar.classList.contains('mobile-active'));
             menuBtn.innerHTML = sidebar.classList.contains('mobile-active')
                 ? '<i class="fas fa-times"></i>'
                 : '<i class="fas fa-bars"></i>';
+            if (overlay) {
+                const isActive = sidebar.classList.contains('mobile-active');
+                overlay.hidden = !isActive;
+                overlay.style.opacity = isActive ? '1' : '0';
+            }
         }
         return;
     }
@@ -5747,6 +5801,12 @@ document.addEventListener('click', function(e) {
             const menuBtn = document.getElementById('mobileMenuBtn');
             if (menuBtn) {
                 menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+            document.body.classList.remove('sidebar-open');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (overlay) {
+                overlay.hidden = true;
+                overlay.style.opacity = '0';
             }
         }
     }
@@ -7080,12 +7140,46 @@ async function fetchCustomers(silent = false) {
             : [];
         
         // تصفية المستخدمين العاديين فقط (إخفاء المدراء)
-        const customers = allUsers.filter(user => user.role !== 'admin');
-        
-        console.log('👥 Total users:', allUsers.length, '| Customers (non-admin):', customers.length, '| Total orders:', state.orders?.length || 0);
-        
+        const fetchedCustomers = allUsers.filter(user => user.role !== 'admin');
+
+        console.log('👥 Total users:', allUsers.length, '| Customers (non-admin):', fetchedCustomers.length, '| Total orders:', state.orders?.length || 0);
+
+        // دمج العملاء الجدد مع الموجودين دون تكرار
+        const existingCustomers = Array.isArray(state.customers) ? state.customers : [];
+        const seenIds = new Set();
+        const seenEmails = new Set();
+
+        existingCustomers.forEach(customer => {
+            const id = customer._id || customer.id;
+            if (id) seenIds.add(String(id));
+            if (customer.email) {
+                seenEmails.add(String(customer.email).toLowerCase());
+            }
+        });
+
+        const mergedCustomers = [
+            ...existingCustomers
+        ];
+
+        fetchedCustomers.forEach(customer => {
+            const id = customer._id || customer.id;
+            const email = customer.email ? String(customer.email).toLowerCase() : null;
+
+            const normalizedId = id ? String(id) : null;
+
+            const alreadyExists =
+                (normalizedId && seenIds.has(normalizedId)) ||
+                (email && seenEmails.has(email));
+
+            if (!alreadyExists) {
+                mergedCustomers.push(customer);
+                if (normalizedId) seenIds.add(normalizedId);
+                if (email) seenEmails.add(email);
+            }
+        });
+
         // إضافة معلومات الطلبات لكل عميل
-        const customersWithOrders = customers.map(customer => {
+        const customersWithOrders = mergedCustomers.map(customer => {
             const customerId = customer._id || customer.id;
             
             // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
@@ -7362,9 +7456,6 @@ function viewCustomerDetails(customerId) {
                     <p style="margin: 8px 0; color: var(--text-main);"><strong>الاسم:</strong> ${customer.name || '-'}</p>
                     <p style="margin: 8px 0; color: var(--text-main);"><strong>البريد الإلكتروني:</strong> ${customer.email || '-'}</p>
                     <p style="margin: 8px 0; color: var(--text-main);"><strong>رقم الهاتف:</strong> <a href="tel:${customer.phone}" style="color: #27ae60; text-decoration: none;">${customer.phone || '-'}</a></p>
-                    <p style="margin: 8px 0;"><strong>الدور:</strong> <span class="badge" style="background: #3498db; color: white; padding: 4px 10px; border-radius: 4px;">${customer.role === 'admin' ? 'مدير' : 'عميل'}</span></p>
-                    <p style="margin: 8px 0;"><strong>الحالة:</strong> ${customer.active ? '<span class="badge" style="background: #27ae60; color: white; padding: 4px 10px; border-radius: 4px;">نشط</span>' : '<span class="badge" style="background: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px;">غير نشط</span>'}</p>
-                    <p style="margin: 8px 0; color: var(--text-main);"><strong>تاريخ التسجيل:</strong> ${customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('ar-EG') : '-'}</p>
                 </div>
             </div>
             
