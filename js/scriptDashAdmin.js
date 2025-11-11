@@ -23,6 +23,10 @@ const SUBCATEGORY_ENDPOINT = (categoryId) => `${CATEGORY_ENDPOINT}/${encodeURICo
 const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) => `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
 const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
 const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
+const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
+const DESCRIPTION_MAX_LENGTH = 700;
+
+let cachedAdminId = null;
 
 // ========================================
 // ===== 2. التحقق من المصادقة =====
@@ -33,6 +37,461 @@ if (!window.adminAuth) {
     console.error('⚠️ لم يتم تحميل وحدة المصادقة adminAuth. لن تعمل حماية لوحة التحكم.');
 } else {
     window.adminAuth.requireAuth();
+}
+
+function getMessageStatusLabel(status) {
+    const labels = {
+        new: 'جديدة',
+        pending: 'قيد المراجعة',
+        resolved: 'تمت المعالجة',
+        archived: 'مؤرشفة',
+        read: 'مقروءة'
+    };
+    return labels[status] || status;
+}
+
+// ===== Messages Panel =====
+const MESSAGE_FETCH_TTL = 60 * 1000;
+const DEFAULT_MESSAGES_LIMIT = 50;
+
+const mockMessages = [
+    {
+        id: 'msg-001',
+        name: 'أحمد فؤاد',
+        email: 'ahmed@example.com',
+        phone: '+201001234567',
+        subject: 'استفسار عن الشحن',
+        message: 'مرحباً، هل يتوفر شحن مجاني للطلبات فوق 1000 ريال؟',
+        createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        status: 'new',
+        isRead: false
+    }
+];
+
+function normalizeMessage(rawMessage = {}, index = 0) {
+    if (!rawMessage || typeof rawMessage !== 'object') return null;
+
+    const id = String(
+        rawMessage._id
+        || rawMessage.id
+        || rawMessage.messageId
+        || rawMessage.slug
+        || rawMessage.uid
+        || rawMessage.uuid
+        || rawMessage.reference
+        || `message-${index}`
+    );
+
+    const name = rawMessage.name
+        || rawMessage.fullName
+        || rawMessage.sender
+        || rawMessage.senderName
+        || rawMessage.user?.name
+        || 'مستخدم مجهول';
+
+    const email = rawMessage.email
+        || rawMessage.mail
+        || rawMessage.user?.email
+        || '';
+
+    const phone = rawMessage.phone
+        || rawMessage.mobile
+        || rawMessage.phoneNumber
+        || rawMessage.user?.phone
+        || '';
+
+    const subject = rawMessage.subject
+        || rawMessage.title
+        || rawMessage.topic
+        || 'بدون عنوان';
+
+    const content = rawMessage.message
+        || rawMessage.body
+        || rawMessage.content
+        || rawMessage.details
+        || '';
+
+    const createdAt = rawMessage.createdAt
+        || rawMessage.created_at
+        || rawMessage.createdOn
+        || rawMessage.submittedAt
+        || rawMessage.date
+        || null;
+
+    const status = rawMessage.status
+        || (rawMessage.isWatched ? 'read' : 'new');
+
+    const isRead = Boolean(rawMessage.isWatched || rawMessage.read || rawMessage.status === 'read');
+
+    return {
+        id,
+        name,
+        email,
+        phone,
+        subject,
+        message: content,
+        createdAt,
+        status,
+        isRead,
+        raw: rawMessage
+    };
+}
+
+function extractMessagesFromResponse(payload) {
+    if (!payload) return [];
+
+    const candidateArrays = [
+        payload.data?.documents,
+        payload.data?.messages,
+        payload.data?.items,
+        payload.data,
+        payload.messages,
+        payload.items,
+        payload.results,
+        Array.isArray(payload) ? payload : null
+    ];
+
+    for (const candidate of candidateArrays) {
+        if (Array.isArray(candidate) && candidate.length) {
+            return candidate;
+        }
+    }
+
+    return [];
+}
+
+function setMessagesLoading(isLoading) {
+    state.messagesLoading = Boolean(isLoading);
+}
+
+function setMessagesError(error) {
+    state.messagesError = error ? String(error) : null;
+}
+
+async function fetchMessages({ force = false, query = {} } = {}) {
+    if (state.messagesLoading) return;
+
+    const shouldSkip = !force
+        && state.messagesLoaded
+        && Date.now() - state.messagesLastFetched < MESSAGE_FETCH_TTL;
+
+    if (shouldSkip) {
+        renderMessagesList(state.filters.messagesSearch || '');
+        return;
+    }
+
+    setMessagesLoading(true);
+    setMessagesError(null);
+    renderMessagesList(state.filters.messagesSearch || '');
+
+    try {
+        const params = new URLSearchParams();
+        const limit = Number.isFinite(query.limit) ? query.limit : DEFAULT_MESSAGES_LIMIT;
+        if (limit) params.set('limit', String(limit));
+
+        if (query.page) params.set('page', String(query.page));
+        if (query.isWatched !== undefined && query.isWatched !== null) {
+            params.set('isWatched', String(query.isWatched));
+        }
+
+        const searchTerm = (state.filters.messagesSearch || '').trim();
+        if (searchTerm && query.search !== false) {
+            params.set('search', searchTerm);
+        }
+
+        const url = params.toString()
+            ? `${MESSAGE_ENDPOINT}?${params.toString()}`
+            : MESSAGE_ENDPOINT;
+
+        const response = await authorizedFetch(url);
+        const handled = handleUnauthorized(response);
+        if (handled !== response) {
+            setMessagesLoading(false);
+            return;
+        }
+
+        if (!response.ok) {
+            const message = `${response.status} ${response.statusText || ''}`.trim();
+            throw new Error(message || 'فشل جلب الرسائل');
+        }
+
+        const payload = await response.json().catch(() => null);
+        const rawMessages = extractMessagesFromResponse(payload);
+
+        const normalizedMessages = rawMessages
+            .map((entry, index) => normalizeMessage(entry, index))
+            .filter(Boolean);
+
+        if (!normalizedMessages.length && !state.messagesLoaded && mockMessages.length) {
+            state.messages = mockMessages.map(msg => ({ ...msg }));
+        } else {
+            state.messages = normalizedMessages;
+        }
+
+        state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+        state.messagesLoaded = true;
+        state.messagesLastFetched = Date.now();
+        setMessagesError(null);
+        updateMessagesBadge();
+    } catch (error) {
+        console.error('❌ Failed to fetch messages:', error);
+        setMessagesError(error?.message || 'تعذر تحميل الرسائل.');
+
+        if (!state.messagesLoaded && !state.messages.length && mockMessages.length) {
+            state.messages = mockMessages.map(msg => ({ ...msg }));
+            state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+            state.messagesLoaded = true;
+        }
+    } finally {
+        setMessagesLoading(false);
+        renderMessagesList(state.filters.messagesSearch || '');
+        updateMessagesBadge();
+    }
+}
+
+function initMessagesPanel() {
+    state.messages = [];
+    state.unreadMessages = 0;
+    state.messagesLoaded = false;
+    state.messagesLastFetched = 0;
+    renderMessagesList(state.filters.messagesSearch || '');
+    fetchMessages({ force: true }).catch(error => {
+        console.error('❌ Failed to initialize messages panel:', error);
+    });
+}
+
+function updateMessagesBadge() {
+    const badge = document.getElementById('messagesBadge');
+    if (!badge) return;
+    badge.textContent = state.unreadMessages > 9 ? '9+' : String(state.unreadMessages || 0);
+    badge.hidden = state.unreadMessages === 0;
+}
+
+function renderMessagesList(filterValue = '') {
+    const list = document.getElementById('messagesList');
+    if (!list) return;
+
+    const filter = String(filterValue || state.filters.messagesSearch || '').trim();
+    state.filters.messagesSearch = filter;
+
+    if (state.messagesLoading) {
+        list.innerHTML = `
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>جاري تحميل الرسائل...</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (state.messagesError) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>تعذر تحميل الرسائل</h3>
+                <p>${escapeHtml(state.messagesError)}</p>
+                <button class="btn-secondary btn-sm" data-action="refresh-messages">
+                    <i class="fas fa-sync-alt"></i> إعادة المحاولة
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const baseMessages = Array.isArray(state.messages) ? state.messages : [];
+
+    const filteredMessages = !filter
+        ? baseMessages
+        : baseMessages.filter(msg => [
+            msg.name,
+            msg.email,
+            msg.phone,
+            msg.subject,
+            msg.message
+        ].some(field => String(field || '').toLowerCase().includes(filter.toLowerCase())));
+
+    if (!filteredMessages.length) {
+        list.innerHTML = '<p class="empty-state">لا توجد رسائل مطابقة.</p>';
+        return;
+    }
+
+    list.innerHTML = filteredMessages.map(msg => createMessageItemMarkup(msg)).join('');
+}
+
+function createMessageItemMarkup(message) {
+    const createdDate = message.createdAt ? new Date(message.createdAt) : null;
+    const relativeTime = createdDate ? formatRelativeTime(createdDate) : 'غير معروف';
+    const isUnread = !message.isRead;
+    const statusKey = message.status ? String(message.status).toLowerCase() : '';
+    const statusBadge = statusKey
+        ? `<span class="message-badge message-badge--${escapeHtml(statusKey)}">${escapeHtml(getMessageStatusLabel(statusKey))}</span>`
+        : '';
+
+    const nameMarkup = escapeHtml(message.name || 'مستخدم مجهول');
+    const emailMarkup = escapeHtml(message.email || '-');
+    const subjectMarkup = escapeHtml(message.subject || 'بدون عنوان');
+    const bodyMarkup = escapeHtml(message.message || '').replace(/\n/g, '<br>');
+
+    const markReadButton = isUnread
+        ? `<button type="button" data-action="mark-read" data-message-id="${escapeHtml(message.id)}"><i class="fas fa-check"></i> تعيين كمقروء</button>`
+        : `<span class="message-status-label"><i class="fas fa-check-circle"></i> مقروءة</span>`;
+
+    return `
+        <article class="message-item ${isUnread ? 'unread' : ''}" data-message-id="${escapeHtml(message.id)}" role="listitem">
+            <header class="message-item-header">
+                <div>
+                    <div class="message-sender">
+                        <i class="fas fa-user-circle"></i>
+                        <span>${nameMarkup}</span>
+                        ${isUnread ? '<span class="message-badge">جديد</span>' : ''}
+                    </div>
+                    <div class="message-meta">
+                        <span><i class="fas fa-envelope"></i> ${emailMarkup}</span>
+                    </div>
+                </div>
+                <div class="message-meta">
+                    ${statusBadge}
+                    <time datetime="${escapeHtml(message.createdAt || '')}" aria-label="وقت الإرسال">${escapeHtml(relativeTime)}</time>
+                </div>
+            </header>
+            <div>
+                <p class="message-subject">${subjectMarkup}</p>
+                <p class="message-body">${bodyMarkup}</p>
+            </div>
+            <footer class="message-actions">
+                ${markReadButton}
+            </footer>
+        </article>
+    `;
+}
+
+function toggleMessagesPanel(forceState = null) {
+    const panel = document.getElementById('messagesPanel');
+    const overlay = document.getElementById('messagesOverlay');
+    const targetState = forceState !== null
+        ? Boolean(forceState)
+        : !panel?.classList.contains('active');
+
+    if (panel) {
+        panel.classList.toggle('active', targetState);
+    }
+    if (overlay) {
+        overlay.hidden = !targetState;
+        overlay.style.opacity = targetState ? '1' : '0';
+    }
+
+    document.body.classList.toggle('messages-open', targetState);
+
+    if (targetState) {
+        if (!state.messagesLoaded && !state.messagesLoading) {
+            fetchMessages({ force: true }).catch(error => {
+                console.error('❌ Failed to load messages on open:', error);
+            });
+        } else {
+            renderMessagesList(state.filters.messagesSearch || '');
+        }
+    }
+}
+
+async function markMessageWatchState(messageId) {
+    if (!messageId) return false;
+
+    try {
+        const response = await authorizedFetch(`${MESSAGE_ENDPOINT}/${encodeURIComponent(messageId)}/watch`, {
+            method: 'PATCH'
+        });
+
+        const handled = handleUnauthorized(response);
+        if (handled !== response) {
+            throw new Error('تم إنهاء الطلب بسبب انتهاء صلاحية الجلسة.');
+        }
+
+        if (!response.ok) {
+            const message = `${response.status} ${response.statusText || ''}`.trim();
+            throw new Error(message || 'تعذر تحديث حالة الرسالة');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to mark message as watched:', error);
+        throw error;
+    }
+}
+
+async function markMessagesAsRead() {
+    const unreadMessages = state.messages.filter(msg => !msg.isRead);
+    if (!unreadMessages.length) {
+        showToast('info', 'الرسائل', 'لا توجد رسائل غير مقروءة حالياً.');
+        return;
+    }
+
+    setMessagesLoading(true);
+    renderMessagesList(state.filters.messagesSearch || '');
+
+    const results = await Promise.allSettled(unreadMessages.map(msg => markMessageWatchState(msg.id)));
+
+    const succeededIds = [];
+    const failedIds = [];
+
+    results.forEach((result, index) => {
+        const targetId = unreadMessages[index].id;
+        if (result.status === 'fulfilled' && result.value) {
+            succeededIds.push(targetId);
+        } else {
+            failedIds.push(targetId);
+        }
+    });
+
+    state.messages = state.messages.map(msg => succeededIds.includes(msg.id)
+        ? { ...msg, isRead: true, status: msg.status === 'new' ? 'read' : (msg.status || 'read') }
+        : msg
+    );
+
+    state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+    setMessagesLoading(false);
+    renderMessagesList(state.filters.messagesSearch || '');
+    updateMessagesBadge();
+
+    if (succeededIds.length) {
+        showToast('success', 'الرسائل', `تم تعيين ${succeededIds.length} رسالة كمقروءة.`);
+    }
+
+    if (failedIds.length) {
+        showToast('warning', 'الرسائل', `تعذر تحديث ${failedIds.length} رسالة. حاول مجدداً لاحقاً.`);
+    }
+}
+
+async function handleMessageAction(action, messageId) {
+    const index = state.messages.findIndex(msg => msg.id === messageId);
+    if (index === -1) return;
+
+    const message = state.messages[index];
+
+    if (action === 'mark-read') {
+        if (message.isRead) {
+            showToast('info', 'الرسائل', 'هذه الرسالة مقروءة بالفعل.');
+            return;
+        }
+
+        try {
+            await markMessageWatchState(messageId);
+            state.messages[index] = {
+                ...message,
+                isRead: true,
+                status: message.status === 'new' ? 'read' : (message.status || 'read')
+            };
+            state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+            renderMessagesList(state.filters.messagesSearch || '');
+            updateMessagesBadge();
+            showToast('success', 'الرسائل', 'تم تعيين الرسالة كمقروءة.');
+        } catch (error) {
+            showToast('error', 'الرسائل', error?.message || 'تعذر تحديث حالة الرسالة.');
+        }
+    } else if (action === 'refresh') {
+        fetchMessages({ force: true }).catch(error => {
+            console.error('❌ Failed to refresh messages:', error);
+        });
+    }
 }
 
 // ========================================
@@ -191,9 +650,6 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
         const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
         const image = subcategory.image || extras.image;
         const description = subcategory.description || extras.description || 'لا يوجد وصف متاح لهذه الفئة الفرعية حالياً.';
-        const productsCount = typeof subcategory.productsCount === 'number'
-            ? subcategory.productsCount
-            : (subcategory.raw?.productsCount ?? subcategory.raw?.productsNumber ?? subcategory.raw?.products?.length ?? extras.productsCount ?? 0);
         const parentCategory = getCategoryById(parentCategoryId);
 
         return `
@@ -204,10 +660,7 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
                 <div class="subcategory-info">
                     <h3>${escapeHtml(subcategory.name)}</h3>
                     ${parentCategory ? `<p class="subcategory-parent"><i class="fas fa-tags"></i> ${escapeHtml(parentCategory.name)}</p>` : ''}
-                    <p class="subcategory-description">${escapeHtml(description)}</p>
-                    <div class="subcategory-meta">
-                        <span class="meta-item meta-item--products"><i class="fas fa-box"></i> ${formatNumber(productsCount)} منتج</span>
-                    </div>
+                    <p class="subcategory-description">${escapeHtml(truncateText(description, DESCRIPTION_MAX_LENGTH))}</p>
                 </div>
                 <div class="subcategory-actions">
                     <button class="btn-danger btn-sm" data-action="delete-subcategory" data-entity-id="${subcategory.id}" data-category-id="${parentCategoryId}" data-entity-name="${escapeHtml(subcategory.name)}" title="حذف"><i class="fas fa-trash"></i></button>
@@ -275,6 +728,30 @@ let brandsFetchPromise = null;
  * @param {Object} options - خيارات الطلب
  * @returns {Promise} - وعد بالاستجابة
  */
+function decodeJwtPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+
+        let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (payload.length % 4 !== 0) {
+            payload += '=';
+        }
+
+        const decoded = atob(payload);
+        try {
+            return JSON.parse(decodeURIComponent(decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        } catch (_) {
+            return JSON.parse(decoded);
+        }
+    } catch (error) {
+        console.warn('⚠️ Failed to decode JWT token:', error);
+        return null;
+    }
+}
+
 function authorizedFetch(url, options = {}) {
     if (!window.adminAuth) {
         return fetch(url, options);
@@ -298,6 +775,124 @@ function authorizedFetch(url, options = {}) {
  * @param {Response} response - استجابة HTTP
  * @returns {Response} - نفس الاستجابة
  */
+function extractIdFromObject(entity) {
+    if (!entity || typeof entity !== 'object') return null;
+
+    const candidates = [
+        entity._id,
+        entity.id,
+        entity.userId,
+        entity.uid,
+        entity.sub,
+        entity?.user?._id,
+        entity?.user?.id,
+        entity?.user?.userId,
+        entity?.data?._id,
+        entity?.data?.id,
+        entity?.data?.user?._id,
+        entity?.data?.user?.id,
+        entity?.profile?._id,
+        entity?.profile?.id
+    ];
+
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
+        }
+        if (typeof candidate === 'object' && candidate.$oid) {
+            return String(candidate.$oid);
+        }
+        if (typeof candidate === 'number') {
+            return String(candidate);
+        }
+    }
+
+    return null;
+}
+
+function setCachedAdminId(value) {
+    if (value && typeof value === 'string' && value.trim()) {
+        cachedAdminId = value.trim();
+    }
+}
+
+async function resolveCurrentAdminId(forceRefresh = false) {
+    if (!forceRefresh && cachedAdminId) {
+        return cachedAdminId;
+    }
+
+    const auth = window.adminAuth;
+    if (!auth) return null;
+
+    let authUser;
+    try {
+        authUser = auth.getUser?.() || null;
+        const extractedFromUser = extractIdFromObject(authUser);
+        if (extractedFromUser && !forceRefresh) {
+            setCachedAdminId(extractedFromUser);
+            return cachedAdminId;
+        }
+    } catch (error) {
+        console.warn('⚠️ Failed to read stored admin user:', error);
+    }
+
+    const token = auth.getToken?.();
+    const payload = decodeJwtPayload(token);
+    const extractedFromPayload = extractIdFromObject(payload) || extractIdFromObject(payload?.user);
+    if (extractedFromPayload && !forceRefresh) {
+        setCachedAdminId(extractedFromPayload);
+        return cachedAdminId;
+    }
+    if (payload?.sub && typeof payload.sub === 'string' && !forceRefresh) {
+        setCachedAdminId(payload.sub);
+        return cachedAdminId;
+    }
+
+    const candidateEndpoints = [
+        `${ADMIN_API_BASE_URL}/auth/profile`,
+        `${ADMIN_API_BASE_URL}/auth/me`,
+        `${USERS_ENDPOINT}/me`
+    ];
+
+    for (const endpoint of candidateEndpoints) {
+        try {
+            const response = await authorizedFetch(endpoint);
+            if (!response?.ok) continue;
+            const data = await response.json().catch(() => null);
+            const extracted = extractIdFromObject(data) || extractIdFromObject(data?.data) || extractIdFromObject(data?.user);
+            if (extracted) {
+                setCachedAdminId(extracted);
+                return cachedAdminId;
+            }
+        } catch (error) {
+            console.warn(`⚠️ Failed to fetch admin identity from ${endpoint}:`, error);
+        }
+    }
+
+    const email = authUser?.email ? String(authUser.email).toLowerCase() : null;
+    if (email) {
+        try {
+            const response = await authorizedFetch(`${USERS_ENDPOINT}?email=${encodeURIComponent(email)}`);
+            if (response?.ok) {
+                const data = await response.json().catch(() => null);
+                const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+                const matched = list.find(item => String(item.email || '').toLowerCase() === email);
+                const extracted = extractIdFromObject(matched);
+                if (extracted) {
+                    setCachedAdminId(extracted);
+                    return cachedAdminId;
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Failed to lookup admin by email:', error);
+        }
+    }
+
+    console.warn('⚠️ Unable to determine current admin id. Password change request cannot proceed.');
+    return null;
+}
+
 function handleUnauthorized(response) {
     if (response?.status === 401 && window.adminAuth) {
         console.warn('انتهت صلاحية الجلسة، يتم إعادة التوجيه إلى صفحة الدخول.');
@@ -419,7 +1014,8 @@ const state = {
         analyticsStart: null,
         analyticsEnd: null,
         subcategoryCategory: 'all',
-        brandSearch: ''
+        brandSearch: '',
+        messagesSearch: ''
     },
     // الفئات
     categories: [],
@@ -445,7 +1041,13 @@ const state = {
     customersLoading: false,
     customersError: null,
     // القسم الحالي
-    currentSection: 'overview'
+    currentSection: 'overview',
+    messages: [],
+    unreadMessages: 0,
+    messagesLoading: false,
+    messagesError: null,
+    messagesLoaded: false,
+    messagesLastFetched: 0
 };
 
 // ========================================
@@ -535,7 +1137,12 @@ function populateSubcategoryModal(categoryId, subcategoryId = null) {
     setFieldValue(form, 'categoryId', resolvedCategoryId);
     setFieldValue(form, 'originalCategoryId', subcategory?.categoryId || resolvedCategoryId);
     setFieldValue(form, 'name', subcategory?.name || '');
-    setFieldValue(form, 'description', extras?.description || subcategory?.description || '');
+    const subcategoryDescriptionField = form.querySelector('[name="description"]');
+    const initialDescription = extras?.description || subcategory?.description || '';
+    setFieldValue(form, 'description', truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)));
+    if (subcategoryDescriptionField) {
+        updateDescriptionCounter(subcategoryDescriptionField);
+    }
 
     const statusField = form.elements['status'];
     if (statusField) {
@@ -2048,7 +2655,13 @@ function buildSubcategoryFormData(formData) {
     const subcategoryId = getFormValue(formData, 'id');
     const name = getFormValue(formData, 'name');
     const slug = getFormValue(formData, 'slug') || slugify(name);
-    const description = getFormValue(formData, 'description');
+    const descriptionField = form.querySelector('[name="description"]');
+    const maxLength = getDescriptionMaxLength(descriptionField);
+    const description = truncateText(getFormValue(formData, 'description'), maxLength);
+    if (descriptionField && descriptionField.value !== description) {
+        descriptionField.value = description;
+        updateDescriptionCounter(descriptionField);
+    }
     const status = getFormValue(formData, 'status', 'active');
 
     const payload = {
@@ -2760,7 +3373,11 @@ function handleEditBrand(brandId) {
     form.dataset.mode = 'edit';
     setFieldValue(form, 'id', brand._id || brand.id || '');
     setFieldValue(form, 'name', brand.name || '');
-    setFieldValue(form, 'description', brand.description || '');
+    setFieldValue(form, 'description', truncateText(brand.description || '', getDescriptionMaxLength(form.querySelector('[name="description"]'))));
+    const brandDescriptionField = form.querySelector('[name="description"]');
+    if (brandDescriptionField) {
+        updateDescriptionCounter(brandDescriptionField);
+    }
 
     const imageInput = form.querySelector('#brandImage');
     if (imageInput) {
@@ -2942,7 +3559,11 @@ async function populateProductModal(productId = null) {
 
         // تعبئة الحقول الأساسية
         setFieldValue(form, 'name', product.name);
-        setFieldValue(form, 'description', product.description);
+        const descriptionField = form.querySelector('[name="description"]');
+        setFieldValue(form, 'description', truncateText(product.description, getDescriptionMaxLength(descriptionField)));
+        if (descriptionField) {
+            updateDescriptionCounter(descriptionField);
+        }
         setFieldValue(form, 'price', product.price);
         setFieldValue(form, 'quantity', product.stock);
         setFieldValue(form, 'sku', product.sku || '');
@@ -3021,7 +3642,11 @@ function populateCategoryModal(categoryId) {
     }
     updateCategoryImagePreview(targetImage);
     const resolvedDescription = extras?.description || category?.description || '';
-    setFieldValue(form, 'description', resolvedDescription);
+    const descriptionField = form.querySelector('[name="description"]');
+    setFieldValue(form, 'description', truncateText(resolvedDescription, getDescriptionMaxLength(descriptionField)));
+    if (descriptionField) {
+        updateDescriptionCounter(descriptionField);
+    }
 
     const originalSnapshot = {
         name: category?.name || '',
@@ -3067,6 +3692,50 @@ function formatDate(value, options = {}) {
     };
 
     return date.toLocaleDateString('ar-EG', formatOptions);
+}
+
+function formatRelativeTime(value) {
+    const date = parseDateValue(value);
+    if (!date) return '-';
+
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const absDiffMs = Math.abs(diffMs);
+
+    const units = [
+        { unit: 'year', ms: 1000 * 60 * 60 * 24 * 365 },
+        { unit: 'month', ms: 1000 * 60 * 60 * 24 * 30 },
+        { unit: 'week', ms: 1000 * 60 * 60 * 24 * 7 },
+        { unit: 'day', ms: 1000 * 60 * 60 * 24 },
+        { unit: 'hour', ms: 1000 * 60 * 60 },
+        { unit: 'minute', ms: 1000 * 60 },
+        { unit: 'second', ms: 1000 }
+    ];
+
+    for (const { unit, ms } of units) {
+        if (absDiffMs >= ms || unit === 'second') {
+            const value = Math.round(diffMs / ms);
+            if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
+                const formatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' });
+                return formatter.format(value, unit);
+            }
+
+            const absValue = Math.abs(value);
+            const suffix = value < 0 ? 'منذ' : 'بعد';
+            const labels = {
+                second: 'ثانية',
+                minute: 'دقيقة',
+                hour: 'ساعة',
+                day: 'يوم',
+                week: 'أسبوع',
+                month: 'شهر',
+                year: 'سنة'
+            };
+            return `${suffix} ${absValue} ${labels[unit] || ''}`.trim();
+        }
+    }
+
+    return '-';
 }
 
 function parseDateValue(value) {
@@ -3186,6 +3855,51 @@ function getFormValue(formData, name, fallback = '') {
     if (!formData) return fallback;
     const value = formData.get(name);
     return value !== null ? value.trim() : fallback;
+}
+
+function truncateText(value = '', maxLength = DESCRIPTION_MAX_LENGTH) {
+    const text = typeof value === 'string' ? value : String(value ?? '');
+    if (!Number.isFinite(maxLength) || maxLength <= 0) {
+        return text;
+    }
+    return text.length > maxLength ? text.slice(0, maxLength) : text;
+}
+
+function getDescriptionMaxLength(field) {
+    if (!field || typeof field.getAttribute !== 'function') return DESCRIPTION_MAX_LENGTH;
+    const attr = Number(field.getAttribute('maxlength'));
+    return Number.isFinite(attr) && attr > 0 ? attr : DESCRIPTION_MAX_LENGTH;
+}
+
+function updateDescriptionCounter(field) {
+    if (!field) return;
+    const maxLength = getDescriptionMaxLength(field);
+    const currentValue = field.value || '';
+    if (currentValue.length > maxLength) {
+        field.value = currentValue.slice(0, maxLength);
+    }
+
+    const counterId = field.dataset.counter;
+    const counterElement = counterId ? document.getElementById(counterId) : null;
+    if (counterElement) {
+        counterElement.textContent = `${field.value.length} / ${maxLength}`;
+    }
+}
+
+function refreshDescriptionCounters(container = document) {
+    if (!container || typeof container.querySelectorAll !== 'function') return;
+    container.querySelectorAll('.js-description-input').forEach(field => updateDescriptionCounter(field));
+}
+
+function initDescriptionInputs(root = document) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    root.querySelectorAll('.js-description-input').forEach(field => {
+        if (field.dataset.descriptionWatcherAttached === 'true') return;
+        field.dataset.descriptionWatcherAttached = 'true';
+        field.addEventListener('input', () => updateDescriptionCounter(field));
+        field.addEventListener('blur', () => updateDescriptionCounter(field));
+        updateDescriptionCounter(field);
+    });
 }
 
 function getNumericValue(formData, name, fallback = 0) {
@@ -4365,7 +5079,7 @@ function renderCategories() {
                     </div>
                     <div class="category-info">
                         <h3>${escapeHtml(category.name)}</h3>
-                        <p class="category-description">${escapeHtml(category.description || 'لا يوجد وصف متاح لهذه الفئة حالياً.')}</p>
+                        <p class="category-description">${escapeHtml(truncateText(category.description || 'لا يوجد وصف متاح لهذه الفئة حالياً.', DESCRIPTION_MAX_LENGTH))}</p>
                         <div class="category-meta">
                             <span class="meta-item"><i class="fas fa-sitemap"></i> ${formatNumber(subcategoriesCount)} فئة فرعية</span>
                         </div>
@@ -4591,8 +5305,8 @@ function renderAnalyticsFilters() {
 }
 
 function renderAuditLogs() {
-    const body = document.getElementById('auditLogTableBody');
-    if (!body) return;
+    const tableBody = document.getElementById('auditLogsTableBody');
+    if (!tableBody) return;
 
     const actionFilter = state.filters.auditAction !== 'all'
         ? item => item.action === state.filters.auditAction
@@ -4606,8 +5320,8 @@ function renderAuditLogs() {
 
     const filtered = applyFilters(mockData.auditLogs, [actionFilter, dateFilter, searchFilter]);
 
-    body.innerHTML = filtered.map(log => `
-        <tr data-id="${log.id}">
+    tableBody.innerHTML = filtered.map(log => `
+        <tr>
             <td>${log.createdAt}</td>
             <td>${log.user}</td>
             <td>${getStatusBadge(log.action)}</td>
@@ -4617,11 +5331,95 @@ function renderAuditLogs() {
     `).join('');
 }
 
-function renderUsers() {
-    const body = document.getElementById('usersTableBody');
-    if (!body) return;
+async function handleChangePasswordSubmit(event) {
+    event.preventDefault();
 
-    body.innerHTML = mockData.users.map(user => `
+    if (!window.adminAuth?.getUser) {
+        showToast('error', 'تغيير كلمة المرور', 'حدثت مشكلة في المصادقة. يرجى إعادة تسجيل الدخول.');
+        return;
+    }
+
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const currentPasswordInput = form.querySelector('#currentPassword');
+    const newPasswordInput = form.querySelector('#newPassword');
+    const confirmPasswordInput = form.querySelector('#confirmPassword');
+
+    const currentPassword = currentPasswordInput?.value?.trim();
+    const newPassword = newPasswordInput?.value?.trim();
+    const confirmPassword = confirmPasswordInput?.value?.trim();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showToast('error', 'تغيير كلمة المرور', 'يرجى ملء جميع الحقول المطلوبة.');
+        return;
+    }
+
+    if (newPassword.length < 8) {
+        showToast('error', 'تغيير كلمة المرور', 'كلمة المرور الجديدة يجب أن لا تقل عن 8 أحرف.');
+        newPasswordInput?.focus();
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showToast('error', 'تغيير كلمة المرور', 'تأكيد كلمة المرور لا يطابق الكلمة الجديدة.');
+        confirmPasswordInput?.focus();
+        return;
+    }
+
+    let userId = await resolveCurrentAdminId();
+
+    if (!userId) {
+        userId = await resolveCurrentAdminId(true);
+    }
+
+    if (!userId) {
+        showToast('error', 'تغيير كلمة المرور', 'تعذر تحديد حساب المدير. يرجى إعادة تسجيل الدخول.');
+        return;
+    }
+
+    const setLoading = (loading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = loading;
+        submitBtn.classList.toggle('is-loading', loading);
+    };
+
+    setLoading(true);
+
+    try {
+        const response = await authorizedFetch(`${USERS_ENDPOINT}/${encodeURIComponent(userId)}/change-password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                currentPassword,
+                newPassword,
+                passwordConfirm: confirmPassword
+            })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || errorBody?.msg || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
+
+        showToast('success', 'تغيير كلمة المرور', 'تم تحديث كلمة المرور بنجاح.');
+        form.reset();
+    } catch (error) {
+        console.error('❌ Failed to change password:', error);
+        const message = error?.message || 'حدث خطأ أثناء تغيير كلمة المرور.';
+        showToast('error', 'تغيير كلمة المرور', message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+function renderUsers(users = []) {
+    const tableBody = document.getElementById('usersTableBody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = users.map(user => `
         <tr data-id="${user.id}">
             <td>${user.name}</td>
             <td>${user.email}</td>
@@ -5534,6 +6332,28 @@ function createMobileMenu() {
     }
 }
 
+function toggleSidebar(forceState = null) {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    if (!sidebar || !overlay) return;
+
+    const isActive = sidebar.classList.contains('mobile-active');
+    const targetState = forceState !== null ? Boolean(forceState) : !isActive;
+
+    sidebar.classList.toggle('mobile-active', targetState);
+    overlay.hidden = !targetState;
+    overlay.style.opacity = targetState ? '1' : '0';
+    document.body.classList.toggle('sidebar-open', targetState);
+
+    if (menuBtn) {
+        menuBtn.innerHTML = targetState
+            ? '<i class="fas fa-times"></i>'
+            : '<i class="fas fa-bars"></i>';
+    }
+}
+
 // ===== Event Delegation =====
 document.addEventListener('click', function(e) {
     // Theme Toggle
@@ -5551,6 +6371,13 @@ document.addEventListener('click', function(e) {
         if (section) {
             switchSection(section);
         }
+        return;
+    }
+
+    // Toggle sidebar (mobile FAB)
+    if (e.target.closest('#mobileMenuBtn')) {
+        e.preventDefault();
+        toggleSidebar();
         return;
     }
 
@@ -5772,27 +6599,6 @@ document.addEventListener('click', function(e) {
         return;
     }
 
-    // Mobile Menu Button
-    if (e.target.closest('#mobileMenuBtn')) {
-        e.preventDefault();
-        const sidebar = document.getElementById('sidebar');
-        const menuBtn = document.getElementById('mobileMenuBtn');
-        const overlay = document.getElementById('sidebarOverlay');
-        if (sidebar && menuBtn) {
-            sidebar.classList.toggle('mobile-active');
-            document.body.classList.toggle('sidebar-open', sidebar.classList.contains('mobile-active'));
-            menuBtn.innerHTML = sidebar.classList.contains('mobile-active')
-                ? '<i class="fas fa-times"></i>'
-                : '<i class="fas fa-bars"></i>';
-            if (overlay) {
-                const isActive = sidebar.classList.contains('mobile-active');
-                overlay.hidden = !isActive;
-                overlay.style.opacity = isActive ? '1' : '0';
-            }
-        }
-        return;
-    }
-
     // Close mobile sidebar when clicking outside
     const sidebar = document.getElementById('sidebar');
     if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('mobile-active')) {
@@ -5808,6 +6614,67 @@ document.addEventListener('click', function(e) {
                 overlay.hidden = true;
                 overlay.style.opacity = '0';
             }
+        }
+    }
+
+    if (e.target.closest('#sidebarOverlay')) {
+        e.preventDefault();
+        toggleSidebar(false);
+        return;
+    }
+
+    // Toggle messages panel
+    if (e.target.closest('#messagesBtn')) {
+        e.preventDefault();
+        toggleMessagesPanel();
+        return;
+    }
+
+    if (e.target.closest('#closeMessagesPanel')) {
+        e.preventDefault();
+        toggleMessagesPanel(false);
+        return;
+    }
+
+    if (e.target.closest('#markAllMessagesRead')) {
+        e.preventDefault();
+        markMessagesAsRead();
+        showToast('success', 'الرسائل', 'تم تعيين جميع الرسائل كمقروءة');
+        return;
+    }
+
+    if (e.target.id === 'messagesOverlay') {
+        toggleMessagesPanel(false);
+        return;
+    }
+
+    if (window.innerWidth > 992) {
+        const panel = document.getElementById('messagesPanel');
+        if (panel?.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('#messagesBtn')) {
+            toggleMessagesPanel(false);
+        }
+    }
+
+    const messageActionBtn = e.target.closest('[data-action][data-message-id]');
+    if (messageActionBtn) {
+        const action = messageActionBtn.getAttribute('data-action');
+        const messageId = messageActionBtn.getAttribute('data-message-id');
+        handleMessageAction(action, messageId);
+        return;
+    }
+});
+
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'messagesSearchInput') {
+        renderMessagesList(e.target.value || '');
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const panel = document.getElementById('messagesPanel');
+        if (panel?.classList.contains('active')) {
+            toggleMessagesPanel(false);
         }
     }
 });
@@ -5979,9 +6846,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+    }
+
+    document.querySelectorAll('.toggle-password').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            const input = targetId ? document.getElementById(targetId) : btn.previousElementSibling;
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-eye', !isPassword);
+                icon.classList.toggle('fa-eye-slash', isPassword);
+            }
+            btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+        });
+    });
+
     // جلب الفئات من الـ API
     fetchCategories();
     fetchProducts();
+
+    initMessagesPanel();
 
     // إنشاء قائمة الهاتف المحمول إذا لزم الأمر
     createMobileMenu();

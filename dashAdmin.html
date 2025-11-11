@@ -17,6 +17,10 @@
                 <span class="logo-text">Action Sports</span>
             </div>
             <div class="header-actions">
+                <button class="icon-btn" id="messagesBtn" title="الرسائل">
+                    <i class="fas fa-envelope"></i>
+                    <span class="badge" id="messagesBadge">3</span>
+                </button>
                 <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -89,6 +93,27 @@
             </nav>
         </aside>
         <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
+        <div class="messages-overlay" id="messagesOverlay" hidden></div>
+        <aside class="messages-panel" id="messagesPanel" aria-label="لوحة الرسائل">
+            <header class="messages-header">
+                <div>
+                    <h3>الرسائل</h3>
+                    <p class="messages-subtitle">رسائل العملاء من نموذج التواصل</p>
+                </div>
+                <div class="messages-header-actions">
+                    <button class="btn-secondary btn-sm" id="markAllMessagesRead">تعيين كمقروء</button>
+                    <button class="close-panel" id="closeMessagesPanel" title="إغلاق">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </header>
+            <div class="messages-search" id="messagesSearchContainer">
+                <input type="search" id="messagesSearchInput" placeholder="بحث في الرسائل..." autocomplete="off">
+            </div>
+            <div class="messages-list" id="messagesList" role="list">
+                <p class="empty-state">لا توجد رسائل بعد.</p>
+            </div>
+        </aside>
 
         <!-- Main Content -->
         <main class="main-content" id="mainContent">
@@ -270,7 +295,9 @@
                             </div>
                             <div class="form-group full-width">
                                 <label for="subcategoryDescription">الوصف</label>
-                                <textarea id="subcategoryDescription" name="description" class="form-input" rows="3" placeholder="يمكنك كتابة وصف للفئة الفرعية"></textarea>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="subcategoryDescription" name="description" class="form-input js-description-input" rows="3" maxlength="700" data-counter="subcategoryDescriptionCounter" placeholder="يمكنك كتابة وصف للفئة الفرعية"></textarea>
+                                <div class="char-counter" id="subcategoryDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -352,11 +379,15 @@
                             </div>
                             <div class="form-group full-width">
                                 <label for="productDescription">وصف مختصر</label>
-                                <textarea id="productDescription" name="description" class="form-input" rows="3" placeholder="يمكنك كتابة وصف للمنتج"></textarea>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="productDescription" name="description" class="form-input js-description-input" rows="3" maxlength="700" data-counter="productDescriptionCounter" placeholder="يمكنك كتابة وصف للمنتج"></textarea>
+                                <div class="char-counter" id="productDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                             <div class="form-group full-width">
                                 <label for="productSpecs">المواصفات</label>
-                                <textarea id="productSpecs" name="specs" class="form-input" rows="4" placeholder="أدخل مواصفات المنتج والتفاصيل التقنية"></textarea>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="productSpecs" name="specs" class="form-input js-description-input" rows="4" maxlength="700" data-counter="productSpecsCounter" placeholder="أدخل مواصفات المنتج والتفاصيل التقنية"></textarea>
+                                <div class="char-counter" id="productSpecsCounter" aria-live="polite">0 / 700</div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -512,7 +543,7 @@
                     <div class="banners-grid" id="bannersGrid">
                         <div class="banner-card" data-id="BN-1">
                             <div class="banner-preview">
-                                <img src="img/slide-01.jpg" alt="عرض الصيف الكبير">
+                                <img src="img/Logo.webp" alt="عرض الصيف الكبير">
                             </div>
                             <div class="banner-info">
                                 <h3>عرض الصيف الكبير</h3>
@@ -525,7 +556,7 @@
                         </div>
                         <div class="banner-card" data-id="BN-2">
                             <div class="banner-preview">
-                                <img src="img/training-image-01.jpg" alt="منتجات مميزة للرياضيين">
+                                <img src="img/Logo.png" alt="منتجات مميزة للرياضيين">
                             </div>
                             <div class="banner-info">
                                 <h3>منتجات مميزة للرياضيين</h3>
@@ -756,27 +787,6 @@
                
                 <div class="settings-container">
                     <div class="settings-card">
-                        <h3><i class="fas fa-store"></i> معلومات المتجر</h3>
-                        <div class="form-group">
-                            <label>اسم المتجر</label>
-                            <input type="text" value="متجر الأجهزة الرياضية" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label>البريد الإلكتروني</label>
-                            <input type="email" value="info@store.com" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label>رقم الهاتف</label>
-                            <input type="tel" value="01012345678" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label>العنوان</label>
-                            <textarea class="form-input" rows="3">القاهرة، مصر</textarea>
-                        </div>
-                        <button class="btn-primary"><i class="fas fa-save"></i> حفظ التغييرات</button>
-                    </div>
-
-                    <div class="settings-card">
                         <h3><i class="fas fa-truck"></i> إعدادات الشحن</h3>
                         <div class="form-group">
                             <label>تكلفة الشحن الافتراضية</label>
@@ -791,6 +801,34 @@
                             <input type="text" value="2-5 أيام عمل" class="form-input">
                         </div>
                         <button class="btn-primary"><i class="fas fa-save"></i> حفظ التغييرات</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3><i class="fas fa-user-shield"></i> تغيير كلمة المرور</h3>
+                        <form id="changePasswordForm" class="settings-form">
+                            <div class="form-group">
+                                <label for="currentPassword">كلمة المرور الحالية</label>
+                                <div class="input-with-icon">
+                                    <input type="password" id="currentPassword" name="currentPassword" class="form-input" placeholder="أدخل كلمة المرور الحالية" required minlength="6">
+                                    <button type="button" class="toggle-password" data-target="currentPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">كلمة المرور الجديدة</label>
+                                <div class="input-with-icon">
+                                    <input type="password" id="newPassword" name="newPassword" class="form-input" placeholder="أدخل كلمة المرور الجديدة" required minlength="8">
+                                    <button type="button" class="toggle-password" data-target="newPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">تأكيد كلمة المرور الجديدة</label>
+                                <div class="input-with-icon">
+                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="أعد إدخال كلمة المرور الجديدة" required minlength="8">
+                                    <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary"><i class="fas fa-key"></i> تحديث كلمة المرور</button>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -891,7 +929,9 @@
                             </div>
                             <div class="form-group full-width">
                                 <label for="categoryDescription">وصف الفئة</label>
-                                <textarea id="categoryDescription" name="description" class="form-input" rows="3" placeholder="اكتب وصفاً مختصراً للفئة"></textarea>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="categoryDescription" name="description" class="form-input js-description-input" rows="3" maxlength="700" data-counter="categoryDescriptionCounter" placeholder="اكتب وصفاً مختصراً للفئة"></textarea>
+                                <div class="char-counter" id="categoryDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -919,7 +959,9 @@
                             </div>
                             <div class="form-group full-width">
                                 <label for="brandDescription">وصف العلامة التجارية *</label>
-                                <textarea id="brandDescription" name="description" class="form-input" rows="3" placeholder="اكتب وصفاً مختصراً للعلامة التجارية" required></textarea>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="brandDescription" name="description" class="form-input js-description-input" rows="3" maxlength="700" data-counter="brandDescriptionCounter" placeholder="اكتب وصفاً مختصراً للعلامة التجارية" required></textarea>
+                                <div class="char-counter" id="brandDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                             <div class="form-group">
                                 <label for="brandImage">صورة العلامة التجارية *</label>
@@ -1028,7 +1070,9 @@
                     </div>
                     <div class="form-group">
                         <label for="featureDescription">وصف مختصر *</label>
-                        <textarea id="featureDescription" name="description" class="form-input" rows="3" placeholder="وضح تفاصيل الميزة" required></textarea>
+                        <small class="input-hint">الحد الأقصى 700 حرف</small>
+                        <textarea id="featureDescription" name="description" class="form-input" rows="3" maxlength="700" data-counter="featureDescriptionCounter" placeholder="وضح تفاصيل الميزة" required></textarea>
+                        <div class="char-counter" id="featureDescriptionCounter" aria-live="polite">0 / 700</div>
                     </div>
                     <div class="form-group">
                         <label for="featureStatus">الحالة</label>
@@ -1185,9 +1229,6 @@
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="js/index-auth.js"></script>
-    <script src="js/scriptDashAdmin.js"></script>
     <!-- Admin Auth Modal -->
     <div class="modal" id="authModal">
         <div class="modal-overlay" data-close-modal></div>
