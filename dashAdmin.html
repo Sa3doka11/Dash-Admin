@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Dash-Admin </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
     <link rel="stylesheet" href="css/dashAdmin.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-            <img class="fas fa-chart-line" src="img/Logo.webp" alt="Logo">
+                <img class="logo-icon" src="img/Logo.webp" alt="Action Sports Logo">
                 <span class="logo-text">Action Sports</span>
             </div>
             <div class="header-actions">
@@ -129,7 +130,7 @@
                             <i class="fas fa-shopping-bag" style="color: #e74c3c;"></i>
                         </div>
                         <div class="stat-content">
-                            <h3>الطلبات اليومية</h3>
+                            <h3>طلبات اليوم</h3>
                             <p class="stat-value" id="dailyOrdersCount">245</p>
                         </div>
                     </div>
@@ -240,10 +241,6 @@
                         <div class="form-group">
                             <label>اسم الطريقة</label>
                             <input type="text" name="name" class="form-input" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>الرسوم الإضافية</label>
-                            <input type="text" name="fee" class="form-input" placeholder="مثال: 2% أو 10 ريال">
                         </div>
                         <div class="form-group">
                             <label>ملاحظات أو تعليمات</label>
@@ -407,6 +404,10 @@
                     </button>
                 </div>
 
+                <div class="filters-bar">
+                    <input type="text" id="categorySearch" class="search-input" placeholder="ابحث في الفئات..." aria-label="البحث في الفئات">
+                </div>
+
                 <div class="categories-list" id="categoriesList"></div>
             </section>
 
@@ -414,14 +415,16 @@
             <section class="content-section" id="subcategories">
                 <div class="section-header">
                     <h1>إدارة الفئات الفرعية</h1>
-                    <div class="section-actions">
-                        <select id="subcategoryCategoryFilter" class="form-input" aria-label="اختيار الفئة الرئيسية">
-                            <option value="">اختر الفئة الرئيسية</option>
-                        </select>
-                        <button class="btn-primary" id="addSubcategoryBtn" data-open-modal="subcategoryModal" data-modal-mode="create" data-entity="subcategory">
-                            <i class="fas fa-plus"></i> إضافة فئة فرعية جديدة
-                        </button>
-                    </div>
+                    <button class="btn-primary" id="addSubcategoryBtn" data-open-modal="subcategoryModal" data-modal-mode="create" data-entity="subcategory">
+                        <i class="fas fa-plus"></i> إضافة فئة فرعية جديدة
+                    </button>
+                </div>
+
+                <div class="filters-bar">
+                    <select id="subcategoryCategoryFilter" class="filter-select" aria-label="اختيار الفئة الرئيسية">
+                        <option value="">اختر الفئة الرئيسية</option>
+                    </select>
+                    <input type="text" id="subcategorySearch" class="search-input" placeholder="ابحث في الفئات الفرعية..." aria-label="البحث في الفئات الفرعية">
                 </div>
 
                 <div id="subcategoriesContent">
@@ -654,10 +657,6 @@
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
-                        <div class="payment-method-details">
-                            <p data-payment-description>رسوم إضافية: 10 ريال </p>
-                            <button class="btn-secondary btn-sm" data-open-modal="paymentSettingsModal" data-modal-mode="edit" data-entity="payment" data-entity-id="cod"><i class="fas fa-cog"></i> إعدادات</button>
-                        </div>
                     </div>
                     <div class="payment-method-card" data-payment-id="visa">
                         <div class="payment-method-header">
@@ -669,26 +668,6 @@
                                 <input type="checkbox" checked>
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
-                        <div class="payment-method-details">
-                            <p data-payment-description>رسوم إضافية: 2%</p>
-                            <button class="btn-secondary btn-sm" data-open-modal="paymentSettingsModal" data-modal-mode="edit" data-entity="payment" data-entity-id="visa"><i class="fas fa-cog"></i> إعدادات</button>
-                        </div>
-                    </div>
-                    <div class="payment-method-card" data-payment-id="instapay">
-                        <div class="payment-method-header">
-                            <div class="payment-method-info">
-                                <i class="fas fa-mobile-alt"></i>
-                                <h3>InstaPay</h3>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="payment-method-details">
-                            <p data-payment-description>رسوم إضافية: لا يوجد</p>
-                            <button class="btn-secondary btn-sm" data-open-modal="paymentSettingsModal" data-modal-mode="edit" data-entity="payment" data-entity-id="instapay"><i class="fas fa-cog"></i> إعدادات</button>
                         </div>
                     </div>
                     <div class="payment-method-card" data-payment-id="installments">
@@ -702,27 +681,9 @@
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
-                        <div class="payment-method-details">
-                            <p data-payment-description>فائدة: 15% سنوياً</p>
-                            <button class="btn-secondary btn-sm" data-open-modal="paymentSettingsModal" data-modal-mode="edit" data-entity="payment" data-entity-id="installments"><i class="fas fa-cog"></i> إعدادات</button>
-                        </div>
                     </div>
                 </div>
 
-                <div class="tax-settings">
-                    <h2>إعدادات الضرائب والرسوم</h2>
-                    <div class="setting-item">
-                        <label>ضريبة القيمة المضافة (VAT)</label>
-                        <input type="number" value="14" class="setting-input">
-                        <span>%</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>رسوم الشحن</label>
-                        <input type="number" value="0" class="setting-input">
-                        <span>%</span>
-                    </div>
-                    <button class="btn-primary mt-3"><i class="fas fa-save"></i> حفظ التغييرات</button>
-                </div>
             </section>
 
             <!-- Analytics Section -->
@@ -786,23 +747,6 @@
             <section class="content-section" id="settings">
                
                 <div class="settings-container">
-                    <div class="settings-card">
-                        <h3><i class="fas fa-truck"></i> إعدادات الشحن</h3>
-                        <div class="form-group">
-                            <label>تكلفة الشحن الافتراضية</label>
-                            <input type="number" value="50" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label>الشحن المجاني فوق</label>
-                            <input type="number" value="500" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label>وقت التوصيل المتوقع</label>
-                            <input type="text" value="2-5 أيام عمل" class="form-input">
-                        </div>
-                        <button class="btn-primary"><i class="fas fa-save"></i> حفظ التغييرات</button>
-                    </div>
-
                     <div class="settings-card">
                         <h3><i class="fas fa-user-shield"></i> تغيير كلمة المرور</h3>
                         <form id="changePasswordForm" class="settings-form">
@@ -1226,6 +1170,32 @@
         </div>
     </div>
 
+    <!-- Image Cropper Modal -->
+    <div class="modal" id="imageCropperModal" aria-hidden="true">
+        <div class="modal-overlay" data-close-modal></div>
+        <div class="modal-content cropper-modal">
+            <div class="modal-header">
+                <h2 data-modal-title id="cropperModalTitle">قص صورة المنتج</h2>
+                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body cropper-body">
+                <p class="cropper-instructions">اسحب الصورة لضبط موضعها واستخدم شريط التكبير لضبط الحجم.</p>
+                <p class="cropper-progress" id="cropperProgress"></p>
+                <div class="cropper-frame">
+                    <img id="cropperImage" alt="معاينة القص" />
+                </div>
+                <div class="cropper-controls">
+                    <label for="cropperZoom">التكبير</label>
+                    <input type="range" id="cropperZoom" min="1" max="3" step="0.01" value="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" type="button" id="cropperCancel">إلغاء</button>
+                <button class="btn-primary" type="button" id="cropperConfirm">حفظ القص</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1262,6 +1232,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
     <script src="js/index-auth.js"></script>
     <script src="js/scriptDashAdmin.js"></script>
 </body>

@@ -63,6 +63,21 @@ body {
     text-align: right;
 }
 
+i.fas,
+i.far,
+i.fal,
+i.fab,
+i.fa-solid,
+i.fa-regular,
+i.fa-light,
+i.fa-brands {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    vertical-align: middle;
+}
+
 /* ===== Header ===== */
 .header {
     position: fixed;
@@ -88,14 +103,24 @@ body {
 .logo-section {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 24px;
+    gap: clamp(8px, 1.8vw, 16px);
+    font-size: clamp(20px, 2.4vw, 30px);
     font-weight: 700;
     color: var(--primary);
 }
 
 .logo-section i {
-    font-size: 32px;
+    font-size: clamp(28px, 4vw, 54px);
+    width: auto;
+    height: auto;
+}
+
+.logo-icon {
+    display: block;
+    width: clamp(42px, 10vw, 64px);
+    height: auto;
+    max-height: clamp(42px, 12vw, 72px);
+    object-fit: contain;
 }
 
 .header-actions {
@@ -279,7 +304,11 @@ body {
 
 .nav-item i {
     font-size: 18px;
-    width: 20px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .nav-item:hover {
@@ -1763,8 +1792,7 @@ body.dark-mode .subcategory-card::before {
 }
 
 /* ===== Payment Methods ===== */
-.payment-methods,
-.tax-settings {
+.payment-methods {
     background: var(--bg-base);
     padding: 25px;
     border-radius: 12px;
@@ -1772,8 +1800,7 @@ body.dark-mode .subcategory-card::before {
     margin-bottom: 25px;
 }
 
-.payment-methods h2,
-.tax-settings h2 {
+.payment-methods h2 {
     font-size: 22px;
     font-weight: 700;
     margin-bottom: 20px;
@@ -2167,6 +2194,73 @@ textarea.form-input {
     gap: 10px;
     padding: 20px 25px;
     border-top: 1px solid var(--border);
+}
+
+.cropper-modal {
+    width: min(720px, 95vw);
+    max-height: 90vh;
+}
+
+.cropper-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cropper-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cropper-instructions {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.cropper-progress {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.cropper-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--bg-light);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(35, 45, 57, 0.18);
+}
+
+.cropper-frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: contain;
+}
+
+.cropper-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cropper-controls label {
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+#cropperZoom {
+    flex: 1;
+    accent-color: var(--primary);
+    direction: ltr;
+}
+
+.cropper-modal .modal-footer {
+    justify-content: flex-end;
 }
 
 /* ===== Form Grid ===== */
@@ -2805,6 +2899,10 @@ textarea.form-input {
     #customers table.data-table thead th:nth-child(5) {
         display: none;
     }
+      .fa-solid,
+    .fas {
+        width: 25%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -2872,6 +2970,13 @@ textarea.form-input {
 }
 
 /* ===== actionsport logo =========*/
-.fa-solid, .fas{
-    width :10%
+.fa-solid,
+.fas {
+    width: 10%;
+}
+@media (max-width: 768px) {
+    .fa-solid,
+    .fas {
+        width: 25%;
+    }
 }

@@ -25,6 +25,40 @@ const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
 const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
 const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
 const DESCRIPTION_MAX_LENGTH = 700;
+const PRODUCT_IMAGE_CROP_CONFIG = {
+    aspectRatio: 1,
+    outputWidth: 800,
+    outputHeight: 800,
+    mimeType: 'image/webp',
+    quality: 0.92
+};
+
+const imageCropperState = {
+    initialized: false,
+    active: false,
+    modal: null,
+    image: null,
+    zoomInput: null,
+    progressLabel: null,
+    cancelBtn: null,
+    confirmBtn: null,
+    overlay: null,
+    input: null,
+    files: [],
+    results: [],
+    previews: [],
+    index: 0,
+    cropper: null,
+    originalPreview: '',
+    originalValue: '',
+    resolve: null,
+    reject: null,
+    currentDataUrl: '',
+    keydownHandler: null,
+    suppressZoomUpdate: false
+};
+
+const productImageCropCache = new WeakMap();
 
 let cachedAdminId = null;
 
@@ -632,20 +666,30 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
         return;
     }
 
-    if (!subcategories.length) {
+    const filteredSubcategories = applyFilters(subcategories, [
+        filterBySearch(state.filters.subcategorySearch, ['name', 'description'])
+    ]);
+
+    if (!filteredSubcategories.length) {
         list.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-sitemap"></i>
-                <h3>${selectedCategoryId === 'all' ? 'لا توجد فئات فرعية حالياً' : 'لا توجد فئات فرعية لهذه الفئة'}</h3>
-                <p>${selectedCategoryId === 'all'
-                    ? 'استخدم زر "إضافة فئة فرعية جديدة" لإنشاء أول فئة.'
-                    : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'}</p>
+                <h3>${state.filters.subcategorySearch
+                    ? 'لا توجد نتائج مطابقة لبحثك'
+                    : selectedCategoryId === 'all'
+                        ? 'لا توجد فئات فرعية حالياً'
+                        : 'لا توجد فئات فرعية لهذه الفئة'}</h3>
+                <p>${state.filters.subcategorySearch
+                    ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.'
+                    : selectedCategoryId === 'all'
+                        ? 'استخدم زر "إضافة فئة فرعية جديدة" لإنشاء أول فئة.'
+                        : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'}</p>
             </div>
         `;
         return;
     }
 
-    list.innerHTML = subcategories.map(subcategory => {
+    list.innerHTML = filteredSubcategories.map(subcategory => {
         const parentCategoryId = subcategory.categoryId || selectedCategoryId;
         const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
         const image = subcategory.image || extras.image;
@@ -954,7 +998,7 @@ const mockData = {
         { id: 'FT-1', icon: 'fas fa-shipping-fast', title: 'توصيل خلال 24 ساعة', description: 'شحن سريع لجميع المحافظات', status: 'active' }
     ],
     payments: [
-        { id: 'cod', name: 'الدفع عند الاستلام', fee: '10 ريال', note: '', enabled: true }
+        { id: 'cod', name: 'الدفع عند الاستلام', note: '', enabled: true }
     ],
     orders: [
         { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', payment: 'cash', date: '2025-10-25', items: 3 }
@@ -1013,7 +1057,9 @@ const state = {
         analyticsDays: 30,
         analyticsStart: null,
         analyticsEnd: null,
+        categorySearch: '',
         subcategoryCategory: 'all',
+        subcategorySearch: '',
         brandSearch: '',
         messagesSearch: ''
     },
@@ -2969,6 +3015,243 @@ function readFileAsDataUrl(file) {
     });
 }
 
+function resetImageCropperState() {
+    imageCropperState.active = false;
+    imageCropperState.input = null;
+    imageCropperState.files = [];
+    imageCropperState.results = [];
+    imageCropperState.previews = [];
+    imageCropperState.index = 0;
+    imageCropperState.currentDataUrl = '';
+    imageCropperState.originalPreview = '';
+    imageCropperState.originalValue = '';
+    imageCropperState.resolve = null;
+    imageCropperState.reject = null;
+    imageCropperState.suppressZoomUpdate = false;
+    if (imageCropperState.keydownHandler) {
+        document.removeEventListener('keydown', imageCropperState.keydownHandler);
+        imageCropperState.keydownHandler = null;
+    }
+}
+
+function destroyCurrentCropper() {
+    if (imageCropperState.cropper) {
+        try {
+            imageCropperState.cropper.destroy();
+        } catch (error) {
+            console.warn('⚠️ Failed to destroy cropper instance:', error);
+        }
+        imageCropperState.cropper = null;
+    }
+}
+
+function hideImageCropperModal() {
+    if (!imageCropperState.modal) return;
+    imageCropperState.modal.classList.remove('active');
+    if (imageCropperState.overlay) {
+        imageCropperState.overlay.hidden = true;
+        imageCropperState.overlay.style.opacity = '0';
+    }
+    destroyCurrentCropper();
+    resetImageCropperState();
+}
+
+function updateCropperProgressLabel() {
+    if (!imageCropperState.progressLabel) return;
+    const total = imageCropperState.files.length;
+    const current = imageCropperState.index + 1;
+    imageCropperState.progressLabel.textContent = total > 1
+        ? `الصورة ${current} من ${total}`
+        : '';
+}
+
+function updateCropperZoomInput(value) {
+    if (!imageCropperState.zoomInput || imageCropperState.suppressZoomUpdate) return;
+    const zoom = typeof value === 'number' ? value : imageCropperState.cropper?.getImageData()?.scaleX || 1;
+    imageCropperState.zoomInput.value = String(Math.min(Math.max(zoom, 1), 3));
+}
+
+function applyCropperZoom(value) {
+    if (!imageCropperState.cropper) return;
+    const zoomValue = Math.min(Math.max(Number(value) || 1, 1), 3);
+    const imageData = imageCropperState.cropper.getImageData();
+    if (!imageData) return;
+    const currentZoom = imageData.scaleX || 1;
+    const ratio = zoomValue / currentZoom;
+    imageCropperState.cropper.zoomTo(zoomValue, { x: imageData.width / 2, y: imageData.height / 2 });
+    imageCropperState.suppressZoomUpdate = true;
+    requestAnimationFrame(() => {
+        imageCropperState.suppressZoomUpdate = false;
+        updateCropperZoomInput(zoomValue);
+    });
+}
+
+async function loadCropperImage(dataUrl) {
+    if (!imageCropperState.image || !dataUrl) return;
+    return new Promise((resolve, reject) => {
+        imageCropperState.image.onload = () => resolve();
+        imageCropperState.image.onerror = (error) => reject(error || new Error('تعذر تحميل الصورة')); 
+        imageCropperState.image.src = dataUrl;
+    });
+}
+
+function initCropperInstance() {
+    if (!imageCropperState.image) return;
+    destroyCurrentCropper();
+    const { aspectRatio } = PRODUCT_IMAGE_CROP_CONFIG;
+    imageCropperState.cropper = new Cropper(imageCropperState.image, {
+        viewMode: 1,
+        aspectRatio,
+        autoCropArea: 1,
+        responsive: true,
+        background: false,
+        zoomOnWheel: true,
+        movable: true,
+        zoomOnTouch: true,
+        scalable: false,
+        ready() {
+            updateCropperZoomInput(1);
+        },
+        zoom(event) {
+            if (imageCropperState.suppressZoomUpdate) return;
+            updateCropperZoomInput(event.detail.ratio);
+        }
+    });
+}
+
+async function openImageCropperModal({ files, input, previews, originalPreview }) {
+    if (!files?.length || !input) return [];
+
+    if (!imageCropperState.initialized) {
+        imageCropperState.modal = document.getElementById('imageCropperModal');
+        imageCropperState.image = document.getElementById('cropperImage');
+        imageCropperState.zoomInput = document.getElementById('cropperZoom');
+        imageCropperState.progressLabel = document.getElementById('cropperProgress');
+        imageCropperState.cancelBtn = document.getElementById('cropperCancel');
+        imageCropperState.confirmBtn = document.getElementById('cropperConfirm');
+        imageCropperState.overlay = imageCropperState.modal?.querySelector('.modal-overlay') || null;
+
+        if (!imageCropperState.modal || !imageCropperState.image) {
+            console.error('❌ Cropper modal elements not found');
+            return [];
+        }
+
+        imageCropperState.zoomInput?.addEventListener('input', (event) => {
+            applyCropperZoom(event.target.value);
+        });
+
+        const handleCancel = () => {
+            hideImageCropperModal();
+            if (imageCropperState.reject) {
+                imageCropperState.reject(new Error('تم إلغاء القص'));
+            }
+        };
+
+        const handleConfirm = async () => {
+            if (!imageCropperState.cropper || !imageCropperState.input) return;
+            try {
+                const canvas = imageCropperState.cropper.getCroppedCanvas({
+                    width: PRODUCT_IMAGE_CROP_CONFIG.outputWidth,
+                    height: PRODUCT_IMAGE_CROP_CONFIG.outputHeight,
+                    imageSmoothingQuality: 'high'
+                });
+                const blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob((result) => {
+                        if (result) resolve(result);
+                        else reject(new Error('تعذر إنشاء الصورة المقصوصة'));
+                    }, PRODUCT_IMAGE_CROP_CONFIG.mimeType, PRODUCT_IMAGE_CROP_CONFIG.quality);
+                });
+
+                const fileName = buildSafeFilename(`${imageCropperState.input?.name || 'image'}-${Date.now()}`, getExtensionFromMime(blob.type));
+                const file = new File([blob], fileName, { type: blob.type });
+
+                imageCropperState.results.push(file);
+                imageCropperState.previews.push(canvas.toDataURL(PRODUCT_IMAGE_CROP_CONFIG.mimeType, PRODUCT_IMAGE_CROP_CONFIG.quality));
+
+                const nextIndex = imageCropperState.index + 1;
+                if (nextIndex < imageCropperState.files.length) {
+                    imageCropperState.index = nextIndex;
+                    updateCropperProgressLabel();
+                    const nextFile = imageCropperState.files[nextIndex];
+                    const dataUrl = await readFileAsDataUrl(nextFile);
+                    imageCropperState.currentDataUrl = dataUrl;
+                    await loadCropperImage(dataUrl);
+                    initCropperInstance();
+                } else {
+                    const resultFiles = imageCropperState.results.slice();
+                    const resultPreviews = imageCropperState.previews.slice();
+                    hideImageCropperModal();
+                    if (imageCropperState.resolve) {
+                        imageCropperState.resolve({ files: resultFiles, previews: resultPreviews });
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Failed to crop image:', error);
+                showToast('error', 'قص الصور', error?.message || 'تعذر قص الصورة');
+                hideImageCropperModal();
+                if (imageCropperState.reject) {
+                    imageCropperState.reject(error);
+                }
+            }
+        };
+
+        imageCropperState.cancelBtn?.addEventListener('click', handleCancel);
+        imageCropperState.confirmBtn?.addEventListener('click', handleConfirm);
+        imageCropperState.modal?.querySelector('.modal-close')?.addEventListener('click', handleCancel);
+        imageCropperState.overlay?.addEventListener('click', handleCancel);
+
+        imageCropperState.initialized = true;
+    }
+
+    return new Promise(async (resolve, reject) => {
+        resetImageCropperState();
+        imageCropperState.active = true;
+        imageCropperState.input = input;
+        imageCropperState.files = Array.from(files);
+        imageCropperState.results = [];
+        imageCropperState.previews = []; 
+        imageCropperState.index = 0;
+        imageCropperState.originalPreview = originalPreview || '';
+        imageCropperState.resolve = resolve;
+        imageCropperState.reject = reject;
+
+        if (imageCropperState.modal) {
+            imageCropperState.modal.classList.add('active');
+        }
+        if (imageCropperState.overlay) {
+            imageCropperState.overlay.hidden = false;
+            requestAnimationFrame(() => {
+                imageCropperState.overlay.style.opacity = '1';
+            });
+        }
+
+        updateCropperProgressLabel();
+
+        try {
+            const firstFile = imageCropperState.files[0];
+            const dataUrl = await readFileAsDataUrl(firstFile);
+            imageCropperState.currentDataUrl = dataUrl;
+            await loadCropperImage(dataUrl);
+            initCropperInstance();
+            updateCropperZoomInput(1);
+            imageCropperState.keydownHandler = (event) => {
+                if (event.key === 'Escape') {
+                    hideImageCropperModal();
+                    if (imageCropperState.reject) {
+                        imageCropperState.reject(new Error('تم إلغاء القص'));
+                    }
+                }
+            };
+            document.addEventListener('keydown', imageCropperState.keydownHandler);
+        } catch (error) {
+            console.error('❌ Failed to initialize cropper:', error);
+            showToast('error', 'قص الصور', 'تعذر تهيئة أداة القص');
+            hideImageCropperModal();
+            reject(error);
+        }
+    });
+}
+
 function getExtensionFromMime(mime = '') {
     const mapping = {
         'image/jpeg': 'jpg',
@@ -3146,23 +3429,55 @@ async function handleProductImageChange(event) {
     const input = event.target;
     if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
 
-    const file = input.files?.[0];
-    if (!file) {
+    const files = input.files ? Array.from(input.files) : [];
+
+    if (!files.length) {
         input.dataset.previewImage = '';
-        updateProductImagePreview(input.dataset.originalImage || '');
+        updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
+        input.dataset.croppedFiles = '';
+        if (input.form) {
+            productImageCropCache.delete(input.form);
+        }
         return;
     }
 
-    console.log('🖼️ Selected product image:', file.name, file.type, file.size);
+    console.log('🖼️ Preparing to crop product images:', files.map(file => `${file.name} (${Math.round(file.size / 1024)} KB)`).join(', '));
 
     try {
-        const dataUrl = await readFileAsDataUrl(file);
-        input.dataset.previewImage = dataUrl;
-        updateProductImagePreview(dataUrl);
-        console.log('✅ Product image preview updated');
+        const originalPreview = input.dataset.originalImage || input.form?.dataset.productImageOriginal || '';
+        const { files: croppedFiles, previews } = await openImageCropperModal({
+            files,
+            input,
+            previews: [],
+            originalPreview
+        });
+
+        if (!Array.isArray(croppedFiles) || !croppedFiles.length) {
+            throw new Error('لم يتم إنشاء صور مقصوصة');
+        }
+
+        const firstPreview = previews?.[0] || '';
+        if (firstPreview) {
+            input.dataset.previewImage = firstPreview;
+            updateProductImagePreview(firstPreview);
+            if (input.form) {
+                productImageCropCache.set(input.form, firstPreview);
+            }
+        }
+
+        const dataTransfer = new DataTransfer();
+        croppedFiles.forEach(file => dataTransfer.items.add(file));
+        input.files = dataTransfer.files;
+        console.log(`✅ Cropped ${croppedFiles.length} product image(s)`);
     } catch (error) {
-        console.error('❌ Failed to preview product image:', error);
-        showToast('error', 'صورة المنتج', 'تعذر معاينة ملف الصورة المحدد');
+        console.error('❌ Product image cropping cancelled or failed:', error);
+        updateProductImagePreview(input.dataset.previewImage || input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
+        if (input.form && input.form.dataset.productImageOriginal) {
+            productImageCropCache.set(input.form, input.form.dataset.productImageOriginal);
+        }
+        if (!input.dataset.previewImage) {
+            input.value = '';
+        }
     }
 }
 
@@ -3553,7 +3868,7 @@ async function populateProductModal(productId = null) {
         }
 
         // تعبئة حقول النموذج
-        title.textContent = `تعديل المنتج: ${product.name || 'غير معروف'}`;
+        title.textContent = 'تعديل المنتج';
         form.dataset.entityId = product.id;
         setFieldValue(form, 'id', product.id);
 
@@ -3599,16 +3914,16 @@ async function populateProductModal(productId = null) {
         }
         
         // تحديث معاينة الصورة إذا وجدت
-        if (product.images && product.images.length > 0) {
-            updateProductImagePreview(product.images[0]);
-        } else {
-            updateProductImagePreview('');
-        }
+        const cachedPreview = productImageCropCache.get(product) || productImageCropCache.get(form);
+        const productImageSource = cachedPreview || product.images?.[0] || '';
+        updateProductImagePreview(productImageSource);
+        form.dataset.productImageOriginal = product.images?.[0] || '';
     } else {
         // وضع الإضافة: إعداد النموذج فارغاً
         title.textContent = 'إضافة منتج جديد';
         delete form.dataset.entityId;
         setFieldValue(form, 'id', '');
+        form.dataset.productImageOriginal = '';
         updateProductImagePreview('');
         
         // تعطيل حقل الفئة الفرعية حتى يتم اختيار فئة رئيسية
@@ -3951,7 +4266,6 @@ function getPaymentLabel(method) {
     const map = {
         cash: 'الدفع عند الاستلام',
         card: 'بطاقة ائتمان',
-        instapay: 'InstaPay',
         installment: 'التقسيط',
         bank: 'تحويل بنكي'
     };
@@ -4100,23 +4414,13 @@ function updatePaymentMethodCard(payment) {
     const card = document.querySelector(`.payment-method-card[data-payment-id="${payment.id}"]`);
     if (!card) return;
 
-    const descriptionEl = card.querySelector('[data-payment-description]');
-    if (descriptionEl) {
-        const feeText = payment.fee ? `رسوم إضافية: ${payment.fee}` : 'لا توجد رسوم إضافية';
-        descriptionEl.textContent = feeText;
-    }
-
     let noteEl = card.querySelector('[data-payment-note]');
     if (payment.note) {
         if (!noteEl) {
             noteEl = document.createElement('p');
             noteEl.setAttribute('data-payment-note', 'true');
             noteEl.className = 'payment-note';
-            if (descriptionEl) {
-                descriptionEl.insertAdjacentElement('afterend', noteEl);
-            } else {
-                card.querySelector('.payment-method-details')?.appendChild(noteEl);
-            }
+            card.querySelector('.payment-method-details')?.appendChild(noteEl);
         }
         noteEl.textContent = payment.note;
     } else if (noteEl) {
@@ -4130,14 +4434,19 @@ function updatePaymentMethodCard(payment) {
 }
 
 // ===== Filter Helpers =====
-function filterBySearch(value, fields = []) {
-    if (!value) return () => true;
-    const needle = value.toLowerCase();
-    return item => fields.some(field => String(item[field] || '').toLowerCase().includes(needle));
+function normalizeFilterValue(value) {
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
-function applyFilters(dataset, filters = []) {
-    return filters.reduce((acc, filterFn) => acc.filter(filterFn), dataset);
+function filterBySearch(term, fields = []) {
+    const needle = normalizeFilterValue(term);
+    if (!needle) return () => true;
+    const targetFields = Array.isArray(fields) && fields.length ? fields : ['name'];
+    return item => targetFields.some(field => normalizeFilterValue(item?.[field]).includes(needle));
+}
+
+function applyFilters(collection, filters = []) {
+    return filters.reduce((items, filterFn) => items.filter(filterFn), collection);
 }
 
 // ===== Print & Export Functions =====
@@ -5052,19 +5361,22 @@ function renderCategories() {
     }
 
     const categories = getCategorySource();
+    const filteredCategories = applyFilters(categories, [
+        filterBySearch(state.filters.categorySearch, ['name', 'description'])
+    ]);
 
-    if (!categories.length) {
+    if (!filteredCategories.length) {
         list.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-tags"></i>
-                <h3>لا توجد فئات حالياً</h3>
-                <p>استخدم زر "إضافة فئة جديدة" لإنشاء أول فئة.</p>
+                <h3>${state.filters.categorySearch ? 'لا توجد نتائج مطابقة لبحثك' : 'لا توجد فئات حالياً'}</h3>
+                <p>${state.filters.categorySearch ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.' : 'استخدم زر "إضافة فئة جديدة" لإنشاء أول فئة.'}</p>
             </div>
         `;
         return;
     }
 
-    list.innerHTML = categories.map(category => {
+    list.innerHTML = filteredCategories.map(category => {
         const loadedSubcategories = getSubcategories(category.id);
         const subcategoriesCount = loadedSubcategories.length
             ? loadedSubcategories.length
@@ -5565,7 +5877,6 @@ function hydrateSubcategoryCategoryOptions() {
     if (filterSelect) {
         const currentFilter = state.filters.subcategoryCategory;
         filterSelect.innerHTML = `<option value="all">جميع الفئات</option>${optionsMarkup}`;
-
         if (currentFilter && currentFilter !== 'all' && availableIds.has(currentFilter)) {
             filterSelect.value = currentFilter;
         } else {
@@ -5613,6 +5924,33 @@ function hydrateFilters() {
         const hasSelectedCategory = categoryOptions.some(option => option.value === state.filters.productCategory);
         productCategoryFilter.value = hasSelectedCategory ? state.filters.productCategory : 'all';
         state.filters.productCategory = productCategoryFilter.value;
+    }
+
+    const categorySearchInput = document.getElementById('categorySearch');
+    if (categorySearchInput) {
+        categorySearchInput.value = state.filters.categorySearch;
+        categorySearchInput.addEventListener('input', event => {
+            state.filters.categorySearch = event.target.value;
+            renderCategories();
+        });
+    }
+
+    const subcategorySearchInput = document.getElementById('subcategorySearch');
+    if (subcategorySearchInput) {
+        subcategorySearchInput.value = state.filters.subcategorySearch;
+        subcategorySearchInput.addEventListener('input', event => {
+            state.filters.subcategorySearch = event.target.value;
+            renderSubcategories();
+        });
+    }
+
+    const subcategoryCategoryFilter = document.getElementById('subcategoryCategoryFilter');
+    if (subcategoryCategoryFilter) {
+        subcategoryCategoryFilter.value = state.filters.subcategoryCategory || 'all';
+        subcategoryCategoryFilter.addEventListener('change', event => {
+            state.filters.subcategoryCategory = event.target.value || 'all';
+            renderSubcategories(event.target.value || 'all');
+        });
     }
 
     const orderStatusFilter = document.getElementById('orderStatusFilter');
@@ -5692,6 +6030,24 @@ function renderDashboard() {
     renderUsers();
 }
 
+function setupModalCancels(root = document) {
+    const closeButtons = root.querySelectorAll('[data-close-modal]');
+    closeButtons.forEach(button => {
+        if (button.dataset.closeBound) return;
+        button.addEventListener('click', () => {
+            const modal = button.closest('.modal');
+            const form = button.closest('form');
+            if (form) {
+                form.reset();
+            }
+            if (modal?.id) {
+                closeModal(modal.id);
+            }
+        });
+        button.dataset.closeBound = 'true';
+    });
+}
+
 // ===== Theme Toggle =====
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -5726,6 +6082,20 @@ function updateThemeIcon() {
 function switchSection(targetSection) {
     console.log('🔀 Switching to section:', targetSection);
     
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+    if (sidebar && sidebarOverlay && window.innerWidth <= 992) {
+        sidebar.classList.remove('mobile-active');
+        sidebarOverlay.hidden = true;
+        sidebarOverlay.style.opacity = '0';
+        document.body.classList.remove('sidebar-open');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        }
+    }
+
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
 
@@ -5800,6 +6170,52 @@ function switchSection(targetSection) {
         } else {
             renderBrands();
         }
+    }
+
+    refreshSectionData(targetSection);
+}
+
+function refreshSectionData(sectionKey) {
+    switch (sectionKey) {
+        case 'overview':
+            updateOverviewStats();
+            break;
+        case 'products':
+            fetchProducts();
+            break;
+        case 'categories':
+            fetchCategories();
+            break;
+        case 'subcategories':
+            if (state.filters?.subcategoryCategory) {
+                fetchSubcategories(state.filters.subcategoryCategory, { force: true });
+            } else {
+                fetchSubcategories();
+            }
+            break;
+        case 'brands':
+            fetchBrands({ force: true }).then(() => renderBrands()).catch(console.error);
+            break;
+        case 'orders':
+            fetchOrders();
+            break;
+        case 'customers':
+            fetchCustomers();
+            break;
+        case 'cms':
+            fetchMessages({ force: true }).catch(console.error);
+            break;
+        case 'payments':
+            renderPaymentMethods();
+            break;
+        case 'analytics':
+            loadAnalyticsCharts();
+            break;
+        case 'settings':
+            hydrateSettingsForms?.();
+            break;
+        default:
+            break;
     }
 }
 
@@ -8534,11 +8950,12 @@ function viewCustomerOrders(customerId) {
  * - ربط الأحداث
  * - جلب البيانات الأولية
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Initializing dashboard...');
 
     // إعداد فلاتر الطلبات
     setupOrderFilters();
+    setupModalCancels();
 
     // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
     const categorySelect = document.getElementById('productCategory');
