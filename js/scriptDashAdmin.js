@@ -66,6 +66,84 @@ function setPaymentToggleState(toggleElement, enabled) {
     }
 }
 
+async function handleCreateAdminSubmit(event) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const nameInput = form.querySelector('#adminName');
+    const emailInput = form.querySelector('#adminCreateEmail');
+    const passwordInput = form.querySelector('#adminCreatePassword');
+    const confirmInput = form.querySelector('#adminCreatePasswordConfirm');
+
+    const name = nameInput?.value?.trim();
+    const email = emailInput?.value?.trim();
+    const password = passwordInput?.value?.trim();
+    const passwordConfirm = confirmInput?.value?.trim();
+
+    if (!name || !email || !password || !passwordConfirm) {
+        showToast('error', 'إنشاء مدير', 'يرجى ملء جميع الحقول المطلوبة.');
+        return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('error', 'إنشاء مدير', 'صيغة البريد الإلكتروني غير صحيحة.');
+        emailInput?.focus();
+        return;
+    }
+
+    if (password.length < 8) {
+        showToast('error', 'إنشاء مدير', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+        passwordInput?.focus();
+        return;
+    }
+
+    if (password !== passwordConfirm) {
+        showToast('error', 'إنشاء مدير', 'تأكيد كلمة المرور لا يطابق المدخلة.');
+        confirmInput?.focus();
+        return;
+    }
+
+    const setLoading = (loading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = loading;
+        submitBtn.classList.toggle('is-loading', loading);
+    };
+
+    setLoading(true);
+
+    try {
+        const response = await authorizedFetch(USERS_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                password,
+                passwordConfirm,
+                role: 'admin'
+            })
+        });
+
+        if (!response?.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || errorBody?.msg || `HTTP ${response?.status}`;
+            throw new Error(message);
+        }
+
+        showToast('success', 'إنشاء مدير', 'تم إنشاء حساب المدير الجديد بنجاح.');
+        form.reset();
+    } catch (error) {
+        console.error('❌ Failed to create admin user:', error);
+        const message = error?.message || 'حدث خطأ أثناء إنشاء حساب المدير.';
+        showToast('error', 'إنشاء مدير', message);
+    } finally {
+        setLoading(false);
+    }
+}
+
 function getMessageStatusLabel(status) {
     const labels = {
         new: 'جديدة',
@@ -5949,7 +6027,9 @@ function refreshSectionData(sectionKey) {
             loadAnalyticsCharts();
             break;
         case 'settings':
-            hydrateSettingsForms?.();
+            if (typeof hydrateSettingsForms === 'function') {
+                hydrateSettingsForms();
+            }
             break;
         default:
             break;
@@ -7045,6 +7125,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const changePasswordForm = document.getElementById('changePasswordForm');
     if (changePasswordForm) {
         changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+    }
+
+    const createAdminForm = document.getElementById('createAdminForm');
+    if (createAdminForm) {
+        createAdminForm.addEventListener('submit', handleCreateAdminSubmit);
     }
 
     document.querySelectorAll('.toggle-password').forEach((btn) => {
