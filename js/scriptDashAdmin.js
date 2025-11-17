@@ -17,6 +17,7 @@
 
 const ADMIN_API_BASE_URL = 'https://action-sports-api.vercel.app/api';
 const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
+const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
 const CUSTOMER_ENDPOINT = `${ADMIN_API_BASE_URL}/customers`;
 const CATEGORY_ENDPOINT = `${ADMIN_API_BASE_URL}/categories`;
 const SUBCATEGORY_ENDPOINT = (categoryId) => `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}/subcategories`;
@@ -41,6 +42,527 @@ const PAYMENT_ID_BY_STATUS_FIELD = Object.fromEntries(
 const DESCRIPTION_MAX_LENGTH = 700;
 
 let cachedAdminId = null;
+
+// ========================================
+// ===== 1.a. دوال مساعدة للعملاء والعناوين =====
+// ========================================
+
+const ADDRESS_TYPE_LABELS = {
+    home: 'المنزل',
+    work: 'العمل',
+    office: 'المكتب',
+    billing: 'عنوان الفواتير',
+    shipping: 'عنوان الشحن',
+    other: 'عنوان آخر'
+};
+
+function getAddressTypeLabel(type) {
+    if (!type) return ADDRESS_TYPE_LABELS.other;
+    const normalized = String(type).toLowerCase();
+    return ADDRESS_TYPE_LABELS[normalized] || type;
+}
+
+function normalizeCustomerAddress(rawAddress = {}, index = 0) {
+    if (!rawAddress) return null;
+
+    if (typeof rawAddress === 'string') {
+        const trimmed = rawAddress.trim();
+        if (!trimmed) return null;
+        return {
+            id: `address-${index}`,
+            type: 'other',
+            label: ADDRESS_TYPE_LABELS.other,
+            details: trimmed,
+            city: '',
+            region: '',
+            country: '',
+            postalCode: '',
+            phone: '',
+            name: '',
+            raw: rawAddress
+        };
+    }
+
+    if (Array.isArray(rawAddress)) {
+        return rawAddress
+            .map((entry, arrayIndex) => normalizeCustomerAddress(entry, index + arrayIndex))
+            .filter(Boolean);
+    }
+
+    if (typeof rawAddress !== 'object') {
+        return null;
+    }
+
+    const id = rawAddress._id
+        || rawAddress.id
+        || rawAddress.addressId
+        || rawAddress.slug
+        || rawAddress.reference
+        || `address-${index}`;
+
+    const type = rawAddress.type
+        || rawAddress.addressType
+        || rawAddress.tag
+        || rawAddress.label
+        || rawAddress.kind
+        || 'other';
+
+    const details = rawAddress.details
+        || rawAddress.detail
+        || rawAddress.street
+        || rawAddress.street1
+        || rawAddress.addressLine1
+        || rawAddress.address1
+        || rawAddress.line1
+        || rawAddress.fullAddress
+        || rawAddress.address
+        || '';
+
+    const city = rawAddress.city
+        || rawAddress.town
+        || rawAddress.cityName
+        || rawAddress.governorate
+        || rawAddress.state
+        || '';
+
+    const region = rawAddress.region
+        || rawAddress.state
+        || rawAddress.province
+        || rawAddress.area
+        || rawAddress.district
+        || '';
+
+    const postalCode = rawAddress.postalCode
+        || rawAddress.zip
+        || rawAddress.zipCode
+        || rawAddress.postal
+        || '';
+
+    const country = rawAddress.country
+        || rawAddress.countryName
+        || rawAddress.country_code
+        || '';
+
+    const phone = rawAddress.phone
+        || rawAddress.mobile
+        || rawAddress.phoneNumber
+        || rawAddress.contactPhone
+        || '';
+
+    const name = rawAddress.name
+        || rawAddress.contactName
+        || rawAddress.receiverName
+        || rawAddress.recipient
+        || '';
+
+    return {
+        id,
+        type,
+        label: getAddressTypeLabel(type),
+        details,
+        city,
+        region,
+        postalCode,
+        country,
+        phone,
+        name,
+        raw: rawAddress
+    };
+}
+
+function collectCustomerAddresses(customer = {}) {
+    const addresses = [];
+
+    const pushAddress = (entry) => {
+        if (!entry) return;
+        const normalized = normalizeCustomerAddress(entry, addresses.length);
+        if (Array.isArray(normalized)) {
+            normalized.forEach(pushAddress);
+            return;
+        }
+        if (!normalized) return;
+
+        const signature = JSON.stringify([
+            normalized.details,
+            normalized.city,
+            normalized.region,
+            normalized.postalCode,
+            normalized.country,
+            normalized.phone
+        ]);
+
+        const isDuplicate = addresses.some(existing => existing.signature === signature);
+        if (!isDuplicate) {
+            addresses.push({ ...normalized, signature });
+        }
+    };
+
+    const candidateSources = [
+        customer.addresses,
+        customer.address,
+        customer.addressList,
+        customer.addressesList,
+        customer.shippingAddress,
+        customer.billingAddress,
+        customer.defaultShippingAddress,
+        customer.defaultBillingAddress,
+        customer.deliveryAddress,
+        customer.shipping,
+        customer.profile?.addresses,
+        customer.profile?.address,
+        customer.data?.addresses,
+        customer.data?.address,
+        customer.user?.addresses,
+        customer.user?.address,
+        customer.contactAddress
+    ];
+
+    candidateSources.forEach(source => {
+        if (!source) return;
+        if (Array.isArray(source)) {
+            source.forEach(item => pushAddress(item));
+        } else {
+            pushAddress(source);
+        }
+    });
+
+    if (!addresses.length) {
+        const fallbackDetails = customer.fullAddress
+            || customer.address
+            || customer.location
+            || '';
+
+        if (
+            fallbackDetails
+            || customer.city
+            || customer.region
+            || customer.country
+            || customer.postalCode
+        ) {
+            pushAddress({
+                type: 'other',
+                details: fallbackDetails,
+                city: customer.city,
+                region: customer.region || customer.state,
+                postalCode: customer.postalCode,
+                country: customer.country,
+                phone: customer.phone
+            });
+        }
+    }
+
+    return addresses.map(({ signature, ...rest }) => rest);
+}
+
+function isUserLikeObject(candidate) {
+    if (!candidate || typeof candidate !== 'object') return false;
+    return Boolean(
+        candidate.email
+        || candidate.phone
+        || candidate.name
+        || candidate.fullName
+        || candidate.address
+        || candidate.addresses
+    );
+}
+
+function pickFirstUserLikeObject(payload) {
+    if (!payload) return null;
+
+    if (Array.isArray(payload)) {
+        for (const item of payload) {
+            const candidate = pickFirstUserLikeObject(item);
+            if (candidate) return candidate;
+        }
+        return null;
+    }
+
+    if (isUserLikeObject(payload)) {
+        return payload;
+    }
+
+    if (typeof payload !== 'object') {
+        return null;
+    }
+
+    const nestedCandidates = [
+        payload.data,
+        payload.user,
+        payload.customer,
+        payload.profile,
+        payload.result,
+        payload.record,
+        payload.document,
+        payload.entry,
+        payload.payload
+    ];
+
+    for (const nested of nestedCandidates) {
+        const candidate = pickFirstUserLikeObject(nested);
+        if (candidate) return candidate;
+    }
+
+    for (const value of Object.values(payload)) {
+        if (Array.isArray(value)) {
+            const candidate = pickFirstUserLikeObject(value);
+            if (candidate) return candidate;
+        }
+    }
+
+    return null;
+}
+
+function extractSingleUserFromPayload(payload) {
+    if (!payload) return null;
+
+    if (isUserLikeObject(payload)) {
+        return payload;
+    }
+
+    const candidateObjects = [
+        payload?.data?.user,
+        payload?.data?.customer,
+        payload?.data?.profile,
+        payload?.data?.record,
+        payload?.user,
+        payload?.customer,
+        payload?.profile,
+        payload?.record,
+        payload?.result,
+        payload?.document,
+        payload?.entry
+    ];
+
+    for (const candidate of candidateObjects) {
+        if (isUserLikeObject(candidate)) {
+            return candidate;
+        }
+    }
+
+    const candidateArrays = [
+        payload?.data?.users,
+        payload?.data?.customers,
+        payload?.data?.documents,
+        payload?.data?.items,
+        payload?.users,
+        payload?.customers,
+        payload?.documents,
+        payload?.items,
+        Array.isArray(payload?.data) ? payload.data : null,
+        Array.isArray(payload) ? payload : null
+    ];
+
+    for (const collection of candidateArrays) {
+        if (!Array.isArray(collection)) continue;
+        const candidate = collection.find(isUserLikeObject);
+        if (candidate) {
+            return candidate;
+        }
+    }
+
+    return pickFirstUserLikeObject(payload);
+}
+
+async function fetchCustomerProfileFromApi(customerId) {
+    if (!customerId) return null;
+
+    const targetId = encodeURIComponent(customerId);
+    const endpoints = [
+        `${USERS_ENDPOINT}/${targetId}`,
+        `${CUSTOMER_ENDPOINT}/${targetId}`
+    ];
+
+    for (const endpoint of endpoints) {
+        try {
+            const response = await authorizedFetch(endpoint);
+
+            if (response?.status === 404) {
+                continue;
+            }
+
+            if (!response?.ok) {
+                const message = `${response.status} ${response.statusText || ''}`.trim();
+                throw new Error(message || 'تعذر جلب بيانات العميل');
+            }
+
+            const payload = await response.json().catch(() => null);
+            const extracted = extractSingleUserFromPayload(payload);
+
+            if (extracted) {
+                return {
+                    ...extracted,
+                    _id: extracted._id || extracted.id || customerId,
+                    id: extracted.id || extracted._id || customerId
+                };
+            }
+        } catch (error) {
+            if (error?.message?.includes('401')) {
+                throw error;
+            }
+            console.warn(`⚠️ Failed to fetch customer profile from ${endpoint}:`, error);
+        }
+    }
+
+    return null;
+}
+
+async function getFreshCustomerData(customerId) {
+    const freshProfile = await fetchCustomerProfileFromApi(customerId);
+    if (!freshProfile) return null;
+
+    const addresses = collectCustomerAddresses(freshProfile);
+
+    if (!Array.isArray(addresses) || !addresses.length) {
+        freshProfile.addresses = [];
+    } else {
+        freshProfile.addresses = addresses.map(address => ({
+            ...address,
+            label: address.label || getAddressTypeLabel(address.type)
+        }));
+    }
+
+    return freshProfile;
+}
+
+function buildCustomerDetailsContent({ customer, loading = false, error = null, customerId }) {
+    if (!customer && loading) {
+        return `
+            <div class="customer-details-loading" style="min-width: 320px; min-height: 220px; display: flex; align-items: center; justify-content: center;">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>جارٍ تحميل بيانات العميل...</p>
+                </div>
+            </div>
+        `;
+    }
+
+    if (!customer) {
+        return `
+            <div class="customer-details-error" style="min-width: 320px; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #e74c3c;"></i>
+                <p style="margin-top: 12px;">تعذر العثور على بيانات العميل</p>
+                ${error ? `<p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(error)}</p>` : ''}
+            </div>
+        `;
+    }
+
+    const normalizedName = escapeHtml(customer.name || customer.fullName || '-');
+    const email = escapeHtml(customer.email || '-');
+    const phoneRaw = customer.phone || customer.mobile || '';
+    const phoneText = escapeHtml(phoneRaw || '-');
+    const phoneHref = phoneRaw ? `tel:${encodeURIComponent(phoneRaw)}` : '#';
+    const segment = customer.segment ? escapeHtml(customer.segment) : null;
+    const createdDate = getCustomerCreatedDate?.(customer);
+    const createdDateText = createdDate ? new Date(createdDate).toLocaleDateString('ar-EG') : null;
+
+    const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
+
+    let addressesContent = '';
+
+    if (loading && !addresses.length) {
+        addressesContent = `
+            <div class="loading-state" style="padding: 20px;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>جارٍ تحميل العناوين المسجلة...</p>
+            </div>
+        `;
+    } else if (addresses.length) {
+        addressesContent = addresses.map((address, index) => {
+            const label = escapeHtml(address.label || getAddressTypeLabel(address.type));
+            const contactName = address.name ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>` : '';
+            const details = address.details ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>` : '';
+            const cityLine = address.city || address.region
+                ? `<p style="margin: 6px 0;"><strong>الموقع:</strong> ${escapeHtml([address.city, address.region].filter(Boolean).join(' - '))}</p>`
+                : '';
+            const postalLine = address.postalCode ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>` : '';
+            const countryLine = address.country ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>` : '';
+            const phoneLine = address.phone
+                ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
+                : '';
+
+            return `
+                <div class="customer-address-card" style="background: var(--bg-light); color: var(--text-main); padding: 16px; border-radius: 10px; border-right: 4px solid var(--primary); margin-bottom: 12px;">
+                    <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #e74c3c;">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>عنوان ${index + 1} (${label})</span>
+                    </h4>
+                    ${contactName}
+                    ${details}
+                    ${cityLine}
+                    ${postalLine}
+                    ${countryLine}
+                    ${phoneLine}
+                </div>
+            `;
+        }).join('');
+    } else {
+        addressesContent = '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة لهذا العميل.</p>';
+    }
+
+    const ordersButton = customerId
+        ? `<button class="btn-primary" data-action="view-customer-orders" data-customer-id="${escapeHtml(customerId)}" style="margin-left: 10px;"><i class="fas fa-shopping-cart"></i> عرض طلبات العميل</button>`
+        : '';
+
+    const errorBlock = error
+        ? `<div class="customer-details-error" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: rgba(231, 76, 60, 0.15); color: #c0392b;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span style="margin-right: 8px;">${escapeHtml(error)}</span>
+            </div>`
+        : '';
+
+    const metaList = [
+        segment ? `<li><strong>الشريحة:</strong> ${segment}</li>` : null,
+        createdDateText ? `<li><strong>تاريخ التسجيل:</strong> ${escapeHtml(createdDateText)}</li>` : null,
+        customer.ordersCount != null ? `<li><strong>عدد الطلبات:</strong> ${escapeHtml(String(customer.ordersCount))}</li>` : null,
+        customer.lastOrder ? `<li><strong>آخر طلب:</strong> ${escapeHtml(customer.lastOrder)}</li>` : null
+    ].filter(Boolean).join('');
+
+    const metaContent = metaList
+        ? `<ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 6px;">${metaList}</ul>`
+        : '<p style="color: var(--text-muted);">لا توجد معلومات إضافية.</p>';
+
+    const loadingBadge = loading && addresses.length
+        ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
+        : '';
+
+    return `
+        <div style="min-width: 320px;">
+            ${errorBlock}
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #e74c3c; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    <span>المعلومات الأساسية</span>
+                </h3>
+                <div style="background: var(--bg-light); padding: 16px; border-radius: 10px; color: var(--text-main); display: grid; gap: 8px;">
+                    <p style="margin: 0;"><strong>الاسم:</strong> ${normalizedName}</p>
+                    <p style="margin: 0;"><strong>البريد الإلكتروني:</strong> ${email}</p>
+                    <p style="margin: 0;"><strong>رقم الهاتف:</strong> ${phoneRaw ? `<a href="${phoneHref}" style="color: #27ae60; text-decoration: none;">${phoneText}</a>` : phoneText}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #e74c3c; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span>العناوين المسجلة (${addresses.length})</span>
+                    ${loadingBadge}
+                </h3>
+                <div>${addressesContent}</div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #e74c3c; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-id-card"></i>
+                    <span>معلومات إضافية</span>
+                </h3>
+                <div style="background: var(--bg-light); padding: 16px; border-radius: 10px; color: var(--text-main);">
+                    ${metaContent}
+                </div>
+            </div>
+
+            ${ordersButton ? `<div style="text-align: center; margin-top: 20px;">${ordersButton}</div>` : ''}
+        </div>
+    `;
+}
 
 // ========================================
 // ===== 2. التحقق من المصادقة =====
@@ -6066,6 +6588,9 @@ function openModal(modalId, mode = 'create', entity = null) {
     if (modalId === 'brandModal' && mode === 'create') {
         prepareBrandCreateForm();
     }
+
+    initDescriptionInputs(modal);
+    refreshDescriptionCounters(modal);
 }
 
 function closeModal(modalId) {
@@ -8139,8 +8664,6 @@ function setupOrderFilters() {
 // ===== 11. دوال إدارة المستخدمين =====
 // ========================================
 
-const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
-
 /**
  * إنشاء عملاء من الطلبات للعملاء المفقودين
  */
@@ -8541,16 +9064,13 @@ async function changeUserPassword(userId, newPassword) {
  * @param {string} customerId - معرف العميل
  */
 function viewCustomerDetails(customerId) {
-    const customer = state.customers?.find(c => (c._id || c.id) === customerId);
-    
-    if (!customer) {
+    const existingCustomer = state.customers?.find(c => (c._id || c.id) === customerId);
+
+    if (!existingCustomer) {
         showToast('error', 'خطأ', 'لم يتم العثور على العميل');
         return;
     }
-    
-    console.log('📋 Customer details:', customer);
-    
-    // إنشاء النافذة المنبثقة
+
     const modal = document.createElement('div');
     modal.className = 'order-details-modal';
     modal.style.cssText = `
@@ -8567,105 +9087,104 @@ function viewCustomerDetails(customerId) {
         opacity: 0;
         transition: opacity 0.3s ease;
     `;
-    
-    // بناء قائمة العناوين
-    const addressesHTML = customer.addresses && customer.addresses.length > 0
-        ? customer.addresses.map((addr, index) => `
-            <div style="background: var(--bg-light); color: var(--text-main); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-right: 3px solid var(--primary);">
-                <h4 style="color: #e74c3c; margin-bottom: 10px;">
-                    <i class="fas fa-map-marker-alt"></i> عنوان ${index + 1} (${addr.type === 'home' ? 'المنزل' : addr.type === 'work' ? 'العمل' : addr.type})
-                </h4>
-                <p style="margin: 5px 0; color: var(--text-main);"><strong>التفاصيل:</strong> ${addr.details || '-'}</p>
-                <p style="margin: 5px 0; color: var(--text-main);"><strong>المدينة:</strong> ${addr.city || '-'}</p>
-                <p style="margin: 5px 0; color: var(--text-main);"><strong>الرمز البريدي:</strong> ${addr.postalCode || '-'}</p>
-                <p style="margin: 5px 0; color: var(--text-main);"><strong>الهاتف:</strong> <a href="tel:${addr.phone}" style="color: #27ae60; text-decoration: none;">${addr.phone || '-'}</a></p>
-            </div>
-        `).join('')
-        : '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة</p>';
-    
-    modal.innerHTML = `
-        <div class="order-details-content" style="
-            background: var(--bg-base);
-            color: var(--text-main);
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        ">
-            <button class="close-btn" style="
-                position: absolute;
-                top: 15px;
-                left: 15px;
-                background: #f44336;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                width: 35px;
-                height: 35px;
-                font-size: 20px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-            ">×</button>
-            
-            <h2 style="text-align: center; margin-bottom: 25px; color: var(--text-main);">
-                <i class="fas fa-user-circle" style="margin-left: 10px; color: #e74c3c;"></i>
-                تفاصيل العميل
-            </h2>
-            
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: #e74c3c; margin-bottom: 15px;">
-                    <i class="fas fa-info-circle"></i> المعلومات الأساسية
-                </h3>
-                <div style="background: var(--bg-light); padding: 15px; border-radius: 8px;">
-                    <p style="margin: 8px 0; color: var(--text-main);"><strong>الاسم:</strong> ${customer.name || '-'}</p>
-                    <p style="margin: 8px 0; color: var(--text-main);"><strong>البريد الإلكتروني:</strong> ${customer.email || '-'}</p>
-                    <p style="margin: 8px 0; color: var(--text-main);"><strong>رقم الهاتف:</strong> <a href="tel:${customer.phone}" style="color: #27ae60; text-decoration: none;">${customer.phone || '-'}</a></p>
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 25px;">
-                <h3 style="color: #e74c3c; margin-bottom: 15px;">
-                    <i class="fas fa-map-marked-alt"></i> العناوين المسجلة (${customer.addresses?.length || 0})
-                </h3>
-                <div style="color: var(--text-main);">
-                    ${addressesHTML}
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 25px;">
-                <button class="btn-primary" onclick="viewCustomerOrders('${customerId}')" style="margin-left: 10px;">
-                    <i class="fas fa-shopping-cart"></i> عرض طلبات العميل
-                </button>
-            </div>
-        </div>
+
+    const content = document.createElement('div');
+    content.className = 'order-details-content';
+    content.style.cssText = `
+        background: var(--bg-base);
+        color: var(--text-main);
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     `;
-    
-    document.body.appendChild(modal);
-    
-    setTimeout(() => {
-        modal.style.opacity = '1';
-    }, 10);
-    
-    // إغلاق النافذة
-    const closeBtn = modal.querySelector('.close-btn');
-    closeBtn.addEventListener('click', () => {
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.type = 'button';
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: #f44336;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    `;
+
+    const bodyWrapper = document.createElement('div');
+
+    const renderContent = ({ customer, loading = false, error = null }) => {
+        bodyWrapper.innerHTML = buildCustomerDetailsContent({ customer, loading, error, customerId });
+        const ordersBtn = bodyWrapper.querySelector('[data-action="view-customer-orders"]');
+        if (ordersBtn) {
+            ordersBtn.addEventListener('click', () => {
+                closeModal();
+                viewCustomerOrders(customerId);
+            });
+        }
+    };
+
+    const closeModal = () => {
         modal.style.opacity = '0';
         setTimeout(() => modal.remove(), 300);
-    });
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.opacity = '0';
-            setTimeout(() => modal.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
         }
     });
+
+    content.appendChild(closeBtn);
+    content.appendChild(bodyWrapper);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+    });
+
+    renderContent({ customer: existingCustomer, loading: true });
+
+    getFreshCustomerData(customerId)
+        .then(freshCustomer => {
+            if (freshCustomer) {
+                const customers = Array.isArray(state.customers) ? [...state.customers] : [];
+                const index = customers.findIndex(c => (c._id || c.id) === customerId);
+                if (index !== -1) {
+                    customers[index] = {
+                        ...customers[index],
+                        ...freshCustomer,
+                        addresses: Array.isArray(freshCustomer.addresses) ? freshCustomer.addresses : []
+                    };
+                    state.customers = customers;
+                }
+
+                renderContent({ customer: freshCustomer, loading: false });
+            } else {
+                renderContent({ customer: existingCustomer, loading: false, error: 'تعذر تحميل بيانات العميل.' });
+            }
+        })
+        .catch(error => {
+            console.error('❌ فشل جلب بيانات العميل:', error);
+            showToast('error', 'بيانات العميل', error?.message || 'تعذر تحميل بيانات العميل من الخادم.');
+            renderContent({ customer: existingCustomer, loading: false, error: error?.message || 'تعذر تحميل بيانات العميل من الخادم.' });
+        });
 }
 
 /**
@@ -8817,6 +9336,9 @@ function viewCustomerOrders(customerId) {
  */
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Initializing dashboard...');
+
+    initDescriptionInputs();
+    refreshDescriptionCounters();
 
     // إعداد فلاتر الطلبات
     setupOrderFilters();
