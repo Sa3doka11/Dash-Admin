@@ -448,9 +448,6 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
 
     const normalizedName = escapeHtml(customer.name || customer.fullName || '-');
     const email = escapeHtml(customer.email || '-');
-    const phoneRaw = customer.phone || customer.mobile || '';
-    const phoneText = escapeHtml(phoneRaw || '-');
-    const phoneHref = phoneRaw ? `tel:${encodeURIComponent(phoneRaw)}` : '#';
     const segment = customer.segment ? escapeHtml(customer.segment) : null;
     const createdDate = getCustomerCreatedDate?.(customer);
     const createdDateText = createdDate ? new Date(createdDate).toLocaleDateString('ar-EG') : null;
@@ -510,17 +507,6 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
             </div>`
         : '';
 
-    const metaList = [
-        segment ? `<li><strong>الشريحة:</strong> ${segment}</li>` : null,
-        createdDateText ? `<li><strong>تاريخ التسجيل:</strong> ${escapeHtml(createdDateText)}</li>` : null,
-        customer.ordersCount != null ? `<li><strong>عدد الطلبات:</strong> ${escapeHtml(String(customer.ordersCount))}</li>` : null,
-        customer.lastOrder ? `<li><strong>آخر طلب:</strong> ${escapeHtml(customer.lastOrder)}</li>` : null
-    ].filter(Boolean).join('');
-
-    const metaContent = metaList
-        ? `<ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 6px;">${metaList}</ul>`
-        : '<p style="color: var(--text-muted);">لا توجد معلومات إضافية.</p>';
-
     const loadingBadge = loading && addresses.length
         ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
         : '';
@@ -536,7 +522,6 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                 <div style="background: var(--bg-light); padding: 16px; border-radius: 10px; color: var(--text-main); display: grid; gap: 8px;">
                     <p style="margin: 0;"><strong>الاسم:</strong> ${normalizedName}</p>
                     <p style="margin: 0;"><strong>البريد الإلكتروني:</strong> ${email}</p>
-                    <p style="margin: 0;"><strong>رقم الهاتف:</strong> ${phoneRaw ? `<a href="${phoneHref}" style="color: #27ae60; text-decoration: none;">${phoneText}</a>` : phoneText}</p>
                 </div>
             </div>
 
@@ -548,17 +533,6 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                 </h3>
                 <div>${addressesContent}</div>
             </div>
-
-            <div style="margin-bottom: 24px;">
-                <h3 style="color: #e74c3c; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-id-card"></i>
-                    <span>معلومات إضافية</span>
-                </h3>
-                <div style="background: var(--bg-light); padding: 16px; border-radius: 10px; color: var(--text-main);">
-                    ${metaContent}
-                </div>
-            </div>
-
             ${ordersButton ? `<div style="text-align: center; margin-top: 20px;">${ordersButton}</div>` : ''}
         </div>
     `;
@@ -1686,7 +1660,15 @@ const state = {
     messagesLoading: false,
     messagesError: null,
     messagesLoaded: false,
-    messagesLastFetched: 0
+    messagesLastFetched: 0,
+    orders: [],
+    ordersLoading: false,
+    ordersError: null,
+    ordersPagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalOrders: 0
+    }
 };
 
 // ========================================
@@ -3278,7 +3260,7 @@ function buildSubcategoryRequestOptions(payload = {}, imageFile = null) {
     };
 }
 
-function buildSubcategoryFormData(formData) {
+function buildSubcategoryFormData(formData, formElement = null) {
     if (!(formData instanceof FormData)) {
         return {
             categoryId: '',
@@ -3289,12 +3271,13 @@ function buildSubcategoryFormData(formData) {
         };
     }
 
+    const form = formElement || document.getElementById('subcategoryForm');
     const categoryId = getFormValue(formData, 'categoryId');
     const originalCategoryId = getFormValue(formData, 'originalCategoryId');
     const subcategoryId = getFormValue(formData, 'id');
     const name = getFormValue(formData, 'name');
     const slug = getFormValue(formData, 'slug') || slugify(name);
-    const descriptionField = form.querySelector('[name="description"]');
+    const descriptionField = form?.querySelector('[name="description"]');
     const maxLength = getDescriptionMaxLength(descriptionField);
     const description = truncateText(getFormValue(formData, 'description'), maxLength);
     if (descriptionField && descriptionField.value !== description) {
@@ -4003,7 +3986,7 @@ async function handleSubcategoryFormSubmit(event) {
         subcategoryId,
         payload,
         imageFile
-    } = buildSubcategoryFormData(formData);
+    } = buildSubcategoryFormData(formData, form);
 
     if (!payload.name) {
         showToast('error', 'حفظ الفئة الفرعية', 'يرجى إدخال اسم الفئة الفرعية');
@@ -5883,7 +5866,7 @@ function renderCustomers() {
         return;
     }
 
-    let customers = state.customers || [];
+    let customers = (state.customers || []).filter(customer => (Number(customer.ordersCount) || 0) > 0);
     
     // تطبيق البحث بالاسم أو رقم الهاتف
     const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
@@ -5894,6 +5877,12 @@ function renderCustomers() {
             return name.includes(searchTerm) || phone.includes(searchTerm);
         });
     }
+
+    customers.sort((a, b) => {
+        const timeA = Number(a.lastOrderTimestamp) || 0;
+        const timeB = Number(b.lastOrderTimestamp) || 0;
+        return timeB - timeA;
+    });
     
     if (!customers.length) {
         const message = searchTerm 
@@ -5914,13 +5903,10 @@ function renderCustomers() {
     console.log('✅ Rendering', customers.length, 'customers');
     
     body.innerHTML = customers.map((customer, index) => {
-        const isFromOrders = customer.isFromOrders;
-        const nameWithBadge = isFromOrders 
-            ? `${customer.name || '-'} <span style="font-size: 10px; background: #f39c12; color: white; padding: 2px 6px; border-radius: 3px; margin-right: 5px;" title="تم استخراجه من الطلبات">من الطلبات</span>`
-            : (customer.name || '-');
+        const nameWithBadge = customer.name || '-';
         
         return `
-            <tr data-id="${customer._id || customer.id}" ${isFromOrders ? 'style="background-color: rgba(243, 156, 18, 0.05);"' : ''}>
+            <tr data-id="${customer._id || customer.id}">
                 <td>${index + 1}</td>
                 <td>${nameWithBadge}</td>
                 <td>${customer.email || '-'}</td>
@@ -8010,14 +7996,23 @@ function resolveOrderStatus(order = {}) {
 /**
  * جلب الطلبات من API
  */
-async function fetchOrders() {
+async function fetchOrders(options = {}) {
+    const { page = 1, append = false } = options || {};
+
+    if (!append) {
+        state.ordersLoading = true;
+    }
+
     console.log('🔄 Fetching orders from API...');
-    state.ordersLoading = true;
     state.ordersError = null;
     renderOrders();
 
     try {
-        const response = await authorizedFetch(ORDER_ENDPOINT);
+        const url = ORDER_ENDPOINT.startsWith('http')
+            ? `${ORDER_ENDPOINT}?page=${page}`
+            : `${ORDER_ENDPOINT}?page=${page}`;
+
+        const response = await authorizedFetch(url);
         console.log('📡 Orders response status:', response.status);
 
         const handled = handleUnauthorized(response);
@@ -8033,8 +8028,23 @@ async function fetchOrders() {
         const normalized = normalizeOrdersPayload(payload);
         console.log(`✅ Normalized ${normalized.length} orders`);
 
-        state.orders = normalized;
+        if (append) {
+            const existingIds = new Set(state.orders.map(order => order.id));
+            const merged = [
+                ...state.orders,
+                ...normalized.filter(order => !existingIds.has(order.id))
+            ];
+            state.orders = merged;
+        } else {
+            state.orders = normalized;
+        }
         state.ordersError = null;
+
+        state.ordersPagination = {
+            currentPage: Number(payload?.currentPage || page || 1),
+            totalPages: Number(payload?.totalPages || 1),
+            totalOrders: Number(payload?.totalOrders || state.orders.length)
+        };
         
         // إعادة جلب العملاء لضمان ظهور أي عملاء جدد
         // أو تحديث بيانات العملاء الموجودين
@@ -8060,14 +8070,18 @@ async function fetchOrders() {
             loadOverviewCharts();
         }
         
-        showToast('success', 'تحميل الطلبات', `تم تحميل ${normalized.length} طلب بنجاح`);
+        showToast('success', 'تحميل الطلبات', append
+            ? `تم إضافة ${normalized.length} طلب`
+            : `تم تحميل ${normalized.length} طلب بنجاح`);
     } catch (error) {
         console.error('❌ Failed to fetch orders:', error);
         state.orders = [];
         state.ordersError = error?.message || 'تعذر تحميل الطلبات. حاول مرة أخرى.';
         showToast('error', 'خطأ في تحميل الطلبات', state.ordersError);
     } finally {
-        state.ordersLoading = false;
+        if (!append) {
+            state.ordersLoading = false;
+        }
         renderOrders();
         renderOverview();
         
@@ -8132,6 +8146,33 @@ function getOrderById(orderId) {
     return getOrdersSource().find(order => String(order.id) === normalizedId);
 }
 
+function getOrdersPagination() {
+    return {
+        currentPage: state.ordersPagination.currentPage || 1,
+        totalPages: state.ordersPagination.totalPages || 1,
+        totalOrders: state.ordersPagination.totalOrders || state.orders.length
+    };
+}
+
+function hasMoreOrders() {
+    const pagination = getOrdersPagination();
+    return pagination.currentPage < pagination.totalPages;
+}
+
+async function loadMoreOrders() {
+    if (!hasMoreOrders()) {
+        showToast('info', 'الطلبات', 'تم عرض جميع الطلبات.');
+        return;
+    }
+
+    const nextPage = state.ordersPagination.currentPage + 1;
+    try {
+        await fetchOrders({ page: nextPage, append: true });
+    } catch (error) {
+        console.error('❌ Failed to load more orders:', error);
+    }
+}
+
 function filterOrders() {
     let filtered = getOrdersSource();
 
@@ -8171,6 +8212,7 @@ function filterOrders() {
  */
 function renderOrders() {
     const body = document.getElementById('ordersTableBody');
+    const loadMoreRowId = 'ordersLoadMoreRow';
     if (!body) return;
 
     // حالة التحميل
@@ -8215,7 +8257,7 @@ function renderOrders() {
         return;
     }
 
-    body.innerHTML = filtered.map((order, index) => `
+    const rows = filtered.map((order, index) => `
         <tr data-id="${order.id}">
             <td>${index + 1}</td>
             <td>${order.id}</td>
@@ -8243,6 +8285,34 @@ function renderOrders() {
             </td>
         </tr>
     `).join('');
+
+    const pagination = getOrdersPagination();
+    const showLoadMore = hasMoreOrders();
+
+    body.innerHTML = showLoadMore
+        ? `${rows}
+            <tr id="${loadMoreRowId}">
+                <td colspan="8" style="text-align: center; padding: 20px;">
+                    <button id="ordersLoadMoreBtn" class="btn-secondary" style="padding: 10px 24px;">
+                        <i class="fas fa-plus-circle"></i> تحميل المزيد (${pagination.currentPage}/${pagination.totalPages})
+                    </button>
+                    <div style="margin-top: 8px; color: #7a7a7a;">
+                        تم عرض ${filtered.length} من إجمالي ${pagination.totalOrders} طلب
+                    </div>
+                </td>
+            </tr>`
+        : rows;
+
+    const loadMoreBtn = document.getElementById('ordersLoadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+            loadMoreOrders().finally(() => {
+                loadMoreBtn.disabled = false;
+            });
+        });
+    }
 }
 
 // تم حذف الدالة المكررة - يوجد renderOverview أعلى في الملف
@@ -8276,6 +8346,8 @@ function viewOrderDetails(orderId) {
         z-index: 1000;
         opacity: 0;
         transition: opacity 0.3s ease;
+        padding: 20px;
+        box-sizing: border-box;
     `;
 
     // محتوى النافذة
@@ -8405,6 +8477,34 @@ function viewOrderDetails(orderId) {
 
     document.body.appendChild(modal);
     
+    const rootStyles = getComputedStyle(document.documentElement);
+    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
+
+    const applyModalPadding = () => {
+        if (window.innerWidth > 992) {
+            modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
+        } else {
+            modal.style.paddingRight = '20px';
+        }
+    };
+
+    applyModalPadding();
+    const handleResize = () => applyModalPadding();
+    window.addEventListener('resize', handleResize);
+    const cleanupHandlers = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('resize', handleResize);
+    };
+    const fadeOutAndRemove = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            cleanupHandlers();
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    };
+
     // إظهار النافذة
     setTimeout(() => {
         modal.style.opacity = '1';
@@ -8413,32 +8513,20 @@ function viewOrderDetails(orderId) {
     // إغلاق النافذة
     const closeBtn = modal.querySelector('.close-btn');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(modal);
-            }, 300);
-        });
+        closeBtn.addEventListener('click', fadeOutAndRemove);
     }
-    
+
     // إغلاق عند النقر خارج المحتوى
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(modal);
-            }, 300);
+            fadeOutAndRemove();
         }
     });
-    
+
     // إغلاق بمفتاح ESC
     const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
-            modal.style.opacity = '0';
-            setTimeout(() => {
-                document.body.removeChild(modal);
-                document.removeEventListener('keydown', handleKeyDown);
-            }, 300);
+            fadeOutAndRemove();
         }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -8769,6 +8857,7 @@ function updateCustomersOrdersInfo() {
         
         // إيجاد آخر طلب
         let lastOrder = '-';
+        let lastOrderTimestamp = null;
         if (customerOrders.length > 0) {
             // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
             const sortedOrders = customerOrders.sort((a, b) => {
@@ -8781,6 +8870,7 @@ function updateCustomersOrdersInfo() {
             const latestOrder = sortedOrders[0];
             const orderDate = getOrderDate(latestOrder);
             if (orderDate) {
+                lastOrderTimestamp = orderDate.getTime();
                 lastOrder = orderDate.toLocaleDateString('ar-EG');
             }
         }
@@ -8788,7 +8878,8 @@ function updateCustomersOrdersInfo() {
         return {
             ...customer,
             ordersCount,
-            lastOrder
+            lastOrder,
+            lastOrderTimestamp
         };
     });
     
@@ -9304,6 +9395,34 @@ function viewCustomerOrders(customerId) {
     `;
     
     document.body.appendChild(modal);
+    const rootStyles = getComputedStyle(document.documentElement);
+    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
+
+    const applyModalPadding = () => {
+        if (window.innerWidth > 992) {
+            modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
+        } else {
+            modal.style.paddingRight = '20px';
+        }
+    };
+
+    applyModalPadding();
+    const handleResize = () => applyModalPadding();
+    window.addEventListener('resize', handleResize);
+
+    const cleanupHandlers = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('resize', handleResize);
+    };
+    const fadeOutAndRemove = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            cleanupHandlers();
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    };
     
     setTimeout(() => {
         modal.style.opacity = '1';
@@ -9311,17 +9430,20 @@ function viewCustomerOrders(customerId) {
     
     // إغلاق النافذة
     const closeBtn = modal.querySelector('.close-btn');
-    closeBtn.addEventListener('click', () => {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 300);
-    });
+    closeBtn.addEventListener('click', fadeOutAndRemove);
     
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.style.opacity = '0';
-            setTimeout(() => modal.remove(), 300);
+            fadeOutAndRemove();
         }
     });
+    
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            fadeOutAndRemove();
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
 }
 
 // ========================================
