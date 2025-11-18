@@ -744,6 +744,21 @@ body.require-auth > .header {
     color: #3498db;
 }
 
+.status-preparing {
+    background: rgba(241, 196, 15, 0.15);
+    color: #b88700;
+}
+
+.status-in_transit {
+    background: rgba(155, 89, 182, 0.12);
+    color: #8e44ad;
+}
+
+.status-delivered {
+    background: rgba(46, 204, 113, 0.12);
+    color: #1e8449;
+}
+
 .status-processing {
     background: rgba(241, 196, 15, 0.1);
     color: #f1c40f;
@@ -772,6 +787,28 @@ body.require-auth > .header {
 .status-scheduled {
     background: rgba(52, 152, 219, 0.1);
     color: #3498db;
+}
+
+.order-status-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.order-status-select {
+    min-width: 160px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-base);
+    color: var(--text-main);
+    font-size: 13px;
+}
+
+.order-status-select[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* ===== Filters Bar ===== */
