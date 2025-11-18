@@ -1680,7 +1680,7 @@
             preparing: { label: 'قيد التجهيز', class: 'status-preparing' },
             in_transit: { label: 'قيد التوصيل', class: 'status-in_transit' },
             delivered: { label: 'تم التوصيل', class: 'status-delivered' },
-            cancelled: { label: 'ملغي', class: 'status-cancelled' },
+            // cancelled: { label: 'ملغي', class: 'status-cancelled' },
             processing: { label: 'قيد المعالجة', class: 'status-processing' },
             shipped: { label: 'تم الشحن', class: 'status-shipped' },
             completed: { label: 'مكتمل', class: 'status-completed' },
@@ -1695,7 +1695,7 @@
             delete: { label: 'حذف', class: 'action-delete' }
         };
 
-        const ORDER_STATUS_FLOW = ['new', 'preparing', 'in_transit', 'delivered', 'cancelled'];
+        const ORDER_STATUS_FLOW = ['new', 'preparing', 'in_transit', 'delivered'];
 
         function normalizeStatusKey(status) {
             if (status === undefined || status === null) return '';
