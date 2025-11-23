@@ -17,6 +17,8 @@
 
         const ADMIN_API_BASE_URL = 'https://action-sports-api.vercel.app/api';
         const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
+        const BANNER_API = `${ADMIN_API_BASE_URL}/banners`;
+        const SHIPPING_ZONES_ENDPOINT = `${ADMIN_API_BASE_URL}/shipping-zones`;
         const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
         const CUSTOMER_ENDPOINT = `${ADMIN_API_BASE_URL}/customers`;
         const CATEGORY_ENDPOINT = `${ADMIN_API_BASE_URL}/categories`;
@@ -60,6 +62,172 @@
             if (!type) return ADDRESS_TYPE_LABELS.other;
             const normalized = String(type).toLowerCase();
             return ADDRESS_TYPE_LABELS[normalized] || type;
+        }
+
+        function updateBannerImagePreview(image) {
+            const preview = document.getElementById('bannerImagePreview');
+            if (!preview) return;
+
+            if (!image) {
+                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+                return;
+            }
+
+            preview.innerHTML = `<img src="${image}" alt="Banner Preview">`;
+        }
+
+        function prepareBannerCreateForm() {
+            const form = document.getElementById('bannerForm');
+            if (!form) return;
+
+            form.reset();
+            form.dataset.mode = 'create';
+            setFieldValue(form, 'id', '');
+            setFieldValue(form, 'title', '');
+            setFieldValue(form, 'description', '');
+
+            const descriptionField = form.querySelector('#bannerDescription');
+            if (descriptionField) {
+                updateDescriptionCounter(descriptionField);
+            }
+
+            const imageInput = form.querySelector('#bannerImage');
+            if (imageInput) {
+                imageInput.value = '';
+                delete imageInput.dataset.originalImage;
+                delete imageInput.dataset.previewImage;
+                imageInput.required = true;
+            }
+
+            updateBannerImagePreview('');
+        }
+
+        function populateBannerModal(bannerId) {
+            const form = document.getElementById('bannerForm');
+            if (!form) return;
+
+            const source = getBannerSource();
+            const banner = source.find(entry => (entry._id === bannerId || entry.id === bannerId));
+            if (!banner) {
+                showToast('error', 'تعديل البانر', 'تعذر العثور على البانر المحدد');
+                return;
+            }
+
+            form.dataset.mode = 'edit';
+            setFieldValue(form, 'id', banner._id || banner.id || '');
+            setFieldValue(form, 'title', banner.title || '');
+            setFieldValue(form, 'description', banner.description || '');
+
+            const descriptionField = form.querySelector('#bannerDescription');
+            if (descriptionField) {
+                updateDescriptionCounter(descriptionField);
+            }
+
+            const imageInput = form.querySelector('#bannerImage');
+            const resolvedImage = banner.image || banner.raw?.image || BANNER_IMAGE_PLACEHOLDER;
+            if (imageInput) {
+                imageInput.value = '';
+                imageInput.dataset.originalImage = resolvedImage;
+                delete imageInput.dataset.previewImage;
+                imageInput.required = false;
+            }
+
+            updateBannerImagePreview(resolvedImage);
+        }
+
+        async function handleBannerImageChange(event) {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+            const file = input.files?.[0];
+            if (!file) {
+                const fallback = input.dataset.previewImage || input.dataset.originalImage || '';
+                updateBannerImagePreview(fallback);
+                return;
+            }
+
+            try {
+                const dataUrl = await readFileAsDataUrl(file);
+                input.dataset.previewImage = dataUrl;
+                updateBannerImagePreview(dataUrl);
+                console.log('✅ Banner image preview updated');
+            } catch (error) {
+                console.error('❌ Failed to preview banner image:', error);
+                showToast('error', 'صورة البانر', 'تعذر معاينة ملف الصورة المحدد');
+                input.value = '';
+                const fallback = input.dataset.originalImage || '';
+                updateBannerImagePreview(fallback);
+            }
+        }
+
+        async function handleBannerFormSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            if (!form || form.dataset.entity !== 'banner') return;
+
+            const formData = new FormData(form);
+            const mode = form.dataset.mode || 'create';
+            const id = getFormValue(formData, 'id');
+            const title = getFormValue(formData, 'title');
+            const description = getFormValue(formData, 'description');
+            const imageInput = form.querySelector('#bannerImage');
+            const imageFile = imageInput?.files?.[0] || null;
+            const originalImage = imageInput?.dataset.originalImage || '';
+
+            if (!title) {
+                showToast('error', 'حفظ البانر', 'يرجى إدخال عنوان للبانر');
+                return;
+            }
+
+            if (!description) {
+                showToast('error', 'حفظ البانر', 'يرجى إدخال وصف للبانر');
+                return;
+            }
+
+            if (!imageFile && mode === 'create') {
+                showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+                return;
+            }
+
+            if (!imageFile && mode === 'edit' && !originalImage) {
+                showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+                return;
+            }
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton?.innerHTML;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+            }
+
+            const payload = { title, description };
+
+            try {
+                if (mode === 'edit') {
+                    if (!id) {
+                        throw new Error('تعذر تحديد البانر الذي ترغب في تعديله');
+                    }
+                    await updateBanner(id, payload, imageFile);
+                    showToast('success', 'تحديث البانر', 'تم تحديث البانر بنجاح');
+                } else {
+                    await createBanner(payload, imageFile);
+                    showToast('success', 'إضافة البانر', 'تمت إضافة البانر بنجاح');
+                }
+
+                closeModal('bannerModal');
+                prepareBannerCreateForm();
+                await fetchBanners({ force: true });
+            } catch (error) {
+                console.error('❌ Banner form error:', error);
+                const message = error?.message || 'حدث خطأ أثناء حفظ البانر';
+                showToast('error', 'خطأ', message);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText || 'حفظ البانر';
+                }
+            }
         }
 
         function normalizeCustomerAddress(rawAddress = {}, index = 0) {
@@ -1328,6 +1496,8 @@
 
         // تتبع طلب جلب العلامات التجارية لتفادي التكرار
         let brandsFetchPromise = null;
+        let bannersFetchPromise = null;
+        let shippingZonesFetchPromise = null;
 
         // ========================================
         // ===== 5. دوال المصادقة والطلبات =====
@@ -1555,9 +1725,7 @@
             promotions: [
                 { id: 'PR-1', title: 'خصم 20% على كل الأجهزة', type: 'percentage', value: '20%', period: '2025-10-20 — 2025-10-31', status: 'active' }
             ],
-            banners: [
-                { id: 'BN-1', title: 'عرض الصيف الكبير', placement: 'home_hero', status: 'active', image: 'https://via.placeholder.com/1200x400?text=Banner' }
-            ],
+            banners: [],
             pages: [
                 { id: 'PG-1', title: 'من نحن', updatedAt: '2025-10-20' }
             ],
@@ -1653,6 +1821,10 @@
             customers: [],
             customersLoading: false,
             customersError: null,
+            // البانرات
+            banners: [],
+            bannersLoading: false,
+            bannersError: null,
             // القسم الحالي
             currentSection: 'overview',
             messages: [],
@@ -1668,7 +1840,11 @@
                 currentPage: 1,
                 totalPages: 1,
                 totalOrders: 0
-            }
+            },
+            shippingZones: [],
+            shippingZonesLoading: false,
+            shippingZonesError: null,
+            selectedShippingZoneId: ''
         };
 
         // ========================================
@@ -2083,6 +2259,7 @@
         }
 
         const PRODUCT_PLACEHOLDER_IMAGE = 'https://via.placeholder.com/320x200?text=Product';
+        const BANNER_IMAGE_PLACEHOLDER = 'https://via.placeholder.com/1200x400?text=Banner';
 
         function extractProductImage(rawProduct = {}) {
             const candidates = [];
@@ -2254,6 +2431,78 @@
                 return state.products;
             }
             return Array.isArray(mockData.products) ? mockData.products : [];
+        }
+
+        function getBannerSource() {
+            if (Array.isArray(state.banners) && state.banners.length) {
+                return state.banners;
+            }
+            return Array.isArray(mockData.banners) ? mockData.banners : [];
+        }
+
+        function normalizeBanner(rawBanner = {}, index = 0) {
+            if (!rawBanner || typeof rawBanner !== 'object') return null;
+
+            const id = rawBanner._id
+                || rawBanner.id
+                || rawBanner.bannerId
+                || rawBanner.slug
+                || rawBanner.reference
+                || rawBanner.uuid
+                || `banner-${Date.now()}-${index}`;
+
+            const title = rawBanner.title || rawBanner.name || 'بانر بدون عنوان';
+            const description = rawBanner.description || rawBanner.subtitle || rawBanner.details || '';
+            const placement = rawBanner.placement || rawBanner.position || rawBanner.location || 'home_hero';
+            const status = rawBanner.status || rawBanner.state || 'active';
+            const link = rawBanner.link || rawBanner.url || rawBanner.targetUrl || rawBanner.href || '';
+            const order = rawBanner.order ?? rawBanner.sortOrder ?? rawBanner.priority ?? 0;
+
+            const imageCandidates = [
+                rawBanner.image?.secure_url,
+                rawBanner.image?.url,
+                rawBanner.image,
+                rawBanner.imageUrl,
+                rawBanner.bannerImage,
+                rawBanner.thumbnail,
+                rawBanner.cover,
+                rawBanner.mediaUrl
+            ];
+
+            const image = imageCandidates
+                .map(candidate => resolveAssetUrl(candidate))
+                .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0)
+                || BANNER_IMAGE_PLACEHOLDER;
+
+            const scheduleStart = rawBanner.schedule?.start
+                || rawBanner.startDate
+                || rawBanner.start_at
+                || rawBanner.validFrom
+                || null;
+
+            const scheduleEnd = rawBanner.schedule?.end
+                || rawBanner.endDate
+                || rawBanner.end_at
+                || rawBanner.validTo
+                || null;
+
+            return {
+                id,
+                title,
+                description,
+                placement,
+                status,
+                link,
+                image,
+                order,
+                schedule: {
+                    start: scheduleStart,
+                    end: scheduleEnd
+                },
+                createdAt: rawBanner.createdAt,
+                updatedAt: rawBanner.updatedAt,
+                raw: rawBanner
+            };
         }
 
         function slugify(value = '') {
@@ -2665,6 +2914,422 @@
             } catch (error) {
                 console.error(`❌ Failed to delete brand ${brandId}:`, error);
                 throw error;
+            }
+        }
+
+        async function fetchBanners(options = {}) {
+            const forceReload = options.force === true;
+
+            if (bannersFetchPromise) {
+                if (!forceReload) {
+                    return bannersFetchPromise;
+                }
+
+                try {
+                    await bannersFetchPromise;
+                } catch (err) {
+                    console.warn('⚠️ Previous banners fetch failed, retrying with force reload.', err);
+                }
+            }
+
+            state.bannersLoading = true;
+            state.bannersError = null;
+            renderBanners();
+
+            const request = (async () => {
+                try {
+                    const response = handleUnauthorized(await authorizedFetch(BANNER_API));
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json().catch(() => ({}));
+                    const candidates = [
+                        data?.data?.banners,
+                        data?.data?.documents,
+                        data?.data,
+                        data?.banners,
+                        data?.documents,
+                        Array.isArray(data) ? data : null
+                    ].filter(Array.isArray);
+
+                    const banners = (candidates[0] || []).map((banner, index) => normalizeBanner(banner, index)).filter(Boolean);
+                    state.banners = banners;
+                    state.bannersError = null;
+                    console.log('✅ Banners fetched:', banners.length);
+                    return banners;
+                } catch (error) {
+                    console.error('❌ Failed to fetch banners:', error);
+                    state.bannersError = error?.message || 'تعذر تحميل البانرات. يرجى المحاولة مرة أخرى.';
+                    state.banners = [];
+                    throw error;
+                } finally {
+                    state.bannersLoading = false;
+                    bannersFetchPromise = null;
+                    renderBanners();
+                }
+            })();
+
+            bannersFetchPromise = request;
+            return request;
+        }
+
+        async function createBanner(bannerData = {}, imageFile = null) {
+            try {
+                const formData = new FormData();
+                formData.append('title', bannerData.title);
+                formData.append('description', bannerData.description);
+                if (imageFile instanceof File) {
+                    formData.append('image', imageFile);
+                }
+
+                const response = await fetch(BANNER_API, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || `HTTP ${response.status}`);
+                }
+
+                console.log('✅ Banner created:', data);
+                return data?.data || data;
+            } catch (error) {
+                console.error('❌ Failed to create banner:', error);
+                throw error;
+            }
+        }
+
+        async function updateBanner(bannerId, bannerData = {}, imageFile = null) {
+            if (!bannerId) {
+                throw new Error('معرّف البانر غير صالح');
+            }
+
+            try {
+                const formData = new FormData();
+                if (bannerData.title !== undefined) formData.append('title', bannerData.title);
+                if (bannerData.description !== undefined) formData.append('description', bannerData.description);
+                if (imageFile instanceof File) {
+                    formData.append('image', imageFile);
+                }
+
+                const response = await fetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || `HTTP ${response.status}`);
+                }
+
+                console.log('✅ Banner updated:', data);
+                return data?.data || data;
+            } catch (error) {
+                console.error(`❌ Failed to update banner ${bannerId}:`, error);
+                throw error;
+            }
+        }
+
+        async function deleteBanner(bannerId) {
+            if (!bannerId) {
+                throw new Error('معرّف البانر غير صالح');
+            }
+
+            try {
+                const response = await fetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || `HTTP ${response.status}`);
+                }
+
+                console.log('✅ Banner deleted:', data);
+                return data?.data || data;
+            } catch (error) {
+                console.error(`❌ Failed to delete banner ${bannerId}:`, error);
+                throw error;
+            }
+        }
+
+        function normalizeShippingZone(rawZone = {}, index = 0) {
+            if (!rawZone || typeof rawZone !== 'object') return null;
+
+            const id = rawZone._id
+                || rawZone.id
+                || rawZone.zoneId
+                || rawZone.key
+                || `zone-${Date.now()}-${index}`;
+
+            const zoneName = rawZone.zoneName
+                || rawZone.nameAr
+                || rawZone.name
+                || rawZone.nameEn
+                || rawZone.title
+                || 'منطقة غير معروفة';
+
+            const rate = Number(rawZone.shippingRate ?? rawZone.rate ?? rawZone.price ?? rawZone.cost ?? 0) || 0;
+
+            return {
+                id,
+                zoneName,
+                shippingRate: rate,
+                raw: rawZone
+            };
+        }
+
+        async function fetchShippingZones(options = {}) {
+            const { force = false } = options || {};
+
+            if (shippingZonesFetchPromise) {
+                if (!force) {
+                    return shippingZonesFetchPromise;
+                }
+
+                try {
+                    await shippingZonesFetchPromise;
+                } catch (error) {
+                    console.warn('⚠️ Previous shipping zones fetch failed, retrying...', error);
+                }
+            }
+
+            state.shippingZonesLoading = true;
+            state.shippingZonesError = null;
+            renderShippingSettings();
+
+            const request = (async () => {
+                try {
+                    const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT));
+                    if (!response?.ok) {
+                        throw new Error(`HTTP ${response?.status}`);
+                    }
+
+                    const payload = await response.json().catch(() => ({}));
+                    const zonesArray = [
+                        payload?.data?.zones,
+                        payload?.data?.shippingZones,
+                        payload?.data,
+                        payload?.zones,
+                        payload?.shippingZones,
+                        Array.isArray(payload) ? payload : null
+                    ].find(Array.isArray) || [];
+
+                    const normalized = zonesArray
+                        .map((zone, index) => normalizeShippingZone(zone, index))
+                        .filter(Boolean);
+
+                    state.shippingZones = normalized;
+                    state.shippingZonesError = null;
+
+                    const hasSelected = normalized.some(zone => String(zone.id) === String(state.selectedShippingZoneId));
+                    if (!hasSelected) {
+                        state.selectedShippingZoneId = normalized[0]?.id || '';
+                    }
+
+                    console.log('✅ Shipping zones fetched:', normalized.length);
+                    return normalized;
+                } catch (error) {
+                    console.error('❌ Failed to fetch shipping zones:', error);
+                    state.shippingZones = [];
+                    state.shippingZonesError = error?.message || 'تعذر تحميل مناطق الشحن';
+                    throw error;
+                } finally {
+                    state.shippingZonesLoading = false;
+                    shippingZonesFetchPromise = null;
+                    renderShippingSettings();
+                }
+            })();
+
+            shippingZonesFetchPromise = request;
+            return request;
+        }
+
+        async function updateShippingZoneRate(zoneId, shippingRate) {
+            if (!zoneId) {
+                throw new Error('لم يتم تحديد منطقة الشحن');
+            }
+
+            const numericRate = Number(shippingRate);
+            if (!Number.isFinite(numericRate) || numericRate < 0) {
+                throw new Error('يرجى إدخال قيمة صالحة لتكلفة الشحن');
+            }
+
+            showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
+
+            try {
+                const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shippingRate: numericRate })
+                }));
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload?.message || `HTTP ${response.status}`);
+                }
+
+                showToast('success', 'تحديث تكلفة الشحن', 'تم حفظ تكلفة الشحن بنجاح');
+                await fetchShippingZones({ force: true });
+                return payload?.data || payload;
+            } catch (error) {
+                console.error(`❌ Failed to update shipping zone ${zoneId}:`, error);
+                showToast('error', 'تحديث تكلفة الشحن', error?.message || 'حدث خطأ أثناء تحديث تكلفة الشحن');
+                throw error;
+            }
+        }
+
+        async function createShippingZone(nameAr, nameEn, shippingRate) {
+            const arabicName = typeof nameAr === 'string' ? nameAr.trim() : '';
+            const englishName = typeof nameEn === 'string' ? nameEn.trim() : '';
+
+            if (!arabicName) {
+                throw new Error('يرجى إدخال اسم المنطقة بالعربية');
+            }
+
+            if (!englishName) {
+                throw new Error('يرجى إدخال اسم المنطقة بالإنجليزية');
+            }
+
+            const numericRate = Number(shippingRate);
+            if (!Number.isFinite(numericRate) || numericRate < 0) {
+                throw new Error('يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+            }
+
+            showToast('info', 'إضافة منطقة الشحن', 'جاري إنشاء منطقة الشحن الجديدة...');
+
+            try {
+                const requestPayload = {
+                    nameAr: arabicName,
+                    nameEn: englishName,
+                    shippingRate: numericRate,
+                };
+
+                const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                }));
+
+                const responseJson = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(responseJson?.message || `HTTP ${response.status}`);
+                }
+
+                const createdZone = responseJson?.data?.shippingZone
+                    || responseJson?.data?.zone
+                    || responseJson?.data
+                    || responseJson;
+                const createdId = createdZone?._id || createdZone?.id || createdZone?.zoneId || null;
+
+                if (createdId) {
+                    state.selectedShippingZoneId = createdId;
+                }
+
+                showToast('success', 'إضافة منطقة الشحن', 'تم إنشاء منطقة الشحن بنجاح');
+                await fetchShippingZones({ force: true });
+                return responseJson?.data || responseJson;
+            } catch (error) {
+                console.error('❌ Failed to create shipping zone:', error);
+                showToast('error', 'إضافة منطقة الشحن', error?.message || 'حدث خطأ أثناء إنشاء منطقة الشحن');
+                throw error;
+            }
+        }
+
+        async function deleteShippingZone(zoneId) {
+            if (!zoneId) {
+                throw new Error('لم يتم اختيار منطقة الشحن');
+            }
+
+            showToast('info', 'حذف منطقة الشحن', 'جاري حذف منطقة الشحن المحددة...');
+
+            try {
+                const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
+                    method: 'DELETE'
+                }));
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload?.message || `HTTP ${response.status}`);
+                }
+
+                showToast('success', 'حذف منطقة الشحن', 'تم حذف منطقة الشحن بنجاح');
+                if (String(state.selectedShippingZoneId) === String(zoneId)) {
+                    state.selectedShippingZoneId = '';
+                }
+                await fetchShippingZones({ force: true });
+                return payload?.data || payload;
+            } catch (error) {
+                console.error(`❌ Failed to delete shipping zone ${zoneId}:`, error);
+                showToast('error', 'حذف منطقة الشحن', error?.message || 'حدث خطأ أثناء حذف منطقة الشحن');
+                throw error;
+            }
+        }
+
+        function getShippingZoneById(zoneId) {
+            if (!zoneId) return null;
+            return state.shippingZones.find(zone => String(zone.id) === String(zoneId)) || null;
+        }
+
+        function hydrateSettingsForms() {
+            fetchShippingZones().catch(error => {
+                console.error('❌ Failed to hydrate shipping settings:', error);
+            });
+        }
+
+        async function handleShippingSettingsSubmit(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            if (!form || form.dataset.entity !== 'shipping-settings') {
+                return;
+            }
+
+            const select = form.querySelector('#shippingZoneSelect');
+            const rateInput = form.querySelector('#shippingZoneRate');
+            const submitButton = form.querySelector('#shippingSettingsSubmit');
+
+            const zoneId = select?.value;
+            const rateValue = rateInput?.value;
+
+            if (!zoneId) {
+                showToast('error', 'إعدادات الشحن', 'يرجى اختيار المنطقة أولاً');
+                return;
+            }
+
+            const numericRate = Number(rateValue);
+            if (!Number.isFinite(numericRate) || numericRate < 0) {
+                showToast('error', 'إعدادات الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+                rateInput?.focus();
+                return;
+            }
+
+            const originalState = submitButton ? { disabled: submitButton.disabled, label: submitButton.innerHTML } : null;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+            }
+
+            try {
+                await updateShippingZoneRate(zoneId, numericRate);
+            } catch (error) {
+                console.error('❌ Shipping settings submit failed:', error);
+            } finally {
+                if (submitButton && originalState) {
+                    submitButton.disabled = originalState.disabled;
+                    submitButton.innerHTML = originalState.label;
+                }
             }
         }
 
@@ -5989,25 +6654,127 @@
         `).join('');
     }
 
+    function renderShippingSettings() {
+        const form = document.getElementById('shippingSettingsForm');
+        const select = document.getElementById('shippingZoneSelect');
+        const rateInput = document.getElementById('shippingZoneRate');
+        const submitButton = document.getElementById('shippingSettingsSubmit');
+        const deleteButton = document.getElementById('shippingZoneDeleteBtn');
+
+        if (!form || !select || !rateInput || !submitButton || !deleteButton) {
+            return;
+        }
+
+        const { shippingZonesLoading, shippingZonesError, shippingZones, selectedShippingZoneId } = state;
+
+        select.disabled = shippingZonesLoading;
+        rateInput.disabled = shippingZonesLoading;
+        submitButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+        deleteButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+
+        if (shippingZonesLoading) {
+            select.innerHTML = '<option value="">جاري التحميل...</option>';
+            if (document.activeElement !== rateInput) {
+                rateInput.value = '';
+            }
+            return;
+        }
+
+        if (shippingZonesError) {
+            select.innerHTML = `<option value="">${escapeHtml(shippingZonesError)}</option>`;
+            if (document.activeElement !== rateInput) {
+                rateInput.value = '';
+            }
+            return;
+        }
+
+        if (!shippingZones.length) {
+            select.innerHTML = '<option value="">لا توجد مناطق شحن متاحة</option>';
+            if (document.activeElement !== rateInput) {
+                rateInput.value = '';
+            }
+            return;
+        }
+
+        const optionsMarkup = shippingZones
+            .map(zone => `<option value="${escapeHtml(zone.id)}">${escapeHtml(zone.zoneName)}</option>`)
+            .join('');
+
+        select.innerHTML = optionsMarkup;
+
+        const targetZoneId = selectedShippingZoneId && getShippingZoneById(selectedShippingZoneId)
+            ? selectedShippingZoneId
+            : shippingZones[0].id;
+
+        state.selectedShippingZoneId = targetZoneId;
+        select.value = targetZoneId;
+
+        const zone = getShippingZoneById(targetZoneId);
+        if (zone && document.activeElement !== rateInput) {
+            rateInput.value = zone.shippingRate;
+        }
+    }
+
     function renderBanners() {
         const grid = document.getElementById('bannersGrid');
         if (!grid) return;
 
-        grid.innerHTML = mockData.banners.map(banner => `
-            <div class="banner-card" data-id="${banner.id}">
-                <div class="banner-preview">
-                    <img src="${banner.image}" alt="${banner.title}">
+        if (state.bannersLoading) {
+            grid.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>جاري تحميل البانرات...</p>
                 </div>
-                <div class="banner-info">
-                    <h3>${banner.title}</h3>
-                    <p>${banner.placement}</p>
-                    <div class="banner-actions">
-                        <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="${banner.id}"><i class="fas fa-edit"></i> تعديل</button>
-                        <button class="btn-danger btn-sm" data-action="delete" data-entity="banner" data-entity-id="${banner.id}"><i class="fas fa-trash"></i> حذف</button>
+            `;
+            return;
+        }
+
+        if (state.bannersError) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>حدث خطأ أثناء تحميل البانرات</h3>
+                    <p>${escapeHtml(state.bannersError)}</p>
+                    <button class="btn-primary" data-action="refresh-banners">إعادة المحاولة</button>
+                </div>
+            `;
+            return;
+        }
+
+        const banners = getBannerSource();
+
+        if (!banners.length) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-image"></i>
+                    <h3>لا توجد بانرات حالياً</h3>
+                    <p>استخدم زر "إضافة بانر جديد" لإنشاء بانر.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = banners.map(banner => {
+            const bannerId = banner._id || banner.id;
+            const imageUrl = banner.image?.secure_url || banner.image?.url || banner.image || 'https://via.placeholder.com/1200x400?text=Banner';
+            const description = banner.description ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH)) : '';
+
+            return `
+                <div class="banner-card" data-id="${escapeHtml(bannerId || '')}">
+                    <div class="banner-preview">
+                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(banner.title || 'بانر')}">
+                    </div>
+                    <div class="banner-info">
+                        <h3>${escapeHtml(banner.title || 'بانر بدون عنوان')}</h3>
+                        ${description ? `<p class="banner-description">${description}</p>` : ''}
+                        <div class="banner-actions">
+                            <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="${escapeHtml(bannerId || '')}"><i class="fas fa-edit"></i> تعديل</button>
+                            <button class="btn-danger btn-sm" data-action="delete-banner" data-entity-id="${escapeHtml(bannerId || '')}"><i class="fas fa-trash"></i> حذف</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function renderPages() {
@@ -6021,7 +6788,7 @@
                     <h3>${page.title}</h3>
                     <p>آخر تحديث: ${page.updatedAt}</p>
                 </div>
-                <button class="btn-secondary btn-sm" data-action="edit-page" data-entity="page" data-entity-id="${page.id}"><i class="fas fa-edit"></i> تعديل</button>
+                <button class="btn-secondary btn-sm" data-action="edit-page" data-entity="page" data-entity-id="${page.id}"><i class="fas fa-edit"></i></button>
             </div>
         `).join('');
     }
@@ -6647,6 +7414,7 @@
         renderAnalyticsFilters();
         renderAuditLogs();
         renderUsers();
+        renderShippingSettings();
     }
 
     function setupModalCancels(root = document) {
@@ -7517,6 +8285,12 @@
                 populateSubcategoryModal(contextCategoryId, mode === 'edit' ? entityId : null);
             } else if (modalId === 'paymentSettingsModal' && entityId) {
                 populatePaymentSettingsModal(entityId);
+            } else if (modalId === 'bannerModal') {
+                if (mode === 'edit' && entityId) {
+                    populateBannerModal(entityId);
+                } else {
+                    prepareBannerCreateForm();
+                }
             }
 
             if (entity) {
@@ -7607,6 +8381,39 @@
         }
 
         // Delete Category
+        const refreshBannersBtn = e.target.closest('[data-action="refresh-banners"]');
+        if (refreshBannersBtn) {
+            e.preventDefault();
+            fetchBanners({ force: true }).then(renderBanners).catch(error => {
+                console.error('❌ Failed to refresh banners:', error);
+                showToast('error', 'تحديث البانرات', 'تعذر تحديث قائمة البانرات.');
+            });
+            return;
+        }
+
+        const deleteBannerBtn = e.target.closest('[data-action="delete-banner"]');
+        if (deleteBannerBtn) {
+            e.preventDefault();
+            const bannerId = deleteBannerBtn.getAttribute('data-entity-id');
+            if (!bannerId) {
+                showToast('error', 'حذف البانر', 'تعذر تحديد البانر المطلوب حذفه');
+                return;
+            }
+
+            if (confirm('هل أنت متأكد من حذف هذا البانر؟')) {
+                deleteBanner(bannerId)
+                    .then(() => {
+                        showToast('success', 'حذف البانر', 'تم حذف البانر بنجاح');
+                        return fetchBanners({ force: true });
+                    })
+                    .catch(error => {
+                        console.error('❌ Delete banner error:', error);
+                        showToast('error', 'حذف البانر', error?.message || 'حدث خطأ أثناء حذف البانر');
+                    });
+            }
+            return;
+        }
+
         const deleteCategoryBtn = e.target.closest('[data-action="delete-category"]');
         if (deleteCategoryBtn) {
             e.preventDefault();
@@ -7911,6 +8718,18 @@
             brandImageInput.addEventListener('change', handleBrandImageChange);
         }
 
+        const bannerForm = document.getElementById('bannerForm');
+        if (bannerForm) {
+            bannerForm.addEventListener('submit', handleBannerFormSubmit);
+        }
+
+        const bannerImageInput = document.getElementById('bannerImage');
+        if (bannerImageInput) {
+            bannerImageInput.addEventListener('change', handleBannerImageChange);
+        }
+
+        prepareBannerCreateForm();
+
         // ربط حدث البحث في العلامات التجارية
         const brandSearchInput = document.getElementById('brandSearch');
         if (brandSearchInput) {
@@ -7939,6 +8758,145 @@
             createAdminForm.addEventListener('submit', handleCreateAdminSubmit);
         }
 
+        const shippingSettingsForm = document.getElementById('shippingSettingsForm');
+        const shippingZoneSelect = document.getElementById('shippingZoneSelect');
+        const shippingZoneDeleteBtn = document.getElementById('shippingZoneDeleteBtn');
+        const shippingZoneCreateContainer = document.getElementById('shippingZoneCreateContainer');
+        const shippingZoneCreateToggle = document.getElementById('shippingZoneCreateToggle');
+        const shippingZoneCreateCancel = document.getElementById('shippingZoneCreateCancel');
+
+        if (shippingZoneSelect) {
+            shippingZoneSelect.addEventListener('change', (event) => {
+                const zoneId = event.target.value;
+                state.selectedShippingZoneId = zoneId;
+                const zone = getShippingZoneById(zoneId);
+                const rateInput = document.getElementById('shippingZoneRate');
+                if (zone && rateInput && document.activeElement !== rateInput) {
+                    rateInput.value = zone.shippingRate;
+                }
+            });
+        }
+
+        if (shippingSettingsForm) {
+            shippingSettingsForm.addEventListener('submit', handleShippingSettingsSubmit);
+        }
+
+        const setCreateZoneVisibility = (visible = false) => {
+            if (!shippingZoneCreateContainer) return;
+            shippingZoneCreateContainer.hidden = !visible;
+
+            if (shippingZoneCreateToggle) {
+                shippingZoneCreateToggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
+                shippingZoneCreateToggle.innerHTML = visible
+                    ? '<i class="fas fa-times"></i> إخفاء نموذج الإضافة'
+                    : '<i class="fas fa-plus"></i> إضافة منطقة جديدة';
+            }
+
+            if (!visible) {
+                const form = shippingZoneCreateContainer.querySelector('#shippingZoneCreateForm');
+                form?.reset();
+            }
+        };
+
+        if (shippingZoneCreateToggle) {
+            shippingZoneCreateToggle.addEventListener('click', () => {
+                const shouldShow = shippingZoneCreateContainer?.hidden !== false;
+                setCreateZoneVisibility(shouldShow);
+                if (shouldShow) {
+                    shippingZoneCreateContainer?.querySelector('#newShippingZoneNameAr')?.focus();
+                }
+            });
+            setCreateZoneVisibility(false);
+        }
+
+        if (shippingZoneCreateCancel) {
+            shippingZoneCreateCancel.addEventListener('click', () => {
+                setCreateZoneVisibility(false);
+            });
+        }
+
+        if (shippingZoneDeleteBtn) {
+            shippingZoneDeleteBtn.addEventListener('click', async () => {
+                const zoneId = state.selectedShippingZoneId || shippingZoneSelect?.value;
+                if (!zoneId) {
+                    showToast('error', 'حذف منطقة الشحن', 'يرجى اختيار المنطقة المراد حذفها');
+                    return;
+                }
+
+                const zone = getShippingZoneById(zoneId);
+                const zoneLabel = zone?.zoneName || 'هذه المنطقة';
+
+                const confirmed = window.confirm(`هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`);
+                if (!confirmed) return;
+
+                shippingZoneDeleteBtn.disabled = true;
+                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
+
+                try {
+                    await deleteShippingZone(zoneId);
+                } catch (error) {
+                    console.error('❌ Delete shipping zone failed:', error);
+                } finally {
+                    shippingZoneDeleteBtn.disabled = false;
+                    shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
+                }
+            });
+        }
+
+        const shippingZoneCreateForm = document.getElementById('shippingZoneCreateForm');
+        if (shippingZoneCreateForm) {
+            shippingZoneCreateForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const form = event.target;
+                const nameArInput = form.querySelector('#newShippingZoneNameAr');
+                const nameEnInput = form.querySelector('#newShippingZoneNameEn');
+                const rateInput = form.querySelector('#newShippingZoneRate');
+                const submitBtn = form.querySelector('#shippingZoneCreateSubmit');
+
+                const nameAr = nameArInput?.value?.trim();
+                const nameEn = nameEnInput?.value?.trim();
+                const shippingRate = rateInput?.value;
+
+                if (!nameAr) {
+                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالعربية');
+                    nameArInput?.focus();
+                    return;
+                }
+
+                if (!nameEn) {
+                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالإنجليزية');
+                    nameEnInput?.focus();
+                    return;
+                }
+
+                const numericRate = Number(shippingRate);
+                if (!Number.isFinite(numericRate) || numericRate < 0) {
+                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+                    rateInput?.focus();
+                    return;
+                }
+
+                const originalState = submitBtn ? { disabled: submitBtn.disabled, label: submitBtn.innerHTML } : null;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإضافة...';
+                }
+
+                try {
+                    await createShippingZone(nameAr, nameEn, numericRate);
+                    setCreateZoneVisibility(false);
+                } catch (error) {
+                    console.error('❌ Create shipping zone failed:', error);
+                } finally {
+                    if (submitBtn && originalState) {
+                        submitBtn.disabled = originalState.disabled;
+                        submitBtn.innerHTML = originalState.label;
+                    }
+                }
+            });
+        }
+
         document.querySelectorAll('.toggle-password').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const targetId = btn.getAttribute('data-target');
@@ -7956,8 +8914,10 @@
         });
 
         // جلب الفئات من الـ API
-        fetchCategories();
+        fetchCustomers();
         fetchProducts();
+        fetchBanners();
+        fetchShippingZones();
 
         initMessagesPanel();
 

@@ -520,34 +520,7 @@
                     <button class="btn-primary mb-3" id="addBannerBtn" data-open-modal="bannerModal" data-modal-mode="create" data-entity="banner">
                         <i class="fas fa-plus"></i> إضافة بانر جديد
                     </button>
-                    <div class="banners-grid" id="bannersGrid">
-                        <div class="banner-card" data-id="BN-1">
-                            <div class="banner-preview">
-                                <img src="img/Logo.webp" alt="عرض الصيف الكبير">
-                            </div>
-                            <div class="banner-info">
-                                <h3>عرض الصيف الكبير</h3>
-                                <p>الصفحة الرئيسية - البانر الرئيسي</p>
-                                <div class="banner-actions">
-                                    <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="BN-1"><i class="fas fa-edit"></i> تعديل</button>
-                                    <button class="btn-danger btn-sm" data-action="delete-banner" data-entity-id="BN-1"><i class="fas fa-trash"></i> حذف</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="banner-card" data-id="BN-2">
-                            <div class="banner-preview">
-                                <img src="img/Logo.png" alt="منتجات مميزة للرياضيين">
-                            </div>
-                            <div class="banner-info">
-                                <h3>منتجات مميزة للرياضيين</h3>
-                                <p>الصفحة الرئيسية - بانر ثانوي</p>
-                                <div class="banner-actions">
-                                    <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="BN-2"><i class="fas fa-edit"></i> تعديل</button>
-                                    <button class="btn-danger btn-sm" data-action="delete-banner" data-entity-id="BN-2"><i class="fas fa-trash"></i> حذف</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="banners-grid" id="bannersGrid"></div>
                 </div>
 
                 <div class="tab-content" id="pages">
@@ -750,6 +723,61 @@
                             </div>
                             <button type="submit" class="btn-primary"><i class="fas fa-key"></i> تحديث كلمة المرور</button>
                         </form>
+                    </div>
+
+                    <div class="settings-card" id="shippingSettingsCard">
+                        <div class="settings-card__header">
+                            <h3><i class="fas fa-shipping-fast"></i> إعدادات الشحن</h3>
+                            <button type="button" class="btn-secondary" id="shippingZoneCreateToggle">
+                                <i class="fas fa-plus"></i> إضافة منطقة جديدة
+                            </button>
+                        </div>
+                        <form id="shippingSettingsForm" class="settings-form" data-entity="shipping-settings">
+                            <div class="form-group">
+                                <label for="shippingZoneSelect">اختر المنطقة</label>
+                                <select id="shippingZoneSelect" name="zoneId" class="form-input" required>
+                                    <option value="">جاري التحميل...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="shippingZoneRate">تكلفة الشحن (ر.س)</label>
+                                <input id="shippingZoneRate" name="shippingRate" type="number" class="form-input" min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary" id="shippingSettingsSubmit">
+                                    <i class="fas fa-save"></i> حفظ التغييرات
+                                </button>
+                                <button type="button" class="btn-danger" id="shippingZoneDeleteBtn">
+                                    <i class="fas fa-trash"></i> حذف المنطقة
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="shippingZoneCreateContainer" class="settings-form" hidden>
+                            <div class="settings-divider"></div>
+                            <form id="shippingZoneCreateForm" data-entity="shipping-zone-create">
+                                <div class="form-group">
+                                    <label for="newShippingZoneNameAr">اسم المنطقة (بالعربية)</label>
+                                    <input id="newShippingZoneNameAr" name="nameAr" type="text" class="form-input" placeholder="مثال: منطقة الرياض" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newShippingZoneNameEn">اسم المنطقة (بالإنجليزية)</label>
+                                    <input id="newShippingZoneNameEn" name="nameEn" type="text" class="form-input" placeholder="مثال: Riyadh Region" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newShippingZoneRate">تكلفة الشحن (ر.س)</label>
+                                    <input id="newShippingZoneRate" name="shippingRate" type="number" class="form-input" min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary" id="shippingZoneCreateSubmit">
+                                        <i class="fas fa-save"></i> حفظ المنطقة الجديدة
+                                    </button>
+                                    <button type="button" class="btn-ghost" id="shippingZoneCreateCancel">
+                                        إلغاء
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <div class="settings-card">
@@ -963,25 +991,10 @@
                                 <input id="bannerTitle" name="title" type="text" class="form-input" placeholder="مثال: عرض الصيف" required>
                             </div>
                             <div class="form-group">
-                                <label for="bannerPlacement">مكان الظهور *</label>
-                                <select id="bannerPlacement" name="placement" class="form-input" required>
-                                    <option value="home_hero">الصفحة الرئيسية - البانر الرئيسي</option>
-                                    <option value="home_secondary">الصفحة الرئيسية - بانر ثانوي</option>
-                                    <option value="collection">صفحة المجموعات</option>
-                                    <option value="product">صفحة المنتج</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="bannerLink">رابط التحويل</label>
-                                <input id="bannerLink" name="link" type="url" class="form-input" placeholder="https://example.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="bannerStatus">الحالة</label>
-                                <select id="bannerStatus" name="status" class="form-input">
-                                    <option value="active">نشط</option>
-                                    <option value="inactive">غير نشط</option>
-                                    <option value="scheduled">مجدول</option>
-                                </select>
+                                <label for="bannerDescription">وصف البانر *</label>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="bannerDescription" name="description" class="form-input" rows="3" maxlength="700" data-counter="bannerDescriptionCounter" placeholder="اشرح الحملة التسويقية" required></textarea>
+                                <div class="char-counter" id="bannerDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                             <div class="form-group full-width">
                                 <label>صورة البانر</label>
@@ -989,6 +1002,9 @@
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <p>اسحب الصورة هنا أو انقر للرفع</p>
                                     <input id="bannerImage" name="image" type="file" accept="image/*" style="display: none;">
+                                    <div id="bannerImagePreview" class="image-preview">
+                                        <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
