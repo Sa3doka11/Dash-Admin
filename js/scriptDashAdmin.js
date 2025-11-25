@@ -9289,6 +9289,17 @@
     function doesOrderBelongToCustomer(order, customer) {
         if (!order || !customer) return false;
 
+        // ============================================
+        // ✅ الطريقة المحسّنة: المقارنة بناءً على:
+        // 1. معرف العميل (userId) - الأولوية الأولى
+        // 2. اسم المستخدم (name) - الأولوية الثانية
+        // 3. الحساب (username/account) - الأولوية الثالثة
+        // ⛔ بدون البريد الإلكتروني ولا الهاتف
+        // ============================================
+
+        // ============================================
+        // المرحلة 1: المقارنة بناءً على معرف العميل (userId)
+        // ============================================
         const customerIds = new Set();
         const addCustomerId = (value) => {
             if (value === null || value === undefined) return;
@@ -9296,6 +9307,7 @@
             if (normalized) customerIds.add(normalized);
         };
 
+        // جمع جميع معرفات العميل الممكنة
         addCustomerId(customer._id);
         addCustomerId(customer.id);
         addCustomerId(customer.userId);
@@ -9303,6 +9315,7 @@
             addCustomerId(customer.user._id || customer.user.id);
         }
 
+        // التحقق من معرفات الطلب الأساسية
         const orderIds = order.userIds || [];
         for (const id of orderIds) {
             if (customerIds.has(String(id))) {
@@ -9310,42 +9323,90 @@
             }
         }
 
-        if (order.userId && customerIds.has(String(order.userId))) {
-            return true;
-        }
-
-        const customerEmails = new Set(
-            [customer.email, customer.contactEmail, customer.user?.email]
-                .filter(Boolean)
-                .map(email => String(email).trim().toLowerCase())
-        );
-        const orderEmails = order.userEmails || [];
-        for (const email of orderEmails) {
-            if (customerEmails.has(email)) {
+        if (order.userId) {
+            const orderUserId = String(order.userId).trim();
+            if (customerIds.has(orderUserId)) {
                 return true;
             }
         }
 
-        const normalizePhone = (phone) => {
-            if (!phone) return '';
-            return String(phone)
-                .replace(/[^0-9+]/g, '')
-                .replace(/^[^0-9+]*/, '');
+        // ============================================
+        // المرحلة 2: المقارنة بناءً على اسم المستخدم (name)
+        // ============================================
+        const normalizeText = (text) => {
+            if (!text) return '';
+            return String(text).trim().toLowerCase();
         };
 
-        const customerPhones = new Set(
-            [customer.phone, customer.contactPhone, customer.user?.phone]
+        // جمع أسماء العميل الممكنة
+        const customerNames = new Set(
+            [
+                customer.name,
+                customer.fullName,
+                customer.user?.name,
+                customer.user?.fullName
+            ]
                 .filter(Boolean)
-                .map(normalizePhone)
-                .filter(Boolean)
+                .map(normalizeText)
+                .filter(name => name.length > 0)
         );
-        const orderPhones = (order.userPhones || []).map(normalizePhone).filter(Boolean);
-        for (const phone of orderPhones) {
-            if (customerPhones.has(phone)) {
-                return true;
+
+        // مقارنة أسماء من الطلب
+        const orderUsernames = (order.usernames || [])
+            .map(normalizeText)
+            .filter(Boolean);
+
+        // أيضاً محاولة استخراج اسم من order.customer
+        if (order.customer && typeof order.customer === 'object') {
+            const custName = normalizeText(order.customer.name || order.customer.fullName);
+            if (custName) orderUsernames.push(custName);
+        }
+
+        // مقارنة الأسماء
+        for (const customerName of customerNames) {
+            for (const orderUsername of orderUsernames) {
+                if (customerName === orderUsername && customerName.length > 0) {
+                    return true;
+                }
             }
         }
 
+        // ============================================
+        // المرحلة 3: المقارنة بناءً على الحساب (username/account)
+        // ============================================
+        const customerAccounts = new Set(
+            [
+                customer.username,
+                customer.account,
+                customer.user?.username,
+                customer.user?.account
+            ]
+                .filter(Boolean)
+                .map(normalizeText)
+                .filter(acc => acc.length > 0)
+        );
+
+        // مقارنة الحسابات من الطلب
+        const orderAccounts = (order.userAccounts || [])
+            .map(normalizeText)
+            .filter(Boolean);
+
+        // أيضاً محاولة استخراج حساب من order.customer
+        if (order.customer && typeof order.customer === 'object') {
+            const custAccount = normalizeText(order.customer.username || order.customer.account);
+            if (custAccount) orderAccounts.push(custAccount);
+        }
+
+        // مقارنة الحسابات
+        for (const customerAccount of customerAccounts) {
+            for (const orderAccount of orderAccounts) {
+                if (customerAccount === orderAccount && customerAccount.length > 0) {
+                    return true;
+                }
+            }
+        }
+
+        // ⛔ لا نقارن بالبريد أو الهاتف نهائياً
         return false;
     }
 
@@ -10840,7 +10901,9 @@
     }
 
     /**
-     * عرض طلبات العميل
+     * عرض طلبات العميل فقط
+     * تصفية بناءً على معرف العميل واسم المستخدم والبريد الإلكتروني
+     * ⛔ لا نستخدم الهاتف للمقارنة
      * @param {string} customerId - معرف العميل
      */
     function viewCustomerOrders(customerId) {
@@ -10851,41 +10914,41 @@
             return;
         }
         
-        // تصفية الطلبات الخاصة بهذا العميل
-        const normalizeId = (value) => (value === null || value === undefined) ? '' : String(value).trim();
-        const normalizeEmail = (value) => (value ? String(value).trim().toLowerCase() : '');
-        const normalizePhone = (phone) => {
-            if (!phone) return '';
-            return String(phone).replace(/[^0-9+]/g, '').replace(/^[^0-9+]*/, '');
-        };
-
-        const normalizedCustomerId = normalizeId(customerId);
-        const normalizedCustomerEmail = normalizeEmail(customer.email || customer.contactEmail || customer.user?.email);
-        const normalizedCustomerPhone = normalizePhone(customer.phone || customer.contactPhone || customer.user?.phone);
-
-        const customerOrders = state.orders?.filter(order => {
-            if (!order) return false;
-
-            if (normalizedCustomerId) {
-                if (normalizeId(order.userId) === normalizedCustomerId) return true;
-                if (Array.isArray(order.userIds) && order.userIds.some(id => normalizeId(id) === normalizedCustomerId)) return true;
-                if (normalizeId(order.user?.id || order.user?._id || order.raw?.userId) === normalizedCustomerId) return true;
-            }
-
-            if (normalizedCustomerEmail) {
-                if (Array.isArray(order.userEmails) && order.userEmails.includes(normalizedCustomerEmail)) return true;
-                if (normalizeEmail(order.customerEmail || order.raw?.userEmail || order.raw?.customerEmail) === normalizedCustomerEmail) return true;
-            }
-
-            if (normalizedCustomerPhone) {
-                if (Array.isArray(order.userPhones) && order.userPhones.map(normalizePhone).includes(normalizedCustomerPhone)) return true;
-                if (normalizePhone(order.customerPhone || order.raw?.userPhone || order.raw?.customerPhone) === normalizedCustomerPhone) return true;
-            }
-
-            return doesOrderBelongToCustomer(order, customer);
-        }) || [];
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('👤 عرض طلبات العميل');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('معرف العميل (User ID):', customerId);
+        console.log('اسم العميل (Name):', customer.name);
+        console.log('الحساب (Account/Username):', customer.username || customer.account || customer.user?.username || 'غير محدد');
+        console.log('');
+        console.log('✅ معايير المقارنة المستخدمة:');
+        console.log('  1️⃣ معرف العميل (User ID) - الأولوية الأولى');
+        console.log('  2️⃣ اسم المستخدم (Name) - الأولوية الثانية');
+        console.log('  3️⃣ الحساب (Account/Username) - الأولوية الثالثة');
+        console.log('');
+        console.log('❌ معايير غير مستخدمة:');
+        console.log('  ⛔ البريد الإلكتروني (Email)');
+        console.log('  ⛔ رقم الهاتف (Phone)');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         
-        console.log('📦 Customer orders:', customerOrders);
+        // تصفية الطلبات الخاصة بهذا العميل فقط
+        // استخدام دالة doesOrderBelongToCustomer للتأكد من أن الطلب ينتمي إلى هذا العميل تحديداً
+        const customerOrders = (state.orders || []).filter(order => {
+            const belongs = doesOrderBelongToCustomer(order, customer);
+            if (belongs) {
+                console.log(`✅ الطلب ${order.id} ينتمي إلى ${customer.name}`);
+            }
+            return belongs;
+        });
+        
+        
+        console.log(`📦 إجمالي طلبات العميل ${customer.name}: ${customerOrders.length} من ${state.orders?.length || 0} طلب`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        // التحقق من أن جميع الطلبات تنتمي لهذا العميل فقط
+        if (customerOrders.length === 0) {
+            showToast('info', 'معلومة', `لا توجد طلبات مسجلة للعميل ${customer.name}`);
+        }
         
         // إنشاء النافذة المنبثقة
         const modal = document.createElement('div');
@@ -10905,6 +10968,9 @@
             transition: opacity 0.3s ease;
         `;
         
+        // حساب إجمالي المبيعات للعميل
+        const totalOrderValue = customerOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        
         const ordersHTML = customerOrders.length > 0
             ? `
                 <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
@@ -10918,17 +10984,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${customerOrders.map(order => `
-                            <tr style="color: var(--text-main);">
+                        ${customerOrders.map((order, index) => `
+                            <tr style="color: var(--text-main); ${index % 2 === 0 ? 'background: var(--bg-light);' : ''}">
                                 <td style="padding: 10px; border: 1px solid var(--border);">${order.id}</td>
-                                <td style="padding: 10px; border: 1px solid var(--border);">${order.date}</td>
-                                <td style="padding: 10px; border: 1px solid var(--border);"><strong>${formatCurrency(order.total)}</strong></td>
+                                <td style="padding: 10px; border: 1px solid var(--border);">${order.date || 'غير محدد'}</td>
+                                <td style="padding: 10px; border: 1px solid var(--border);"><strong>${formatCurrency(order.total || 0)}</strong></td>
                                 <td style="padding: 10px; border: 1px solid var(--border);">${getStatusBadge(order.status)}</td>
                                 <td style="padding: 10px; border: 1px solid var(--border);">
-                                    <button class="action-btn" onclick="viewOrderDetails('${order.id}')" title="عرض التفاصيل">
+                                    <button class="action-btn view-order-details" data-order-id="${order.id}" title="عرض التفاصيل">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn" onclick="printOrder('${order.id}')" title="طباعة">
+                                    <button class="action-btn print-order" data-order-id="${order.id}" title="طباعة">
                                         <i class="fas fa-print"></i>
                                     </button>
                                 </td>
@@ -10937,7 +11003,7 @@
                     </tbody>
                 </table>
             `
-            : '<p style="text-align: center; color: var(--text-muted); padding: 40px;">لا توجد طلبات لهذا العميل</p>';
+            : '<p style="text-align: center; color: var(--text-muted); padding: 40px;"><i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 20px;"></i>لا توجد طلبات لهذا العميل</p>';
         
         modal.innerHTML = `
             <div class="order-details-content" style="
@@ -10946,7 +11012,7 @@
                 padding: 30px;
                 border-radius: 12px;
                 width: 90%;
-                max-width: 900px;
+                max-width: 1000px;
                 max-height: 90vh;
                 overflow-y: auto;
                 position: relative;
@@ -10968,16 +11034,27 @@
                     align-items: center;
                     justify-content: center;
                     transition: all 0.3s ease;
+                    z-index: 10;
                 ">×</button>
                 
                 <h2 style="text-align: center; margin-bottom: 25px; color: var(--text-main);">
                     <i class="fas fa-shopping-cart" style="margin-left: 10px; color: #e74c3c;"></i>
-                    طلبات العميل: ${customer.name}
+                    طلبات العميل: ${escapeHtml(customer.name || 'غير محدد')}
                 </h2>
                 
-                <div style="background: var(--bg-light); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: var(--text-main);">
-                    <p style="margin: 5px 0;"><strong>إجمالي الطلبات:</strong> ${customerOrders.length}</p>
-                    <p style="margin: 5px 0;"><strong>البريد الإلكتروني:</strong> ${customer.email}</p>
+                <div style="background: var(--bg-light); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: var(--text-main); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">إجمالي الطلبات</p>
+                        <p style="margin: 5px 0; font-size: 1.5rem; font-weight: bold; color: #e74c3c;">${customerOrders.length}</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">إجمالي المبيعات</p>
+                        <p style="margin: 5px 0; font-size: 1.5rem; font-weight: bold; color: #27ae60;">${formatCurrency(totalOrderValue)}</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">البريد الإلكتروني</p>
+                        <p style="margin: 5px 0; font-size: 0.95rem; word-break: break-all;">${escapeHtml(customer.email || 'غير محدد')}</p>
+                    </div>
                 </div>
                 
                 ${ordersHTML}
@@ -11034,6 +11111,22 @@
             }
         };
         document.addEventListener('keydown', handleKeyDown);
+        
+        // إضافة معالجات للأزرار
+        modal.querySelectorAll('.view-order-details').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const orderId = e.currentTarget.dataset.orderId;
+                fadeOutAndRemove();
+                viewOrderDetails(orderId);
+            });
+        });
+        
+        modal.querySelectorAll('.print-order').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const orderId = e.currentTarget.dataset.orderId;
+                printOrder(orderId);
+            });
+        });
     }
 
     // ========================================
@@ -11227,4 +11320,49 @@
         }
 
         console.log('Dashboard initialized');
+
+        // =========================================
+        // دالة تشخيصية: مساعدة المسؤول على فهم سبب تعدد الطلبات
+        // =========================================
+        window.debugCustomerOrders = function(customerIndex = 0) {
+            const customers = state.customers || [];
+            if (customerIndex >= customers.length) {
+                console.error('❌ العميل غير موجود');
+                return;
+            }
+
+            const customer = customers[customerIndex];
+            console.log('\n\n╔════════════════════════════════════════════════════════════════╗');
+            console.log('║          تشخيص طلبات العميل - DEBUG REPORT                  ║');
+            console.log('╚════════════════════════════════════════════════════════════════╝\n');
+            
+            console.log('👤 معلومات العميل:');
+            console.log('  • الاسم:', customer.name);
+            console.log('  • البريد:', customer.email);
+            console.log('  • الهاتف:', customer.phone);
+            console.log('  • _id:', customer._id);
+            console.log('  • id:', customer.id);
+            console.log('  • userId:', customer.userId);
+            console.log('');
+
+            const orders = state.orders || [];
+            console.log(`📦 إجمالي الطلبات في النظام: ${orders.length}\n`);
+
+            orders.forEach((order, idx) => {
+                const belongs = doesOrderBelongToCustomer(order, customer);
+                const status = belongs ? '✅' : '❌';
+                
+                console.log(`${status} الطلب #${idx + 1}:`);
+                console.log(`  • معرف الطلب: ${order.id}`);
+                console.log(`  • userIds: ${order.userIds?.join(', ') || 'غير محدد'}`);
+                console.log(`  • userId: ${order.userId || 'غير محدد'}`);
+                console.log(`  • userEmails: ${order.userEmails?.join(', ') || 'غير محدد'}`);
+                console.log(`  • userPhones: ${order.userPhones?.join(', ') || 'غير محدد'}`);
+                console.log('');
+            });
+        };
+
+        // مثال على الاستخدام:
+        // debugCustomerOrders(0)  // لتشخيص العميل الأول
+        // debugCustomerOrders(1)  // لتشخيص العميل الثاني
     }); 
