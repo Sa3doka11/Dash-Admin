@@ -8793,6 +8793,10 @@
         renderDashboard();
         setupProductFilters();
 
+        // جلب الفئات مباشرة عند التهيئة (لـ product form)
+        fetchCategories();
+        fetchBrands();
+
         // ربط حدث إرسال نموذج الفئة
         const categoryForm = document.getElementById('categoryForm');
         if (categoryForm) {
