@@ -14,6 +14,191 @@
     --dashboard-image-height: 220px;
 }
 
+/* ===== Loading Screen Styles ===== */
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loader-container {
+    text-align: center;
+    padding: 40px;
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loader-logo {
+    margin-bottom: 20px;
+}
+
+.loader-logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+.loader-title {
+    font-size: 32px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin: 0 0 5px 0;
+    font-family: 'Cairo', sans-serif;
+}
+
+.loader-subtitle {
+    font-size: 14px;
+    color: #7a7a7a;
+    margin: 0 0 30px 0;
+    font-family: 'Cairo', sans-serif;
+}
+
+.loader-animation {
+    margin: 30px 0;
+}
+
+.spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid #e74c3c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loader-progress-container {
+    margin: 30px 0;
+    width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.loader-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.loader-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.loader-progress-text {
+    font-size: 12px;
+    color: #7a7a7a;
+    margin: 0;
+    font-family: 'Cairo', sans-serif;
+}
+
+.loader-steps {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.loader-step {
+    font-size: 13px;
+    color: #7a7a7a;
+    margin: 8px 0;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.3s ease;
+    min-height: 20px;
+}
+
+.loader-step.active {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.loader-step.completed {
+    color: #27ae60;
+}
+
+.loader-step.completed::before {
+    content: '✓ ';
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.loader-steps {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.loader-step {
+    font-size: 13px;
+    color: #7a7a7a;
+    margin: 8px 0;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.3s ease;
+    min-height: 20px;
+}
+
+.loader-step.active {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.loader-step.completed {
+    color: #27ae60;
+}
+
+.loader-step.completed::before {
+    content: '✓ ';
+    color: #27ae60;
+    font-weight: bold;
+}
+
 .sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -45,6 +230,29 @@ body.dark-mode {
     --bg-light: #202124;
     --bg-base: #292a2d;
     --overlay: rgba(0, 0, 0, 0.8);
+}
+
+/* Dark Mode Loader */
+body.dark-mode .loading-screen {
+    background: linear-gradient(135deg, #292a2d 0%, #202124 100%);
+}
+
+body.dark-mode .loader-title {
+    color: #e74c3c;
+}
+
+body.dark-mode .loader-subtitle,
+body.dark-mode .loader-progress-text,
+body.dark-mode .loader-step {
+    color: #9aa0a6;
+}
+
+body.dark-mode .loader-progress-bar {
+    background: #3c4043;
+}
+
+body.dark-mode .logo-text {
+    color: #ffffff;
 }
 
 /* ===== Reset & Base Styles ===== */
@@ -107,6 +315,11 @@ i.fa-brands {
     font-size: clamp(20px, 2.4vw, 30px);
     font-weight: 700;
     color: var(--primary);
+}
+
+.logo-text {
+    color: #000000;
+    font-family: 'Cairo', sans-serif;
 }
 
 .logo-section i {

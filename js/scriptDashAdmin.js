@@ -12,6 +12,87 @@
          */
 
         // ========================================
+        // ===== 0. دوال التحميل (Loader) =====
+        // ========================================
+
+        class DashboardLoader {
+            constructor() {
+                this.loaderScreen = document.getElementById('loadingScreen');
+                this.progressFill = document.getElementById('loaderProgressFill');
+                this.progressText = document.getElementById('loaderProgressText');
+                this.currentProgress = 0;
+            }
+
+            /**
+             * تحديث شريط التقدم
+             */
+            setProgress(percentage) {
+                this.currentProgress = Math.min(percentage, 100);
+                if (this.progressFill) {
+                    this.progressFill.style.width = this.currentProgress + '%';
+                }
+                if (this.progressText) {
+                    this.progressText.textContent = `جاري التحميل... ${this.currentProgress}%`;
+                }
+            }
+
+            /**
+             * تحديث خطوة التحميل
+             */
+            updateStep(stepNumber, status = 'active') {
+                const stepElement = document.getElementById(`step-${stepNumber}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active', 'completed');
+                    if (status === 'active') {
+                        stepElement.classList.add('active');
+                        stepElement.textContent = `⏳ جاري تحميل البيانات...`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
+                    } else if (status === 'completed') {
+                        stepElement.classList.add('completed');
+                        stepElement.textContent = `✓ تم ${this.getStepText(stepNumber)}`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
+                    }
+                }
+            }
+
+            getStepText(stepNumber) {
+                const steps = {
+                    1: 'تحميل البيانات',
+                    2: 'تحضير الواجهة',
+                    3: 'تحميل الرسوم البيانية'
+                };
+                return steps[stepNumber] || 'تحميل النظام';
+            }
+
+            /**
+             * إخفاء شاشة التحميل
+             */
+            async hide() {
+                if (this.loaderScreen) {
+                    this.setProgress(100);
+                    // انتظر قليلاً قبل الإخفاء
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    this.loaderScreen.classList.add('hidden');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    this.loaderScreen.style.display = 'none';
+                }
+            }
+
+            /**
+             * إظهار الـ Loader
+             */
+            show() {
+                if (this.loaderScreen) {
+                    this.loaderScreen.style.display = 'flex';
+                    this.loaderScreen.classList.remove('hidden');
+                    this.currentProgress = 0;
+                    this.setProgress(0);
+                }
+            }
+        }
+
+        // إنشاء instance من الـ Loader
+        const dashboardLoader = new DashboardLoader();
+
+        // ========================================
         // ===== 1. إعدادات API =====
         // ========================================
 
@@ -2169,16 +2250,11 @@
                         }
                         
                         // إغلاق المودال بعد الحفظ
-                        const modal = document.getElementById('addProductModal');
-                        if (modal) {
-                            const modalInstance = bootstrap.Modal.getInstance(modal);
-                            if (modalInstance) {
-                                modalInstance.hide();
-                            }
-                        }
+                        closeModal('addProductModal');
                         
                         // تحديث قائمة المنتجات
                         await fetchProducts();
+                        renderProducts();
                         
                     } catch (error) {
                         console.error('❌ Error saving product:', error);
@@ -11141,42 +11217,58 @@
      */
     document.addEventListener('DOMContentLoaded', async () => {
         console.log('🚀 Initializing dashboard...');
+        
+        // إظهار شاشة التحميل
+        dashboardLoader.show();
+        
+        try {
+            // الخطوة 1: تهيئة الواجهة الأساسية
+            dashboardLoader.updateStep(1, 'active');
+            dashboardLoader.setProgress(10);
+            
+            initDescriptionInputs();
+            refreshDescriptionCounters();
 
-        initDescriptionInputs();
-        refreshDescriptionCounters();
+            // إعداد فلاتر الطلبات
+            setupOrderFilters();
+            setupModalCancels();
+            
+            dashboardLoader.setProgress(25);
 
-        // إعداد فلاتر الطلبات
-        setupOrderFilters();
-        setupModalCancels();
+            // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
+            const categorySelect = document.getElementById('productCategory');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', (e) => {
+                    const categoryId = e.target.value;
+                    console.log('🔽 Selected category changed to:', categoryId);
+                    populateSubcategoryOptions(categoryId);
+                });
+            }
 
-        // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
-        const categorySelect = document.getElementById('productCategory');
-        if (categorySelect) {
-            categorySelect.addEventListener('change', (e) => {
-                const categoryId = e.target.value;
-                console.log('🔽 Selected category changed to:', categoryId);
-                populateSubcategoryOptions(categoryId);
-            });
-        }
+            // جلب البيانات الأولية من API
+            dashboardLoader.updateStep(2, 'active');
+            dashboardLoader.setProgress(40);
+            
+            await fetchOrders();
+            await fetchCustomers();
+            
+            dashboardLoader.setProgress(80);
 
-        // جلب البيانات الأولية من API
-        fetchOrders();
+            // إعداد زر التحديث
+            const refreshBtn = document.getElementById('refreshOrdersBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', fetchOrders);
+            }
 
-        // إعداد زر التحديث
-        const refreshBtn = document.getElementById('refreshOrdersBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', fetchOrders);
-        }
-
-        // إعداد حقل البحث عن العملاء
-        const customerSearchInput = document.getElementById('customerSearchInput');
-        if (customerSearchInput) {
-            customerSearchInput.addEventListener('input', (e) => {
-                if (!state.filters) state.filters = {};
-                state.filters.customerSearch = e.target.value;
-                renderCustomers();
-            });
-        }
+            // إعداد حقل البحث عن العملاء
+            const customerSearchInput = document.getElementById('customerSearchInput');
+            if (customerSearchInput) {
+                customerSearchInput.addEventListener('input', (e) => {
+                    if (!state.filters) state.filters = {};
+                    state.filters.customerSearch = e.target.value;
+                    renderCustomers();
+                });
+            }
 
         // إعداد فلاتر التحليلات ونطاق التاريخ
         const analyticsTimeFilter = document.getElementById('analyticsTimeFilter');
@@ -11365,4 +11457,40 @@
         // مثال على الاستخدام:
         // debugCustomerOrders(0)  // لتشخيص العميل الأول
         // debugCustomerOrders(1)  // لتشخيص العميل الثاني
+        
+        // الخطوة 2: تحديث الخطوة الثانية
+        dashboardLoader.updateStep(1, 'completed');
+        dashboardLoader.updateStep(2, 'active');
+        dashboardLoader.setProgress(60);
+        
+            // جلب البيانات
+            await fetchOrders();
+            await fetchCustomers();
+            
+            dashboardLoader.setProgress(85);
+            
+            // الخطوة 3: تحميل الرسوم البيانية
+            dashboardLoader.updateStep(2, 'completed');
+            dashboardLoader.updateStep(3, 'active');
+            
+            // تأكد من تحميل الرسوم البيانية
+            setTimeout(() => {
+                dashboardLoader.updateStep(3, 'completed');
+                dashboardLoader.setProgress(100);
+                
+                // إخفاء الـ Loader
+                setTimeout(() => {
+                    dashboardLoader.hide();
+                }, 500);
+            }, 800);
+            
+        } catch (error) {
+            console.error('❌ خطأ في تحميل Dashboard:', error);
+            dashboardLoader.setProgress(100);
+            setTimeout(() => {
+                dashboardLoader.hide();
+                showToast('error', 'خطأ', 'تعذر تحميل لوحة التحكم. حاول مرة أخرى.');
+            }, 1000);
+        }
+        
     }); 

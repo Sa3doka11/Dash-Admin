@@ -9,6 +9,34 @@
     <link rel="stylesheet" href="css/dashAdmin.css">
 </head>
 <body>
+    <!-- Loading Screen / Loader -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader-container">
+            <div class="loader-logo">
+                <img src="img/Logo.webp" alt="Action Sports Logo" class="loader-logo-img">
+            </div>
+            <h1 class="loader-title">Action Sports</h1>
+            <p class="loader-subtitle">لوحة التحكم الإدارية</p>
+            
+            <div class="loader-animation">
+                <div class="spinner"></div>
+            </div>
+            
+            <div class="loader-progress-container">
+                <div class="loader-progress-bar">
+                    <div class="loader-progress-fill" id="loaderProgressFill"></div>
+                </div>
+                <p class="loader-progress-text" id="loaderProgressText">جاري التحميل... 0%</p>
+            </div>
+            
+            <div class="loader-steps">
+                <p class="loader-step" id="step-1">⏳ جاري تحميل البيانات...</p>
+                <p class="loader-step" id="step-2">⏳ جاري تحضير الواجهة...</p>
+                <p class="loader-step" id="step-3">⏳ جاري تحميل الرسوم البيانية...</p>
+            </div>
+        </div>
+    </div>
+    
     <!-- Header -->
     <header class="header">
         <div class="header-content">
