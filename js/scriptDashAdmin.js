@@ -4277,8 +4277,7 @@
         async function fetchSubcategories(categoryId, options = {}) {
             const { force = false, skipRender = false } = options || {};
 
-            if (!categoryId) {
-                console.warn('⚠️ fetchSubcategories called without categoryId');
+            if (!categoryId || categoryId === 'all') {
                 return [];
             }
 
