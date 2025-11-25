@@ -293,7 +293,7 @@
                 || rawAddress.state
                 || '';
 
-            const region = rawAddress.region
+            const baseRegion = rawAddress.region
                 || rawAddress.state
                 || rawAddress.province
                 || rawAddress.area
@@ -323,6 +323,53 @@
                 || rawAddress.recipient
                 || '';
 
+            const zoneInfo = typeof resolveShippingZone === 'function'
+                ? resolveShippingZone({}, rawAddress)
+                : { zoneName: '', shippingRate: null, zoneId: '' };
+
+            const zoneIdCandidate = rawAddress.zoneId
+                || rawAddress.shippingZoneId
+                || (typeof rawAddress.shippingZone === 'string' ? rawAddress.shippingZone : '')
+                || (typeof rawAddress.zone === 'string' ? rawAddress.zone : '')
+                || zoneInfo.zoneId;
+
+            let zoneName = zoneInfo.zoneName
+                || rawAddress.zoneName
+                || rawAddress.shippingZoneName
+                || rawAddress.shippingZone?.name
+                || rawAddress.zone?.name
+                || rawAddress.areaName
+                || '';
+
+            if (!zoneName && zoneIdCandidate && typeof getShippingZoneById === 'function') {
+                const matchedZone = getShippingZoneById(zoneIdCandidate);
+                if (matchedZone?.zoneName) {
+                    zoneName = matchedZone.zoneName;
+                }
+            }
+
+            const rateCandidate = zoneInfo.shippingRate
+                ?? rawAddress.shippingRate
+                ?? rawAddress.rate
+                ?? rawAddress.price
+                ?? rawAddress.cost
+                ?? rawAddress.shippingCost
+                ?? rawAddress.deliveryFee
+                ?? null;
+
+            const numericRate = Number(rateCandidate);
+            const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
+
+            const zoneId = zoneIdCandidate
+                || rawAddress.shippingZone?._id
+                || rawAddress.shippingZone?.id
+                || rawAddress.zone?._id
+                || rawAddress.zone?.id
+                || zoneInfo.zoneId
+                || '';
+
+            const region = zoneName || baseRegion;
+
             return {
                 id,
                 type,
@@ -334,6 +381,9 @@
                 country,
                 phone,
                 name,
+                zoneName,
+                shippingRate,
+                zoneId,
                 raw: rawAddress
             };
         }
@@ -349,6 +399,24 @@
                     return;
                 }
                 if (!normalized) return;
+
+                const zoneRef = normalized.zoneId || normalized.raw?.zoneId || normalized.raw?.shippingZoneId;
+                if (!normalized.zoneName && zoneRef && typeof getShippingZoneById === 'function') {
+                    const zone = getShippingZoneById(zoneRef);
+                    if (zone?.zoneName) {
+                        normalized.zoneName = zone.zoneName;
+                        if (!normalized.region || normalized.region === normalized.zoneId || normalized.region === zoneRef) {
+                            normalized.region = zone.zoneName;
+                        }
+                        if (!normalized.zoneId) {
+                            normalized.zoneId = zone.id;
+                        }
+                    }
+                }
+
+                if (normalized.region && normalized.zoneId && normalized.region === normalized.zoneId) {
+                    normalized.region = normalized.zoneName || '';
+                }
 
                 const signature = JSON.stringify([
                     normalized.details,
@@ -636,11 +704,9 @@
                     const label = escapeHtml(address.label || getAddressTypeLabel(address.type));
                     const contactName = address.name ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>` : '';
                     const details = address.details ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>` : '';
-                    const cityLine = address.city || address.region
-                        ? `<p style="margin: 6px 0;"><strong>الموقع:</strong> ${escapeHtml([address.city, address.region].filter(Boolean).join(' - '))}</p>`
-                        : '';
                     const postalLine = address.postalCode ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>` : '';
                     const countryLine = address.country ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>` : '';
+                    const zoneLine = address.zoneName ? `<p style="margin: 6px 0;"><strong>منطقة الشحن:</strong> ${escapeHtml(address.zoneName)}</p>` : '';
                     const phoneLine = address.phone
                         ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
                         : '';
@@ -653,9 +719,9 @@
                             </h4>
                             ${contactName}
                             ${details}
-                            ${cityLine}
                             ${postalLine}
                             ${countryLine}
+                            ${zoneLine}
                             ${phoneLine}
                         </div>
                     `;
@@ -1788,7 +1854,7 @@
                 auditSearch: '',
                 auditAction: 'all',
                 auditDate: '',
-                analyticsRange: '7d',
+                analyticsRange: '30',
                 analyticsDays: 30,
                 analyticsStart: null,
                 analyticsEnd: null,
@@ -2332,6 +2398,15 @@
                 ?? rawProduct.salePrice;
             const price = Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
 
+            const installationPriceSource = rawProduct.installationPrice
+                ?? rawProduct.installation_price
+                ?? rawProduct.installation?.price
+                ?? rawProduct.installation?.value
+                ?? null;
+            const installationPrice = Number.isFinite(Number(installationPriceSource)) && Number(installationPriceSource) >= 0
+                ? Number(installationPriceSource)
+                : null;
+
             const quantitySource = rawProduct.quantity
                 ?? rawProduct.stock
                 ?? rawProduct.availableQuantity
@@ -2404,6 +2479,7 @@
                 colors,
                 sold,
                 rating,
+                installationPrice,
                 raw: rawProduct
             };
         }
@@ -3081,11 +3157,15 @@
                 || 'منطقة غير معروفة';
 
             const rate = Number(rawZone.shippingRate ?? rawZone.rate ?? rawZone.price ?? rawZone.cost ?? 0) || 0;
+            const installationAvailable = Boolean(
+                rawZone.isInstallationAvailable ?? rawZone.installationAvailable ?? rawZone.hasInstallation
+            );
 
             return {
                 id,
                 zoneName,
                 shippingRate: rate,
+                installationAvailable,
                 raw: rawZone
             };
         }
@@ -3156,7 +3236,7 @@
             return request;
         }
 
-        async function updateShippingZoneRate(zoneId, shippingRate) {
+        async function updateShippingZoneRate(zoneId, shippingRate, isInstallationAvailable) {
             if (!zoneId) {
                 throw new Error('لم يتم تحديد منطقة الشحن');
             }
@@ -3166,13 +3246,18 @@
                 throw new Error('يرجى إدخال قيمة صالحة لتكلفة الشحن');
             }
 
+            const payload = { shippingRate: numericRate };
+            if (typeof isInstallationAvailable === 'boolean') {
+                payload.isInstallationAvailable = isInstallationAvailable;
+            }
+
             showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
 
             try {
                 const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ shippingRate: numericRate })
+                    body: JSON.stringify(payload)
                 }));
 
                 const payload = await response.json().catch(() => ({}));
@@ -3299,9 +3384,11 @@
             const select = form.querySelector('#shippingZoneSelect');
             const rateInput = form.querySelector('#shippingZoneRate');
             const submitButton = form.querySelector('#shippingSettingsSubmit');
+            const installationCheckbox = form.querySelector('#shippingZoneInstallation');
 
             const zoneId = select?.value;
             const rateValue = rateInput?.value;
+            const installationValue = installationCheckbox?.checked ?? null;
 
             if (!zoneId) {
                 showToast('error', 'إعدادات الشحن', 'يرجى اختيار المنطقة أولاً');
@@ -3322,7 +3409,7 @@
             }
 
             try {
-                await updateShippingZoneRate(zoneId, numericRate);
+                await updateShippingZoneRate(zoneId, numericRate, installationValue);
             } catch (error) {
                 console.error('❌ Shipping settings submit failed:', error);
             } finally {
@@ -3495,6 +3582,7 @@
             const title = getFormValue(formData, 'title', '').trim() || name;
             const description = getFormValue(formData, 'description', '').trim();
             const priceValue = getFormValue(formData, 'price', '0');
+            const installationPriceValue = getFormValue(formData, 'installationPrice', '').trim();
             const quantityValue = getFormValue(formData, 'quantity', '0');
             const sku = getFormValue(formData, 'sku', '').trim();
             const category = getFormValue(formData, 'category', '').trim();
@@ -3506,6 +3594,15 @@
             const price = parseFloat(priceValue);
             if (Number.isNaN(price) || price < 0) {
                 throw new Error('يجب إدخال سعر صحيح');
+            }
+
+            let installationPrice = null;
+            if (installationPriceValue) {
+                const parsedInstallationPrice = parseFloat(installationPriceValue);
+                if (Number.isNaN(parsedInstallationPrice) || parsedInstallationPrice < 0) {
+                    throw new Error('يجب إدخال سعر تركيب صحيح (0 أو أكبر)');
+                }
+                installationPrice = parsedInstallationPrice;
             }
 
             const quantity = parseInt(quantityValue, 10);
@@ -3528,6 +3625,10 @@
                 brand,
                 specs,
             };
+
+            if (installationPrice !== null) {
+                payload.installationPrice = String(installationPrice);
+            }
 
             if (sku) {
                 payload.sku = sku;
@@ -3703,6 +3804,15 @@
                 `
                 : '';
 
+            const installationMarkup = Number.isFinite(product.installationPrice)
+                ? `
+                    <div class="product-details-card">
+                        <span class="product-details-label">سعر التركيب</span>
+                        <span class="product-details-value price">${formatCurrency(product.installationPrice)}</span>
+                    </div>
+                `
+                : '';
+
             const skuMarkup = product.sku
                 ? `
                     <div class="product-details-card">
@@ -3757,6 +3867,7 @@
                                     <span class="product-details-value price">${formatCurrency(product.price)}</span>
                                 </div>
                                 ${stockMarkup}
+                                ${installationMarkup}
                                 ${skuMarkup}
                             </div>
                             <div class="product-details-meta">
@@ -4984,6 +5095,7 @@
                     updateDescriptionCounter(descriptionField);
                 }
                 setFieldValue(form, 'price', product.price);
+                setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
                 setFieldValue(form, 'quantity', product.stock);
                 setFieldValue(form, 'sku', product.sku || '');
                 setFieldValue(form, 'status', product.status || 'draft');
@@ -5456,7 +5568,8 @@
                     }];
 
                 const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.cost ?? 0) || 0;
+                const shippingInfo = order.shipping || normalizeOrderShipping(order.raw?.shippingAddress || order.raw?.shipping || null, order.raw);
+                const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? shippingInfo?.shippingRate ?? 0) || 0;
                 const discountValue = Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
                 const totalValue = Number(order.total);
                 const resolvedTotal = Number.isFinite(totalValue) ? totalValue : (subtotal + shippingCost - discountValue);
@@ -5467,7 +5580,7 @@
                         email: order.customerEmail || order.user?.email || '-',
                         phone: order.customerPhone || order.user?.phone || '-'
                     },
-                    shipping: order.shipping || order.raw?.shippingAddress || null,
+                    shipping: shippingInfo,
                     paymentMethod: order.payment,
                     date: order.date,
                     items,
@@ -5653,111 +5766,6 @@
         }
 
         // ===== Print & Export Functions =====
-        function buildPrintItemsRows(items = []) {
-            if (!items.length) {
-                return '<tr><td colspan="4">لا توجد منتجات مضافة</td></tr>';
-            }
-
-            return items.map(item => {
-                const quantity = item.quantity ?? 1;
-                const price = item.price ?? 0;
-                const total = quantity * price;
-                return `
-                    <tr>
-                        <td>${item.name}</td>
-                        <td>${quantity}</td>
-                        <td>${formatCurrency(price)}</td>
-                        <td>${formatCurrency(total)}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function printOrder(orderId) {
-            const normalized = normalizeOrderId(orderId);
-            const details = getOrderDetails(normalized);
-            const order = getOrderById(normalized);
-
-            if (!details) {
-                showToast('error', 'طباعة الفاتورة', 'تعذر العثور على بيانات الطلب للطباعة');
-                return;
-            }
-
-            const win = window.open('', '_blank', 'width=900,height=700');
-            if (!win) {
-                showToast('error', 'طباعة الفاتورة', 'يبدو أن النوافذ المنبثقة محظورة');
-                return;
-            }
-
-            const summary = details.summary || {
-                subtotal: order?.total || 0,
-                shipping: 0,
-                discount: 0,
-                total: order?.total || 0
-            };
-
-            win.document.write(`
-                <!doctype html>
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="utf-8" />
-                    <title>فاتورة طلب ${normalized}</title>
-                    <style>
-                        body { font-family: 'Cairo', sans-serif; padding: 24px; color: #2d3436; }
-                        h1 { margin-bottom: 8px; }
-                        .meta { margin-bottom: 20px; }
-                        .meta span { display: inline-block; min-width: 140px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 18px; }
-                        th, td { border: 1px solid #dfe6e9; padding: 10px 12px; text-align: right; }
-                        th { background: #fafafa; }
-                        .summary { margin-top: 24px; width: 320px; }
-                        .summary div { display: flex; justify-content: space-between; padding: 6px 0; }
-                        .summary div.total { font-weight: 700; border-top: 1px solid #dfe6e9; margin-top: 6px; padding-top: 12px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>فاتورة طلب ${normalized}</h1>
-                    <div class="meta">
-                        <p><span>العميل:</span> ${details.customer?.name || order?.customer || '-'}</p>
-                        <p><span>البريد:</span> ${details.customer?.email || '-'}</p>
-                        <p><span>الهاتف:</span> ${details.customer?.phone || '-'}</p>
-                        <p><span>تاريخ الطلب:</span> ${details.date || order?.date || '-'}</p>
-                        <p><span>طريقة الدفع:</span> ${details.paymentMethod || order?.payment || '-'}</p>
-                    </div>
-                    <h2>قائمة المنتجات</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>المنتج</th>
-                                <th>الكمية</th>
-                                <th>سعر الوحدة</th>
-                                <th>الإجمالي</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${buildPrintItemsRows(details.items)}
-                        </tbody>
-                    </table>
-                    <div class="summary">
-                        <div><span>المجموع الفرعي:</span><span>${formatCurrency(summary.subtotal || 0)}</span></div>
-                        <div><span>الشحن:</span><span>${formatCurrency(summary.shipping || 0)}</span></div>
-                        <div><span>الخصم:</span><span>${formatCurrency(summary.discount || 0)}</span></div>
-                        <div class="total"><span>الإجمالي:</span><span>${formatCurrency(summary.total || 0)}</span></div>
-                    </div>
-                </body>
-                </html>
-            `);
-
-            win.document.close();
-            win.focus();
-            setTimeout(() => {
-                win.print();
-                win.close();
-            }, 100);
-
-            showToast('success', 'طباعة الفاتورة', `تم إرسال طلب ${normalized} للطباعة`);
-        }
-
         function buildReportTemplate(title, sections = [], options = {}) {
             const generatedAt = options.generatedAt || new Date().toLocaleString('ar-EG');
             const {
@@ -5896,8 +5904,9 @@
                 `
                 : '<p class="empty-state">لا تتوفر بيانات لطرق الدفع.</p>';
 
-            const ordersRows = orders.map(order => `
+            const ordersRows = orders.map((order, index) => `
                 <tr>
+                    <td>${index + 1}</td>
                     <td>${order.id}</td>
                     <td>${order.customer}</td>
                     <td>${formatCurrency(order.total)}</td>
@@ -5912,6 +5921,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>رقم الطلب</th>
                             <th>العميل</th>
                             <th>قيمة الطلب</th>
@@ -6414,7 +6424,7 @@
             if (todaysOrders.length === 0) {
                 body.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 20px; color: #95a5a6;">
+                        <td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">
                             لا توجد طلبات مسجلة اليوم
                         </td>
                     </tr>
@@ -6446,12 +6456,14 @@
                     : (order.date || '-');
 
                 const customerName = order.customer || order.user?.name || '-';
+                const statusBadge = getStatusBadge(order.status);
 
                 return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
                     <td>${customerName}</td>
+                    <td>${statusBadge}</td>
                     <td>${formatCurrency(order.total)}</td>
                     <td>${displayDate}</td>
                     <td>
@@ -6660,6 +6672,7 @@
         const rateInput = document.getElementById('shippingZoneRate');
         const submitButton = document.getElementById('shippingSettingsSubmit');
         const deleteButton = document.getElementById('shippingZoneDeleteBtn');
+        const installationCheckbox = document.getElementById('shippingZoneInstallation');
 
         if (!form || !select || !rateInput || !submitButton || !deleteButton) {
             return;
@@ -6677,6 +6690,10 @@
             if (document.activeElement !== rateInput) {
                 rateInput.value = '';
             }
+            if (installationCheckbox) {
+                installationCheckbox.checked = false;
+                installationCheckbox.disabled = true;
+            }
             return;
         }
 
@@ -6685,6 +6702,10 @@
             if (document.activeElement !== rateInput) {
                 rateInput.value = '';
             }
+            if (installationCheckbox) {
+                installationCheckbox.checked = false;
+                installationCheckbox.disabled = true;
+            }
             return;
         }
 
@@ -6692,6 +6713,10 @@
             select.innerHTML = '<option value="">لا توجد مناطق شحن متاحة</option>';
             if (document.activeElement !== rateInput) {
                 rateInput.value = '';
+            }
+            if (installationCheckbox) {
+                installationCheckbox.checked = false;
+                installationCheckbox.disabled = true;
             }
             return;
         }
@@ -6710,8 +6735,17 @@
         select.value = targetZoneId;
 
         const zone = getShippingZoneById(targetZoneId);
-        if (zone && document.activeElement !== rateInput) {
-            rateInput.value = zone.shippingRate;
+        if (zone) {
+            if (document.activeElement !== rateInput) {
+                rateInput.value = zone.shippingRate;
+            }
+            if (installationCheckbox) {
+                installationCheckbox.checked = Boolean(zone.installationAvailable);
+                installationCheckbox.disabled = false;
+            }
+        } else if (installationCheckbox) {
+            installationCheckbox.checked = false;
+            installationCheckbox.disabled = true;
         }
     }
 
@@ -6916,7 +6950,7 @@
     }
 
     function renderAnalyticsFilters() {
-        const select = document.getElementById('analyticsRangeFilter');
+        const select = document.getElementById('analyticsTimeFilter');
         if (!select) return;
 
         select.innerHTML = mockData.analyticsRangeOptions.map(option => `
@@ -8771,8 +8805,13 @@
                 state.selectedShippingZoneId = zoneId;
                 const zone = getShippingZoneById(zoneId);
                 const rateInput = document.getElementById('shippingZoneRate');
+                const installationCheckbox = document.getElementById('shippingZoneInstallation');
                 if (zone && rateInput && document.activeElement !== rateInput) {
                     rateInput.value = zone.shippingRate;
+                }
+                if (installationCheckbox) {
+                    installationCheckbox.checked = Boolean(zone?.installationAvailable);
+                    installationCheckbox.disabled = !zone;
                 }
             });
         }
@@ -8996,15 +9035,21 @@
         const userEmails = Array.from(identifiers.emails);
         const userPhones = Array.from(identifiers.phones);
         const primaryUserId = userIds.length ? userIds[0] : null;
-        
-        // استخراج السعر الإجمالي
-        const total = order.totalOrderPrice ?? order.totalAmount ?? order.total ?? order.amount ?? 0;
-        
+
         // استخراج عناصر الطلب وتحويلها للتنسيق المطلوب
         const items = extractOrderItems(order);
-        
+
+        const totalSource = order.totalOrderPrice
+            ?? order.totalAmount
+            ?? order.total
+            ?? order.amount
+            ?? order.summary?.total
+            ?? order.raw?.total
+            ?? 0;
+        const total = Number(totalSource);
+
         // تحويل cartItems إلى itemsDetails بالتنسيق الصحيح
-        const itemsDetails = Array.isArray(order.cartItems) 
+        const itemsDetails = Array.isArray(order.cartItems)
             ? order.cartItems.map(item => ({
                 name: item.productId?.name || item.name || 'منتج',
                 quantity: item.qty || item.quantity || 1,
@@ -9016,47 +9061,35 @@
                 }
             }))
             : [];
-        
-        // استخراج حالة الطلب
+
         const status = resolveOrderStatus(order);
-        
-        // طريقة الدفع
         const payment = order.paymentMethod || order.payment_method || order.payment || 'نقدي';
-        
-        // التاريخ
         const createdAtSource = order.createdAt || order.created_at || order.date || order.createdDate;
         const createdAtDate = parseDateValue(createdAtSource);
-        const dateValue = createdAtDate ? formatDateInputValue(createdAtDate) : '';
         const dateDisplay = createdAtDate ? formatDate(createdAtDate) : '-';
+        const dateValue = createdAtDate ? createdAtDate.toISOString() : '';
 
-        if (!id) {
-            console.warn('⚠️ Order without ID:', order);
-            return null;
-        }
+        const shippingSource = order.shippingAddress || order.shipping || order.deliveryAddress || order.raw?.shippingAddress || order.raw?.shipping;
+        const shipping = normalizeOrderShipping(shippingSource, order);
 
         return {
             id: String(id),
-            userId: primaryUserId ? String(primaryUserId) : null,
-            userIds,
-            userEmails,
-            userPhones,
-            user: {
-                _id: primaryUserId ? String(primaryUserId) : null,
-                name: customer.name || '',
-                email: customer.email || '',
-                phone: customer.phone || ''
-            },
             customer: customer.name || 'غير معروف',
             customerEmail: customer.email || '',
             customerPhone: customer.phone || '',
             total: Number(total) || 0,
             items: items.totalCount,
             itemsDetails: itemsDetails,
-            payment,
             status,
+            payment,
             date: dateDisplay,
             dateValue,
-            shipping: order.shippingAddress || null,
+            shipping,
+            userId: primaryUserId,
+            userIds,
+            userEmails,
+            userPhones,
+            primaryUserId,
             isPaid: order.isPaid || false,
             isDelivered: order.isDelivered || false,
             isCanceled: order.isCanceled || false,
@@ -9064,15 +9097,145 @@
         };
     }
 
-    function normalizePhoneNumber(phone) {
-        if (!phone) return '';
-        return String(phone).replace(/[^0-9+]/g, '').replace(/^[^0-9+]*/, '');
+    function resolveShippingText(value) {
+        if (value === null || value === undefined) return '';
+
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            const text = String(value).trim();
+            if (!text || text === '[object Object]') return '';
+            return text;
+        }
+
+        if (Array.isArray(value)) {
+            for (const entry of value) {
+                const resolved = resolveShippingText(entry);
+                if (resolved) return resolved;
+            }
+            return '';
+        }
+
+        if (typeof value === 'object') {
+            const candidates = [
+                value.zoneName, value.nameAr, value.name_ar, value['name-ar'], value.nameAR,
+                value.nameEn, value.name_en, value['name-en'], value.name,
+                value.label, value.title, value.displayName, value.display_name,
+                value.ar, value.arabic, value.en, value.english,
+                value.city, value.cityName, value.region, value.regionName, value.country,
+                value.details, value.address, value.addressLine1, value.addressLine2,
+                value.street, value.value
+            ];
+
+            for (const candidate of candidates) {
+                const resolved = resolveShippingText(candidate);
+                if (resolved) return resolved;
+            }
+        }
+
+        return '';
+    }
+
+    function resolveShippingZone(rawOrder = {}, shippingObj = {}) {
+        const directZone = shippingObj.shippingZone || shippingObj.zone || shippingObj.area || shippingObj.region || shippingObj.shipping;
+        const rawZone = rawOrder.shippingZone || rawOrder.zone || rawOrder.shipping_area;
+
+        const zoneCandidate = directZone || rawZone;
+        if (!zoneCandidate) {
+            return { zoneName: '', shippingRate: null, zoneId: '' };
+        }
+
+        const zoneName = resolveShippingText(zoneCandidate) || resolveShippingText(zoneCandidate?.name) || '';
+        const rateCandidate = zoneCandidate?.shippingRate
+            ?? zoneCandidate?.rate
+            ?? zoneCandidate?.price
+            ?? zoneCandidate?.cost
+            ?? shippingObj?.shippingRate
+            ?? shippingObj?.shippingCost
+            ?? rawOrder.shippingCost
+            ?? rawOrder.shippingFee
+            ?? rawOrder.deliveryFee
+            ?? rawOrder.deliveryCost
+            ?? null;
+
+        const numericRate = Number(rateCandidate);
+        const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
+
+        const zoneId = zoneCandidate?.id || zoneCandidate?._id || shippingObj?.zoneId || rawOrder.shippingZoneId || rawOrder.zoneId || '';
+
+        return {
+            zoneName,
+            shippingRate,
+            zoneId
+        };
+    }
+
+    function normalizeOrderShipping(shippingSource, rawOrder = {}) {
+        if (!shippingSource) return null;
+
+        if (Array.isArray(shippingSource)) {
+            const firstEntry = shippingSource.find(Boolean);
+            return firstEntry ? normalizeOrderShipping(firstEntry, rawOrder) : null;
+        }
+
+        if (typeof shippingSource === 'string' || typeof shippingSource === 'number') {
+            const details = resolveShippingText(shippingSource) || String(shippingSource).trim();
+            const zone = resolveShippingZone(rawOrder, {});
+            return {
+                details,
+                city: '',
+                region: '',
+                postalCode: '',
+                phone: '',
+                zoneName: zone.zoneName,
+                shippingRate: zone.shippingRate,
+                zoneId: zone.zoneId
+            };
+        }
+
+        if (typeof shippingSource !== 'object') {
+            return null;
+        }
+
+        const details = resolveShippingText([
+            shippingSource.details,
+            shippingSource.address,
+            shippingSource.addressLine1 && `${shippingSource.addressLine1} ${shippingSource.addressLine2 || ''}`.trim(),
+            shippingSource.street,
+            shippingSource.location,
+            shippingSource.description,
+            shippingSource.fullAddress,
+            shippingSource.notes
+        ]);
+
+        const city = resolveShippingText([shippingSource.city, shippingSource.cityName, shippingSource.cityAr, shippingSource.cityEn]);
+        const region = resolveShippingText([shippingSource.region, shippingSource.state, shippingSource.governorate, shippingSource.zone, shippingSource.area]);
+        const postalCode = resolveShippingText(shippingSource.postalCode || shippingSource.zip || shippingSource.zipCode);
+        const phone = resolveShippingText(shippingSource.phone || shippingSource.mobile || shippingSource.contactPhone);
+
+        const zone = resolveShippingZone(rawOrder, shippingSource);
+
+        return {
+            details,
+            city,
+            region,
+            postalCode,
+            phone,
+            zoneName: zone.zoneName,
+            shippingRate: zone.shippingRate,
+            zoneId: zone.zoneId
+        };
     }
 
     function extractOrderIdentifiers(order = {}) {
         const ids = new Set();
         const emails = new Set();
         const phones = new Set();
+
+        const normalizePhone = (phone) => {
+            if (!phone) return '';
+            return String(phone)
+                .replace(/[^0-9+]/g, '')
+                .replace(/^[^0-9+]*/, '');
+        };
 
         const pushId = (value) => {
             if (value === null || value === undefined) return;
@@ -9087,7 +9250,7 @@
         };
 
         const pushPhone = (value) => {
-            const normalized = normalizePhoneNumber(value);
+            const normalized = normalizePhone(value);
             if (normalized) phones.add(normalized);
         };
 
@@ -9111,14 +9274,12 @@
             }
         });
 
-        // إضافة بيانات من العناوين أو الحقول الأخرى
         if (order.shippingAddress) {
             pushEmail(order.shippingAddress.email);
             pushPhone(order.shippingAddress.phone);
             pushId(order.shippingAddress.userId || order.shippingAddress.customerId);
         }
 
-        // إضافة بيانات من الحقول الشائعة في الـ API
         pushEmail(order.userEmail || order.customerEmail);
         pushPhone(order.userPhone || order.customerPhone);
 
@@ -9165,13 +9326,20 @@
             }
         }
 
+        const normalizePhone = (phone) => {
+            if (!phone) return '';
+            return String(phone)
+                .replace(/[^0-9+]/g, '')
+                .replace(/^[^0-9+]*/, '');
+        };
+
         const customerPhones = new Set(
             [customer.phone, customer.contactPhone, customer.user?.phone]
                 .filter(Boolean)
-                .map(normalizePhoneNumber)
+                .map(normalizePhone)
                 .filter(Boolean)
         );
-        const orderPhones = (order.userPhones || []).map(normalizePhoneNumber).filter(Boolean);
+        const orderPhones = (order.userPhones || []).map(normalizePhone).filter(Boolean);
         for (const phone of orderPhones) {
             if (customerPhones.has(phone)) {
                 return true;
@@ -9501,7 +9669,13 @@
 
         // Filter by date
         if (state.filters.orderDate) {
-            filtered = filtered.filter(order => order.dateValue === state.filters.orderDate);
+            const selectedDate = parseDateValue(state.filters.orderDate);
+            if (selectedDate) {
+                filtered = filtered.filter(order => {
+                    const orderDate = getOrderDate(order);
+                    return isSameDay(orderDate, selectedDate);
+                });
+            }
         }
 
         return filtered;
@@ -9629,7 +9803,19 @@
         }
 
         console.log('📋 Order details:', order);
-        
+
+        const orderDetails = getOrderDetails(order.id) || {};
+        const summary = orderDetails.summary || {
+            subtotal: (order.itemsDetails || []).reduce((sum, item) => {
+                const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+                const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+                return sum + quantity * price;
+            }, 0),
+            shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+            discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
+            total: Number(order.total) || 0
+        };
+
         // إنشاء النافذة المنبثقة
         const modal = document.createElement('div');
         modal.className = 'order-details-modal';
@@ -9747,6 +9933,18 @@
                                     <strong>التفاصيل:</strong> ${order.shipping.details}
                                 </p>
                             ` : ''}
+                            ${order.shipping.zoneName ? `
+                                <p style="margin: 8px 0; color: var(--text-main);">
+                                    <i class="fas fa-map-pin" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
+                                    <strong>منطقة الشحن:</strong> ${order.shipping.zoneName}
+                                </p>
+                            ` : ''}
+                            ${Number.isFinite(order.shipping.shippingRate) ? `
+                                <p style="margin: 8px 0; color: var(--text-main);">
+                                    <i class="fas fa-shipping-fast" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
+                                    <strong>تكلفة الشحن:</strong> ${formatCurrency(order.shipping.shippingRate)}
+                                </p>
+                            ` : ''}
                             ${order.shipping.city ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-city" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
@@ -9797,8 +9995,13 @@
                 </div>
                 
                 <div style="text-align: left; padding: 20px; background: var(--bg-light); border-radius: 8px; color: var(--text-main);">
-                    <h3 style="color: #e74c3c; margin-bottom: 15px;">الإجمالي</h3>
-                    <p style="font-size: 1.5em; font-weight: bold; color: #27ae60;">${formatCurrency(order.total)}</p>
+                    <h3 style="color: #e74c3c; margin-bottom: 15px;">ملخص الفاتورة</h3>
+                    <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
+                    <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
+                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        <p style="font-size: 1.4em; font-weight: bold; color: #27ae60; margin: 0;"><strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}</p>
+                    </div>
                 </div>
             </div>
         `;
@@ -9894,6 +10097,18 @@
         }
 
         // محتوى الفاتورة
+        const orderDetails = getOrderDetails(order.id) || {};
+        const summary = orderDetails.summary || {
+            subtotal: (order.itemsDetails || []).reduce((sum, item) => {
+                const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+                const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+                return sum + quantity * price;
+            }, 0),
+            shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+            discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
+            total: Number(order.total) || 0
+        };
+
         win.document.write(`
             <!doctype html>
             <html lang="ar" dir="rtl">
@@ -10002,6 +10217,8 @@
                             <i class="fas fa-map-marker-alt"></i> عنوان الشحن
                         </h3>
                         ${order.shipping.details ? `<p style="margin: 5px 0;"><strong>التفاصيل:</strong> ${order.shipping.details}</p>` : ''}
+                        ${order.shipping.zoneName ? `<p style="margin: 5px 0;"><strong>منطقة الشحن:</strong> ${order.shipping.zoneName}</p>` : ''}
+                        ${Number.isFinite(order.shipping.shippingRate) ? `<p style="margin: 5px 0;"><strong>تكلفة الشحن:</strong> ${formatCurrency(order.shipping.shippingRate)}</p>` : ''}
                         ${order.shipping.city ? `<p style="margin: 5px 0;"><strong>المدينة:</strong> ${order.shipping.city}</p>` : ''}
                         ${order.shipping.postalCode ? `<p style="margin: 5px 0;"><strong>الرمز البريدي:</strong> ${order.shipping.postalCode}</p>` : ''}
                         ${order.shipping.phone ? `<p style="margin: 5px 0;"><strong>رقم الهاتف:</strong> ${order.shipping.phone}</p>` : ''}
@@ -10039,8 +10256,11 @@
                 </table>
                 
                 <div class="summary">
+                    <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
+                    <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
+                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
                     <div class="total">
-                        <strong>الإجمالي الكلي:</strong> ${formatCurrency(order.total)}
+                        <strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}
                     </div>
                 </div>
                 
@@ -10054,12 +10274,10 @@
 
         win.document.close();
         win.focus();
-        
-        // طباعة تلقائية بعد تحميل المحتوى
-        setTimeout(() => {
+        win.onload = () => {
+            win.focus();
             win.print();
-            win.close();
-        }, 250);
+        };
 
         showToast('success', 'طباعة الفاتورة', `تم إرسال فاتورة الطلب ${order.id} للطباعة`);
     }
@@ -10634,9 +10852,38 @@
         }
         
         // تصفية الطلبات الخاصة بهذا العميل
-        const customerOrders = state.orders?.filter(order => 
-            order.userId === customerId || order.user?._id === customerId || order.user?.id === customerId
-        ) || [];
+        const normalizeId = (value) => (value === null || value === undefined) ? '' : String(value).trim();
+        const normalizeEmail = (value) => (value ? String(value).trim().toLowerCase() : '');
+        const normalizePhone = (phone) => {
+            if (!phone) return '';
+            return String(phone).replace(/[^0-9+]/g, '').replace(/^[^0-9+]*/, '');
+        };
+
+        const normalizedCustomerId = normalizeId(customerId);
+        const normalizedCustomerEmail = normalizeEmail(customer.email || customer.contactEmail || customer.user?.email);
+        const normalizedCustomerPhone = normalizePhone(customer.phone || customer.contactPhone || customer.user?.phone);
+
+        const customerOrders = state.orders?.filter(order => {
+            if (!order) return false;
+
+            if (normalizedCustomerId) {
+                if (normalizeId(order.userId) === normalizedCustomerId) return true;
+                if (Array.isArray(order.userIds) && order.userIds.some(id => normalizeId(id) === normalizedCustomerId)) return true;
+                if (normalizeId(order.user?.id || order.user?._id || order.raw?.userId) === normalizedCustomerId) return true;
+            }
+
+            if (normalizedCustomerEmail) {
+                if (Array.isArray(order.userEmails) && order.userEmails.includes(normalizedCustomerEmail)) return true;
+                if (normalizeEmail(order.customerEmail || order.raw?.userEmail || order.raw?.customerEmail) === normalizedCustomerEmail) return true;
+            }
+
+            if (normalizedCustomerPhone) {
+                if (Array.isArray(order.userPhones) && order.userPhones.map(normalizePhone).includes(normalizedCustomerPhone)) return true;
+                if (normalizePhone(order.customerPhone || order.raw?.userPhone || order.raw?.customerPhone) === normalizedCustomerPhone) return true;
+            }
+
+            return doesOrderBelongToCustomer(order, customer);
+        }) || [];
         
         console.log('📦 Customer orders:', customerOrders);
         
@@ -10889,7 +11136,7 @@
             const startDate = new Date(endDate);
             startDate.setDate(startDate.getDate() - (validDays - 1));
 
-            setDateInputsDisabled(true);
+            setDateInputsDisabled(false);
             setAnalyticsRangeState(String(validDays), startDate, endDate, validDays);
 
             if (analyticsTimeFilter && analyticsTimeFilter.value !== String(validDays)) {
@@ -10980,4 +11227,4 @@
         }
 
         console.log('Dashboard initialized');
-    });
+    }); 
