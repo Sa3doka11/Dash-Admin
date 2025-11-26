@@ -472,6 +472,38 @@
         function collectCustomerAddresses(customer = {}) {
             const addresses = [];
 
+            const isAddressFromApi = (normalizedAddress) => {
+                if (!normalizedAddress) return false;
+
+                const raw = normalizedAddress.raw;
+                if (!raw || typeof raw !== 'object') {
+                    return false;
+                }
+
+                if (raw.source === 'api' || raw.fromApi === true || raw.__fromApi === true) {
+                    return true;
+                }
+
+                const identifierCandidates = [
+                    raw._id,
+                    raw.id,
+                    raw.addressId,
+                    raw.address_id,
+                    raw.addressID,
+                    raw.slug
+                ];
+
+                if (identifierCandidates.some(value => typeof value === 'string' ? value.trim() : value)) {
+                    return true;
+                }
+
+                if (typeof normalizedAddress.id === 'string' && !normalizedAddress.id.startsWith('address-')) {
+                    return true;
+                }
+
+                return false;
+            };
+
             const pushAddress = (entry) => {
                 if (!entry) return;
                 const normalized = normalizeCustomerAddress(entry, addresses.length);
@@ -480,6 +512,23 @@
                     return;
                 }
                 if (!normalized) return;
+
+                const raw = normalized.raw;
+
+                if (raw && typeof raw === 'object') {
+                    const hasOrderSignature = Boolean(
+                        raw.orderId
+                        || raw.order_id
+                        || raw.order
+                        || raw.orderReference
+                        || raw.orderRef
+                        || raw.cartId
+                    );
+
+                    if (hasOrderSignature) {
+                        return;
+                    }
+                }
 
                 const zoneRef = normalized.zoneId || normalized.raw?.zoneId || normalized.raw?.shippingZoneId;
                 if (!normalized.zoneName && zoneRef && typeof getShippingZoneById === 'function') {
@@ -508,6 +557,10 @@
                     normalized.phone
                 ]);
 
+                if (!isAddressFromApi(normalized)) {
+                    return;
+                }
+
                 const isDuplicate = addresses.some(existing => existing.signature === signature);
                 if (!isDuplicate) {
                     addresses.push({ ...normalized, signature });
@@ -516,22 +569,11 @@
 
             const candidateSources = [
                 customer.addresses,
-                customer.address,
                 customer.addressList,
                 customer.addressesList,
-                customer.shippingAddress,
-                customer.billingAddress,
-                customer.defaultShippingAddress,
-                customer.defaultBillingAddress,
-                customer.deliveryAddress,
-                customer.shipping,
                 customer.profile?.addresses,
-                customer.profile?.address,
                 customer.data?.addresses,
-                customer.data?.address,
-                customer.user?.addresses,
-                customer.user?.address,
-                customer.contactAddress
+                customer.user?.addresses
             ];
 
             candidateSources.forEach(source => {
@@ -3325,6 +3367,7 @@
             const payload = { shippingRate: numericRate };
             if (typeof isInstallationAvailable === 'boolean') {
                 payload.isInstallationAvailable = isInstallationAvailable;
+                payload.installationAvailable = isInstallationAvailable;
             }
 
             showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
@@ -3336,14 +3379,14 @@
                     body: JSON.stringify(payload)
                 }));
 
-                const payload = await response.json().catch(() => ({}));
+                const responseBody = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    throw new Error(payload?.message || `HTTP ${response.status}`);
+                    throw new Error(responseBody?.message || `HTTP ${response.status}`);
                 }
 
                 showToast('success', 'تحديث تكلفة الشحن', 'تم حفظ تكلفة الشحن بنجاح');
                 await fetchShippingZones({ force: true });
-                return payload?.data || payload;
+                return responseBody?.data || responseBody;
             } catch (error) {
                 console.error(`❌ Failed to update shipping zone ${zoneId}:`, error);
                 showToast('error', 'تحديث تكلفة الشحن', error?.message || 'حدث خطأ أثناء تحديث تكلفة الشحن');
@@ -5645,9 +5688,20 @@
                 const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                 const shippingInfo = order.shipping || normalizeOrderShipping(order.raw?.shippingAddress || order.raw?.shipping || null, order.raw);
                 const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? shippingInfo?.shippingRate ?? 0) || 0;
+                const installationCost = Number(
+                    order.raw?.totalInstallationPrice
+                    ?? order.raw?.installationCost
+                    ?? order.raw?.installation_price
+                    ?? order.raw?.installationFee
+                    ?? order.installationCost
+                    ?? order.totalInstallationPrice
+                    ?? 0
+                ) || 0;
                 const discountValue = Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
                 const totalValue = Number(order.total);
-                const resolvedTotal = Number.isFinite(totalValue) ? totalValue : (subtotal + shippingCost - discountValue);
+                const resolvedTotal = Number.isFinite(totalValue)
+                    ? totalValue
+                    : (subtotal + shippingCost + installationCost - discountValue);
 
                 return {
                     customer: {
@@ -5662,6 +5716,7 @@
                     summary: {
                         subtotal,
                         shipping: shippingCost,
+                        installation: installationCost,
                         discount: discountValue,
                         total: resolvedTotal
                     },
@@ -5683,6 +5738,9 @@
                 if (mockOrder) {
                     const quantity = mockOrder.items && mockOrder.items > 0 ? mockOrder.items : 1;
                     const unitPrice = quantity > 0 ? mockOrder.total / quantity : mockOrder.total;
+                    const installationCost = Number(mockOrder.totalInstallationPrice ?? mockOrder.installationCost ?? mockOrder.installation ?? 0) || 0;
+                    const shippingCost = Number(mockOrder.shippingCost ?? mockOrder.shipping ?? 0) || 0;
+                    const discountValue = Number(mockOrder.discount ?? 0) || 0;
                     return {
                         customer: { name: mockOrder.customer, email: '-', phone: '-' },
                         shipping: { line: '-', city: '-', country: '-' },
@@ -5691,9 +5749,10 @@
                         items: [{ name: 'تفاصيل المنتجات غير متاحة', quantity, price: unitPrice }],
                         summary: {
                             subtotal: unitPrice * quantity,
-                            shipping: 0,
-                            discount: 0,
-                            total: mockOrder.total
+                            shipping: shippingCost,
+                            installation: installationCost,
+                            discount: discountValue,
+                            total: mockOrder.total ?? ((unitPrice * quantity) + shippingCost + installationCost - discountValue)
                         },
                         status: mockOrder.status,
                         notes: ''
@@ -9945,7 +10004,7 @@
         console.log('📋 Order details:', order);
 
         const orderDetails = getOrderDetails(order.id) || {};
-        const summary = orderDetails.summary || {
+        let summary = orderDetails.summary || {
             subtotal: (order.itemsDetails || []).reduce((sum, item) => {
                 const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
                 const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
@@ -9953,7 +10012,47 @@
             }, 0),
             shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
             discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
-            total: Number(order.total) || 0
+            total: (() => {
+                const totalValue = Number(order.total);
+                if (Number.isFinite(totalValue)) {
+                    return totalValue;
+                }
+                return (
+                    ((order.itemsDetails || []).reduce((sum, item) => {
+                        const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+                        const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+                        return sum + quantity * price;
+                    }, 0))
+                    + (Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0)
+                    - (Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0)
+                );
+            })()
+        };
+
+        const installationAmount = Number(
+            summary.installation
+            ?? order.raw?.totalInstallationPrice
+            ?? order.raw?.installationCost
+            ?? order.raw?.installation_price
+            ?? order.raw?.installationFee
+            ?? order.installationCost
+            ?? order.totalInstallationPrice
+            ?? 0
+        ) || 0;
+
+        const subtotalValue = Number(summary.subtotal) || 0;
+        const shippingValue = Number(summary.shipping) || 0;
+        const discountValue = Number(summary.discount) || 0;
+        const totalValue = Number(summary.total);
+        const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+
+        summary = {
+            ...summary,
+            installation: installationAmount,
+            subtotal: subtotalValue,
+            shipping: shippingValue,
+            discount: discountValue,
+            total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
         };
 
         // إنشاء النافذة المنبثقة
@@ -10138,6 +10237,7 @@
                     <h3 style="color: #e74c3c; margin-bottom: 15px;">ملخص الفاتورة</h3>
                     <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
                     <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
+                    <p style="margin: 6px 0;"><strong>التركيب:</strong> ${formatCurrency(summary.installation)}</p>
                     ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);">
                         <p style="font-size: 1.4em; font-weight: bold; color: #27ae60; margin: 0;"><strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}</p>
@@ -10238,7 +10338,7 @@
 
         // محتوى الفاتورة
         const orderDetails = getOrderDetails(order.id) || {};
-        const summary = orderDetails.summary || {
+        let summary = orderDetails.summary || {
             subtotal: (order.itemsDetails || []).reduce((sum, item) => {
                 const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
                 const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
@@ -10247,6 +10347,32 @@
             shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
             discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
             total: Number(order.total) || 0
+        };
+
+        const installationAmount = Number(
+            summary.installation
+            ?? order.raw?.totalInstallationPrice
+            ?? order.raw?.installationCost
+            ?? order.raw?.installation_price
+            ?? order.raw?.installationFee
+            ?? order.installationCost
+            ?? order.totalInstallationPrice
+            ?? 0
+        ) || 0;
+
+        const subtotalValue = Number(summary.subtotal) || 0;
+        const shippingValue = Number(summary.shipping) || 0;
+        const discountValue = Number(summary.discount) || 0;
+        const totalValue = Number(summary.total);
+        const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+
+        summary = {
+            ...summary,
+            installation: installationAmount,
+            subtotal: subtotalValue,
+            shipping: shippingValue,
+            discount: discountValue,
+            total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
         };
 
         win.document.write(`
@@ -10398,6 +10524,7 @@
                 <div class="summary">
                     <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
                     <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
+                    <p style="margin: 6px 0;"><strong>التركيب:</strong> ${formatCurrency(summary.installation)}</p>
                     ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
                     <div class="total">
                         <strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}
