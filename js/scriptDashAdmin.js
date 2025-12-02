@@ -89,9 +89,39 @@
             }
         }
 
+        async function updateProductDiscountPrice(productId, priceAfterDiscount) {
+            if (!productId) {
+                throw new Error('معرف المنتج غير صالح لتحديث سعر الخصم');
+            }
+
+            const requestBody = priceAfterDiscount === null
+                ? { priceAfterDiscount: null }
+                : { priceAfterDiscount: Number(priceAfterDiscount) };
+
+            console.log('💸 Updating discounted price:', { productId, priceAfterDiscount: requestBody.priceAfterDiscount });
+
+            const response = await authorizedFetch(PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId), {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                console.error('❌ Failed to update discounted price:', data);
+                const errorMessage = data.message || 'تعذر تحديث سعر المنتج بعد الخصم';
+                throw new Error(errorMessage);
+            }
+
+            console.log('✅ Discounted price updated successfully');
+            return response.json().catch(() => ({}));
+        }
+
         // إنشاء instance من الـ Loader
         const dashboardLoader = new DashboardLoader();
-
+        
         // ========================================
         // ===== 1. إعدادات API =====
         // ========================================
@@ -107,6 +137,7 @@
         const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) => `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
         const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
         const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
+        const PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT = (productId) => `${PRODUCT_ENDPOINT}/price-after-discount/${encodeURIComponent(productId)}`;
         const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
         const PAYMENT_TOGGLE_ENDPOINTS = {
             cod: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payOnDelivery`,
@@ -2264,6 +2295,11 @@
 
                 const mode = form.dataset.mode || 'create';
                 const id = form.querySelector('[name="id"]')?.value;
+                const discountInputValue = form.querySelector('[name="priceAfterDiscount"]')?.value.trim() ?? '';
+                const originalDiscountValue = form.dataset.originalPriceAfterDiscount ?? '';
+                const normalizedCurrentDiscount = discountInputValue || '';
+                const normalizedOriginalDiscount = originalDiscountValue || '';
+                const discountNeedsUpdate = mode === 'edit' && id && normalizedCurrentDiscount !== normalizedOriginalDiscount;
                 
                 try {
                     // بناء بيانات المنتج
@@ -2284,11 +2320,19 @@
                         
                         if (mode === 'edit' && id) {
                             await updateProduct(id, payload, imageFiles);
+
+                            if (discountNeedsUpdate) {
+                                const numericDiscount = normalizedCurrentDiscount === '' ? null : Number(normalizedCurrentDiscount);
+                                await updateProductDiscountPrice(id, numericDiscount);
+                            }
+
+                            form.dataset.originalPriceAfterDiscount = normalizedCurrentDiscount;
                             showToast('success', 'تم التحديث', 'تم تحديث المنتج بنجاح');
                         } else {
                             await createProduct(payload, imageFiles);
                             showToast('success', 'تمت الإضافة', 'تمت إضافة المنتج بنجاح');
                             form.reset(); // إعادة تعيين النموذج بعد الإضافة
+                            form.dataset.originalPriceAfterDiscount = '';
                         }
                         
                         // إغلاق المودال بعد الحفظ
@@ -2516,6 +2560,20 @@
                 ?? rawProduct.salePrice;
             const price = Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
 
+            const priceAfterDiscountSource = rawProduct.priceAfterDiscount
+                ?? rawProduct.discountedPrice
+                ?? rawProduct.discountPrice
+                ?? rawProduct.discount_value
+                ?? rawProduct.discount
+                ?? rawProduct.price?.afterDiscount
+                ?? rawProduct.price?.discounted
+                ?? rawProduct.salePriceAfterDiscount
+                ?? null;
+            const parsedDiscountPrice = Number(priceAfterDiscountSource);
+            const priceAfterDiscount = Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= 0
+                ? parsedDiscountPrice
+                : null;
+
             const installationPriceSource = rawProduct.installationPrice
                 ?? rawProduct.installation_price
                 ?? rawProduct.installation?.price
@@ -2598,7 +2656,8 @@
                 sold,
                 rating,
                 installationPrice,
-                raw: rawProduct
+                raw: rawProduct,
+                priceAfterDiscount
             };
         }
 
@@ -3701,6 +3760,7 @@
             const title = getFormValue(formData, 'title', '').trim() || name;
             const description = getFormValue(formData, 'description', '').trim();
             const priceValue = getFormValue(formData, 'price', '0');
+            const priceAfterDiscountValue = getFormValue(formData, 'priceAfterDiscount', '').trim();
             const installationPriceValue = getFormValue(formData, 'installationPrice', '').trim();
             const quantityValue = getFormValue(formData, 'quantity', '0');
             const sku = getFormValue(formData, 'sku', '').trim();
@@ -3722,6 +3782,15 @@
                     throw new Error('يجب إدخال سعر تركيب صحيح (0 أو أكبر)');
                 }
                 installationPrice = parsedInstallationPrice;
+            }
+
+            let priceAfterDiscount = null;
+            if (priceAfterDiscountValue) {
+                const parsedDiscountPrice = parseFloat(priceAfterDiscountValue);
+                if (Number.isNaN(parsedDiscountPrice) || parsedDiscountPrice < 0) {
+                    throw new Error('يجب إدخال سعر بعد الخصم صحيح (0 أو أكبر)');
+                }
+                priceAfterDiscount = parsedDiscountPrice;
             }
 
             const quantity = parseInt(quantityValue, 10);
@@ -3747,6 +3816,10 @@
 
             if (installationPrice !== null) {
                 payload.installationPrice = String(installationPrice);
+            }
+
+            if (priceAfterDiscount !== null) {
+                payload.priceAfterDiscount = String(priceAfterDiscount);
             }
 
             if (sku) {
@@ -3941,6 +4014,24 @@
                 `
                 : '';
 
+            const hasDiscountPrice = Number.isFinite(product.priceAfterDiscount);
+            const priceCardMarkup = hasDiscountPrice
+                ? `
+                    <div class="product-details-card">
+                        <span class="product-details-label">السعر بعد الخصم</span>
+                        <span class="product-details-value price">${formatCurrency(product.priceAfterDiscount)}</span>
+                        <small class="product-details-subtext" style="display:block;margin-top:4px;font-size:0.85em;color:var(--text-muted, #a0a0a0);">
+                            السعر الأصلي: <span style="text-decoration: line-through; opacity: 0.8;">${formatCurrency(product.price)}</span>
+                        </small>
+                    </div>
+                `
+                : `
+                    <div class="product-details-card">
+                        <span class="product-details-label">السعر</span>
+                        <span class="product-details-value price">${formatCurrency(product.price)}</span>
+                    </div>
+                `;
+
             const subcategoryMarkup = subcategoryName !== '-'
                 ? `
                     <div class="product-details-card product-details-meta-card">
@@ -3981,10 +4072,7 @@
                             <h3 class="product-details-title">${product.name}</h3>
                             ${product.description ? `<p class="product-details-description">${product.description}</p>` : ''}
                             <div class="product-details-stats">
-                                <div class="product-details-card">
-                                    <span class="product-details-label">السعر</span>
-                                    <span class="product-details-value price">${formatCurrency(product.price)}</span>
-                                </div>
+                                ${priceCardMarkup}
                                 ${stockMarkup}
                                 ${installationMarkup}
                                 ${skuMarkup}
@@ -5214,6 +5302,7 @@
                 }
                 setFieldValue(form, 'price', product.price);
                 setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
+                setFieldValue(form, 'priceAfterDiscount', product.raw?.priceAfterDiscount ?? '');
                 setFieldValue(form, 'quantity', product.stock);
                 setFieldValue(form, 'sku', product.sku || '');
                 setFieldValue(form, 'status', product.status || 'draft');
