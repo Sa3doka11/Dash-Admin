@@ -1,45 +1,23 @@
 const AUTH_CONFIG = {
     apiBase: 'https://action-sports-api.vercel.app/api',
-    tokenKey: 'actionSportsAuthToken',
     userKey: 'actionSportsAuthUser',
     redirectKey: 'redirectAfterLogin',
     dashboard: 'dashAdmin.html'
 };
 
+const authState = {
+    user: null
+};
+
 const authStorage = {
-    setToken(token) {
-        if (!token) return;
-        try {
-            localStorage.setItem(AUTH_CONFIG.tokenKey, token);
-            console.log('[auth] setToken -> stored token (len=' + (token ? token.length : 0) + ')');
-        } catch (e) {
-            console.warn('[auth] setToken error', e);
-        }
-    },
-    getToken() {
-        return localStorage.getItem(AUTH_CONFIG.tokenKey);
-    },
     setUser(user) {
-        if (!user) return;
-        localStorage.setItem(AUTH_CONFIG.userKey, JSON.stringify(user));
+        authState.user = user || null;
     },
     getUser() {
-        const raw = localStorage.getItem(AUTH_CONFIG.userKey);
-        try {
-            return raw ? JSON.parse(raw) : null;
-        } catch (err) {
-            console.warn('authStorage.getUser parse error', err);
-            return null;
-        }
+        return authState.user;
     },
     clearAuth() {
-        try {
-            localStorage.removeItem(AUTH_CONFIG.tokenKey);
-            localStorage.removeItem(AUTH_CONFIG.userKey);
-            console.log('[auth] clearAuth -> removed token & user');
-        } catch (e) {
-            console.warn('[auth] clearAuth error', e);
-        }
+        authState.user = null;
     },
     setRedirect(url) {
         if (!url) return;
@@ -58,6 +36,7 @@ const authApi = {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email, password })
         });
 
@@ -74,45 +53,13 @@ const authApi = {
             throw new Error(message);
         }
 
-        const token = extractToken(data);
-        if (!token) {
-            throw new Error('لم يتم استلام رمز المصادقة من الخادم');
-        }
-
         const user = extractUser(data) || { email };
-        authStorage.setToken(token);
         authStorage.setUser(user);
 
-        return { token, user };
+        return { user };
     }
 };
 
-function extractToken(payload = {}) {
-    const candidates = [
-        payload.token,
-        payload.accessToken,
-        payload.access_token,
-        payload?.data?.token,
-        payload?.data?.accessToken,
-        payload?.data?.access_token
-    ];
-
-    for (const candidate of candidates) {
-        if (candidate && typeof candidate === 'string') {
-            return candidate;
-        }
-    }
-
-    if (payload && typeof payload === 'object') {
-        for (const value of Object.values(payload)) {
-            if (typeof value === 'string' && value.split('.').length === 3) {
-                return value;
-            }
-        }
-    }
-
-    return null;
-}
 
 function extractUser(payload = {}) {
     if (payload.user) return payload.user;
@@ -266,71 +213,55 @@ function normalizeErrorMessage(message) {
     return message;
 }
 
+
+
 function ensureAuthenticated() {
-    try {
-        const token = authStorage.getToken();
-        if (token) {
-            redirectToDashboard();
-        }
-    } catch (err) {
-        console.warn('ensureAuthenticated error', err);
-    }
+    // No session verification needed - cookie-based auth
 }
 
 function bootstrapAuthPage() {
     const formInitialized = initAuthForm();
 
     if (formInitialized) {
-        ensureAuthenticated();
+        // Login page - no verification needed
     } else {
         enforceDashboardAuth();
     }
 }
 
 function enforceDashboardAuth() {
-    const token = authStorage.getToken();
-    if (token) {
-        return;
-    }
+    // Cookie-based auth - let the server handle authentication
+    // If the user is not authenticated, API calls will fail with 401
+    // and the authorizedFetch will handle redirects
+}
 
-    const current = window.location.href;
+async function logout() {
     try {
-        authStorage.setRedirect(current);
-    } catch (err) {
-        console.warn('Failed to persist redirect', err);
+        await fetch(`${AUTH_CONFIG.apiBase}/auth/log-out`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (error) {
+        console.warn('logout error', error);
+    } finally {
+        authStorage.clearAuth();
+        window.location.href = 'index.html';
     }
-
-    window.location.href = 'index.html';
 }
 
-function logout() {
-    authStorage.clearAuth();
-    window.location.href = 'index.html';
-}
-
-function getAuthHeader() {
-    const token = authStorage.getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-function isAuthenticated() {
-    const token = authStorage.getToken();
-    return Boolean(token);
-}
 
 function getUser() {
     return authStorage.getUser();
 }
 
 window.adminAuth = {
-    getToken: authStorage.getToken.bind(authStorage),
     getUser,
     setRedirect: authStorage.setRedirect.bind(authStorage),
     consumeRedirect: authStorage.consumeRedirect.bind(authStorage),
-    getAuthHeader,
-    isAuthenticated,
     requireAuth: enforceDashboardAuth,
     logout
 };
 
-document.addEventListener('DOMContentLoaded', bootstrapAuthPage);
+document.addEventListener('DOMContentLoaded', () => {
+    bootstrapAuthPage();
+});

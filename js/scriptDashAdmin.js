@@ -98,8 +98,6 @@
                 ? { priceAfterDiscount: null }
                 : { priceAfterDiscount: Number(priceAfterDiscount) };
 
-            console.log('💸 Updating discounted price:', { productId, priceAfterDiscount: requestBody.priceAfterDiscount });
-
             const response = await authorizedFetch(PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId), {
                 method: 'PATCH',
                 headers: {
@@ -110,12 +108,10 @@
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                console.error('❌ Failed to update discounted price:', data);
                 const errorMessage = data.message || 'تعذر تحديث سعر المنتج بعد الخصم';
                 throw new Error(errorMessage);
             }
 
-            console.log('✅ Discounted price updated successfully');
             return response.json().catch(() => ({}));
         }
 
@@ -262,9 +258,7 @@
                 const dataUrl = await readFileAsDataUrl(file);
                 input.dataset.previewImage = dataUrl;
                 updateBannerImagePreview(dataUrl);
-                console.log('✅ Banner image preview updated');
             } catch (error) {
-                console.error('❌ Failed to preview banner image:', error);
                 showToast('error', 'صورة البانر', 'تعذر معاينة ملف الصورة المحدد');
                 input.value = '';
                 const fallback = input.dataset.originalImage || '';
@@ -331,7 +325,6 @@
                 prepareBannerCreateForm();
                 await fetchBanners({ force: true });
             } catch (error) {
-                console.error('❌ Banner form error:', error);
                 const message = error?.message || 'حدث خطأ أثناء حفظ البانر';
                 showToast('error', 'خطأ', message);
             } finally {
@@ -789,7 +782,6 @@
                     if (error?.message?.includes('401')) {
                         throw error;
                     }
-                    console.warn(`⚠️ Failed to fetch customer profile from ${endpoint}:`, error);
                 }
             }
 
@@ -1020,7 +1012,7 @@
                 showToast('success', 'إنشاء مدير', 'تم إنشاء حساب المدير الجديد بنجاح.');
                 form.reset();
             } catch (error) {
-                console.error('❌ Failed to create admin user:', error);
+                console.error('Error:', error);
                 const message = error?.message || 'حدث خطأ أثناء إنشاء حساب المدير.';
                 showToast('error', 'إنشاء مدير', message);
             } finally {
@@ -1212,24 +1204,21 @@
                     .filter(Boolean);
 
                 if (!normalizedMessages.length && !state.messagesLoaded && mockMessages.length) {
-                    state.messages = mockMessages.map(msg => ({ ...msg }));
-                } else {
-                    state.messages = normalizedMessages;
+                    state.messagesLoaded = true;
+                    state.messagesLastFetched = Date.now();
                 }
 
-                state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+                state.messages = normalizedMessages;
                 state.messagesLoaded = true;
                 state.messagesLastFetched = Date.now();
-                setMessagesError(null);
+
+                renderMessagesList(state.filters.messagesSearch || '');
                 updateMessagesBadge();
             } catch (error) {
-                console.error('❌ Failed to fetch messages:', error);
                 setMessagesError(error?.message || 'تعذر تحميل الرسائل.');
 
                 if (!state.messagesLoaded && !state.messages.length && mockMessages.length) {
-                    state.messages = mockMessages.map(msg => ({ ...msg }));
-                    state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
-                    state.messagesLoaded = true;
+                    state.messages = normalizeMessages(mockMessages);
                 }
             } finally {
                 setMessagesLoading(false);
@@ -1245,7 +1234,7 @@
             state.messagesLastFetched = 0;
             renderMessagesList(state.filters.messagesSearch || '');
             fetchMessages({ force: true }).catch(error => {
-                console.error('❌ Failed to initialize messages panel:', error);
+                console.error('Error:', error);
             });
         }
 
@@ -1374,7 +1363,7 @@
             if (targetState) {
                 if (!state.messagesLoaded && !state.messagesLoading) {
                     fetchMessages({ force: true }).catch(error => {
-                        console.error('❌ Failed to load messages on open:', error);
+                        console.error('Error:', error);
                     });
                 } else {
                     renderMessagesList(state.filters.messagesSearch || '');
@@ -1402,7 +1391,7 @@
 
                 return true;
             } catch (error) {
-                console.error('❌ Failed to mark message as watched:', error);
+                console.error('Error:', error);
                 throw error;
             }
         }
@@ -1478,7 +1467,7 @@
                 }
             } else if (action === 'refresh') {
                 fetchMessages({ force: true }).catch(error => {
-                    console.error('❌ Failed to refresh messages:', error);
+                    console.error('Error:', error);
                 });
             }
         }
@@ -1491,23 +1480,22 @@
          * عرض العلامات التجارية
          */
         function renderBrands() {
-            console.log('🎨 Rendering brands...', state.brands);
             
             const list = document.getElementById('brandsList');
             const emptyState = document.getElementById('brandsEmptyState');
             
             if (!list) {
-                console.error('❌ brandsList element not found!');
+                console.error('Error:', new Error('brandsList element not found'));
                 return;
             }
             if (!emptyState) {
-                console.error('❌ brandsEmptyState element not found!');
+                console.error('Error:', new Error('brandsEmptyState element not found'));
                 return;
             }
 
             // التأكد من أن brands هو array
             if (!Array.isArray(state.brands)) {
-                console.error('❌ state.brands is not an array:', state.brands);
+                console.error('Error:', new Error('state.brands is not an array'));
                 state.brands = [];
             }
 
@@ -1517,17 +1505,13 @@
                 brand.name?.toLowerCase().includes(searchTerm)
             );
 
-            console.log('🔍 Filtered brands:', filteredBrands.length);
-
             if (filteredBrands.length === 0) {
                 list.innerHTML = '';
                 emptyState.style.display = 'flex';
-                console.log('📭 No brands to display');
                 return;
             }
 
             emptyState.style.display = 'none';
-            console.log('✅ Rendering', filteredBrands.length, 'brands');
             
             list.innerHTML = filteredBrands.map(brand => {
                 const brandId = brand._id || brand.id;
@@ -1754,21 +1738,8 @@
         }
 
         function authorizedFetch(url, options = {}) {
-            if (!window.adminAuth) {
-                return fetch(url, options);
-            }
-
-            const authHeader = window.adminAuth.getAuthHeader?.() || {};
-
-            if (options.headers instanceof Headers) {
-                Object.entries(authHeader).forEach(([key, value]) => {
-                    if (value) options.headers.set(key, value);
-                });
-                return fetch(url, { ...options, headers: options.headers });
-            }
-
-            const mergedHeaders = { ...authHeader, ...(options.headers || {}) };
-            return fetch(url, { ...options, headers: mergedHeaders });
+            const baseOptions = { ...options, credentials: 'include' };
+            return fetch(url, baseOptions);
         }
 
         /**
@@ -1946,12 +1917,6 @@
                 { id: 'PR-1', title: 'خصم 20% على كل الأجهزة', type: 'percentage', value: '20%', period: '2025-10-20 — 2025-10-31', status: 'active' }
             ],
             banners: [],
-            pages: [
-                { id: 'PG-1', title: 'من نحن', updatedAt: '2025-10-20' }
-            ],
-            features: [
-                { id: 'FT-1', icon: 'fas fa-shipping-fast', title: 'توصيل خلال 24 ساعة', description: 'شحن سريع لجميع المحافظات', status: 'active' }
-            ],
             payments: [
                 { id: 'cod', name: 'الدفع عند الاستلام', note: '', enabled: true }
             ],
@@ -2243,7 +2208,7 @@
                 try {
                     form.dataset.originalSubcategory = JSON.stringify(snapshot);
                 } catch (error) {
-                    console.warn('⚠️ Failed to stringify original subcategory snapshot', error);
+                    console.error('Error:', error);
                     delete form.dataset.originalSubcategory;
                 }
             } else {
@@ -2258,8 +2223,6 @@
                 console.error('❌ Invalid form element');
                 return;
             }
-
-            console.log('📝 Submitting product form...');
 
             // إظهار مؤشر التحميل
             const submitButton = form.querySelector('button[type="submit"]');
@@ -2308,13 +2271,9 @@
                     // الحصول على ملفات الصور
                     const imageInput = form.querySelector('#productImage');
                     const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];
-                    
-                    console.log('📸 Selected images:', imageFiles.length);
 
                     try {
                         // طباعة البيانات للتشخيص
-                        console.log('📤 Payload being sent:', JSON.stringify(payload, null, 2));
-                        
                         // إضافة رسالة تحميل
                         showToast('info', 'جاري الحفظ', 'جاري حفظ المنتج، يرجى الانتظار...', 2000);
                         
@@ -2343,7 +2302,7 @@
                         renderProducts();
                         
                     } catch (error) {
-                        console.error('❌ Error saving product:', error);
+                        console.error('Error:', error);
                         let errorMessage = 'حدث خطأ أثناء محاولة حفظ المنتج';
                         
                         if (error.response) {
@@ -2363,7 +2322,7 @@
                         showToast('error', 'خطأ', errorMessage);
                     }
                 } catch (error) {
-                    console.error('❌ Error in buildProductPayload:', error);
+                    console.error('Error:', error);
                     let errorMessage = error.message || 'الرجاء التحقق من البيانات المدخلة';
                     
                     // تحسين رسائل الخطأ
@@ -2391,7 +2350,7 @@
                     }
                 }
             } catch (error) {
-                console.error('❌ Error in handleProductFormSubmit:', error);
+                console.error('Error:', error);
                 
                 // معالجة أخطاء التحقق من صحة البيانات
                 if (error.message.includes('validation failed')) {
@@ -2408,7 +2367,7 @@
             try {
                 return sessionStorage.getItem('currentSection') || 'overview';
             } catch (error) {
-                console.warn('Failed to load current section', error);
+                console.error('Error:', error);
                 return 'overview';
             }
         }
@@ -2977,11 +2936,7 @@
         }
 
         // ===== API Functions =====
-        // Helper function to get auth token
-        function getAuthToken() {
-            return window.adminAuth?.getToken() || '';
-        }
-
+        
         // Brands
         async function fetchBrands(options = {}) {
             const forceReload = options.force === true;
@@ -3003,9 +2958,8 @@
 
             const request = (async () => {
                 try {
-                    const response = await fetch(BRAND_API, {
+                    const response = await authorizedFetch(BRAND_API, {
                         headers: {
-                            'Authorization': `Bearer ${getAuthToken()}`,
                             'Content-Type': 'application/json'
                         }
                     });
@@ -3061,11 +3015,8 @@
                     formData.append('image', imageFile);
                 }
 
-                const response = await fetch(BRAND_API, {
+                const response = await authorizedFetch(BRAND_API, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    },
                     body: formData
                 });
 
@@ -3149,11 +3100,8 @@
 
         async function deleteBrand(brandId) {
             try {
-                const response = await fetch(`${BRAND_API}/${brandId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    }
+                const response = await authorizedFetch(`${BRAND_API}/${brandId}`, {
+                    method: 'DELETE'
                 });
 
                 if (!response.ok) {
@@ -3236,11 +3184,8 @@
                     formData.append('image', imageFile);
                 }
 
-                const response = await fetch(BANNER_API, {
+                const response = await authorizedFetch(BANNER_API, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    },
                     body: formData
                 });
 
@@ -3270,11 +3215,8 @@
                     formData.append('image', imageFile);
                 }
 
-                const response = await fetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+                const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
                     method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    },
                     body: formData
                 });
 
@@ -3297,11 +3239,8 @@
             }
 
             try {
-                const response = await fetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    }
+                const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+                    method: 'DELETE'
                 });
 
                 const data = await response.json().catch(() => ({}));
@@ -3589,7 +3528,6 @@
             try {
                 await updateShippingZoneRate(zoneId, numericRate, installationValue);
             } catch (error) {
-                console.error('❌ Shipping settings submit failed:', error);
             } finally {
                 if (submitButton && originalState) {
                     submitButton.disabled = originalState.disabled;
@@ -3599,21 +3537,18 @@
         }
 
         async function fetchCategories() {
-            console.log('🔄 Fetching categories...');
             state.categoriesLoading = true;
             state.categoriesError = null;
             renderCategories();
 
             try {
                 const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT));
-                console.log('📡 Response status:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
 
                 const payload = await response.json();
-                console.log('📦 Raw API response:', payload);
 
                 const documents = Array.isArray(payload?.data?.documents)
                     ? payload.data.documents
@@ -3623,7 +3558,6 @@
                             ? payload
                             : [];
 
-                console.log('📋 Extracted documents:', documents);
 
                 const previousExtras = { ...state.categoryExtras };
                 const normalized = documents
@@ -3640,7 +3574,6 @@
                         };
                     });
 
-                console.log('✅ Normalized categories:', normalized);
 
                 state.categories = normalized;
                 syncCategoriesCache(normalized);
@@ -3667,7 +3600,6 @@
                     renderSubcategories();
                 }
             } catch (error) {
-                console.error('❌ Failed to fetch categories:', error);
                 state.categoriesError = 'تعذر تحميل الفئات. يرجى المحاولة مرة أخرى.';
             } finally {
                 state.categoriesLoading = false;
@@ -3677,21 +3609,18 @@
         }
 
         async function fetchProducts() {
-            console.log('🔄 Fetching products...');
             state.productsLoading = true;
             state.productsError = null;
             renderProducts();
 
             try {
                 const response = handleUnauthorized(await authorizedFetch(PRODUCT_ENDPOINT));
-                console.log('📡 Products response status:', response.status);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
 
                 const payload = await response.json();
-                console.log('📦 Raw products response:', payload);
 
                 const documents = Array.isArray(payload?.data?.products)
                     ? payload.data.products
@@ -3716,12 +3645,10 @@
                         };
                     });
 
-                console.log('✅ Normalized products:', normalized);
 
                 state.products = normalized;
                 syncProductExtras(normalized);
             } catch (error) {
-                console.error('❌ Failed to fetch products:', error);
                 state.productsError = error.message || 'تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.';
                 state.products = [];
             } finally {
@@ -3855,17 +3782,13 @@
                 }
             });
 
-            console.log('📦 Product FormData entries:');
             for (let [key, value] of formData.entries()) {
-                console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
             }
 
             return { body: formData, headers: null };
         }
 
         async function createProduct(payload, imageFiles = []) {
-            console.log('➕ Creating product:', payload);
-            console.log('📸 Image files:', imageFiles.length);
 
             try {
                 const formData = new FormData();
@@ -3879,7 +3802,6 @@
                 if (imageFiles && imageFiles.length > 0) {
                     imageFiles.forEach((file, index) => {
                         formData.append('images', file);
-                        console.log(`📎 Added image ${index + 1}:`, file.name);
                     });
                 }
 
@@ -3891,22 +3813,18 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error('❌ Create product error response:', data);
                     const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
                     throw new Error(errorMessage);
                 }
 
-                console.log('✅ Product created successfully:', data);
                 return data;
             } catch (error) {
-                console.error('❌ Failed to create product:', error);
                 throw error;
             }
         }
 
         // دالة تحديث المنتج
         async function updateProduct(productId, payload, imageFiles = []) {
-            console.log('✏️ Updating product:', { productId, files: imageFiles.length });
 
             if (!productId) {
                 throw new Error('معرف المنتج غير صالح');
@@ -3925,7 +3843,7 @@
                     imageFiles.forEach((file, index) => {
                         if (file instanceof File) {
                             formData.append('images', file);
-                            console.log(`📎 Added image ${index + 1}:`, file.name);
+                         
                         }
                     });
                 }
@@ -3938,12 +3856,10 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.error('❌ Update product error:', data);
                     const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
                     throw new Error(errorMessage);
                 }
 
-                console.log('✅ Product updated successfully:', data);
 
                 const updatedProduct = data.data || data;
 
@@ -3956,7 +3872,6 @@
 
                 return updatedProduct;
             } catch (error) {
-                console.error('❌ Failed to update product:', error);
                 showToast('error', 'تحديث المنتج', error.message || 'حدث خطأ غير متوقع');
                 throw error;
             }
@@ -4114,7 +4029,6 @@
         }
 
         async function deleteProduct(productId, { productName } = {}) {
-            console.log('🗑️ Deleting product:', productId);
 
             if (!productId) return;
 
@@ -4131,11 +4045,9 @@
                     method: 'DELETE'
                 }));
 
-                console.log('📡 Delete product status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Delete product error:', errorBody);
                     const message = errorBody?.message || `HTTP ${response.status}`;
                     throw new Error(message);
                 }
@@ -4143,20 +4055,17 @@
                 await fetchProducts();
                 showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
             } catch (error) {
-                console.error('❌ Failed to delete product:', error);
                 showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
             }
         }
 
         async function createCategory(payload, extras = {}, imageFile = null) {
-            console.log('➕ Creating category:', { payload, extras, hasFile: !!imageFile });
             
             try {
                 const { body, headers } = buildCategoryRequestOptions(payload, {
                     description: extras.description
                 }, imageFile);
 
-                console.log('📤 Request body type:', body instanceof FormData ? 'FormData' : 'JSON');
 
                 const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT, {
                     method: 'POST',
@@ -4164,17 +4073,14 @@
                     body
                 }));
 
-                console.log('📡 Create response status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Create error:', errorBody);
                     const message = errorBody?.message || `HTTP ${response.status}`;
                     throw new Error(message);
                 }
 
                 const responseData = await response.json();
-                console.log('✅ Create response:', responseData);
 
                 const newCategoryId = responseData?.data?._id || responseData?._id;
                 
@@ -4192,13 +4098,11 @@
                 showToast('success', 'إضافة الفئة', 'تمت إضافة الفئة بنجاح');
                 closeModal('categoryModal');
             } catch (error) {
-                console.error('❌ Failed to create category:', error);
                 showToast('error', 'إضافة الفئة', error.message || 'حدث خطأ غير متوقع');
             }
         }
 
         async function updateCategory(categoryId, payload, extras = {}, imageFile = null) {
-            console.log('✏️ Updating category:', { categoryId, payload, extras, hasFile: !!imageFile });
             
             if (!categoryId) return;
             
@@ -4225,13 +4129,11 @@
                     }
                 }
 
-                console.log('🧹 Clean payload:', cleanPayload);
 
                 const { body, headers } = buildCategoryRequestOptions(cleanPayload, {
                     description: extras.description
                 }, imageFile);
 
-                console.log('📤 Update request body type:', body instanceof FormData ? 'FormData' : 'JSON');
 
                 const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
                     method: 'PATCH',
@@ -4239,17 +4141,14 @@
                     body
                 }));
 
-                console.log('📡 Update response status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Update error:', errorBody);
                     const message = errorBody?.message || `HTTP ${response.status}`;
                     throw new Error(message);
                 }
 
                 const responseData = await response.json();
-                console.log('✅ Update response:', responseData);
 
                 const document = responseData?.data?.category
                     ?? responseData?.data
@@ -4265,7 +4164,6 @@
                             image: extras.image || cleanPayload.image || normalized.image || ''
                         };
 
-                        console.log('🎯 Merged category data:', merged);
 
                         const categoryIndex = state.categories.findIndex(category => category.id === categoryId);
                         if (categoryIndex !== -1) {
@@ -4289,13 +4187,11 @@
                 showToast('success', 'تحديث الفئة', 'تم تحديث الفئة بنجاح');
                 closeModal('categoryModal');
             } catch (error) {
-                console.error('❌ Failed to update category:', error);
                 showToast('error', 'تحديث الفئة', error.message || 'حدث خطأ غير متوقع');
             }
         }
 
         async function deleteCategory(categoryId) {
-            console.log('🗑️ Deleting category:', categoryId);
 
             if (!categoryId) return;
 
@@ -4304,21 +4200,17 @@
                     method: 'DELETE'
                 }));
 
-                console.log('📡 Delete response status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Delete error:', errorBody);
                     const message = errorBody?.message || `HTTP ${response.status}`;
                     throw new Error(message);
                 }
 
-                console.log('✅ Category deleted successfully');
 
                 await fetchCategories();
                 showToast('success', 'حذف الفئة', 'تم حذف الفئة بنجاح');
             } catch (error) {
-                console.error('❌ Failed to delete category:', error);
                 showToast('error', 'حذف الفئة', error.message || 'حدث خطأ غير متوقع');
             }
         }
@@ -4340,15 +4232,12 @@
                 });
                 formData.append('image', imageFile);
 
-                console.log('📦 Subcategory FormData entries:');
                 for (let [key, value] of formData.entries()) {
-                    console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
                 }
 
                 return { body: formData, headers: null };
             }
 
-            console.log('📦 Subcategory JSON payload:', dataPayload);
             return {
                 body: JSON.stringify(dataPayload),
                 headers: { 'Content-Type': 'application/json' }
@@ -4416,30 +4305,25 @@
                 return getSubcategories(categoryId);
             }
 
-            console.log('🔄 Fetching subcategories for category:', categoryId);
             setSubcategoryLoading(categoryId, true);
             setSubcategoryError(categoryId, null);
 
             try {
                 const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId)));
-                console.log('📡 Subcategories response status:', response.status);
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        console.info('ℹ️ No subcategories found for category:', categoryId);
                         state.subcategories[categoryId] = [];
                         setSubcategoryError(categoryId, null);
                         return [];
                     }
 
                     const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Fetch subcategories error:', errorBody);
                     const message = errorBody?.message || `HTTP ${response.status}`;
                     throw new Error(message);
                 }
 
                 const payload = await response.json();
-                console.log('📦 Raw subcategories response:', payload);
 
                 const documents = Array.isArray(payload?.data?.documents)
                     ? payload.data.documents
@@ -4483,7 +4367,6 @@
                 throw new Error('رقم الفئة الرئيسية مفقود.');
             }
 
-            console.log('➕ Creating subcategory:', { categoryId, payload, hasFile: !!imageFile });
 
             try {
                 const { body, headers } = buildSubcategoryRequestOptions(payload, imageFile);
@@ -4494,7 +4377,6 @@
                     body
                 }));
 
-                console.log('📡 Create subcategory status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
@@ -4504,7 +4386,6 @@
                 }
 
                 const responseData = await response.json();
-                console.log('✅ Create subcategory response:', responseData);
 
                 const document = responseData?.data?.subcategory
                     ?? responseData?.data
@@ -4542,14 +4423,6 @@
             const previousCategoryId = options.previousCategoryId;
             const targetCategoryId = options.targetCategoryId || payload.categoryId || categoryId;
 
-            console.log('✏️ Updating subcategory:', {
-                endpointCategoryId: categoryId,
-                subcategoryId,
-                payload,
-                hasFile: !!imageFile,
-                previousCategoryId,
-                targetCategoryId
-            });
 
             try {
                 const cleanPayload = {};
@@ -4564,7 +4437,6 @@
                     delete cleanPayload.image;
                 }
 
-                console.log('🧹 Clean payload:', cleanPayload);
 
                 const { body, headers } = buildSubcategoryRequestOptions(cleanPayload, imageFile);
 
@@ -4574,7 +4446,6 @@
                     body
                 }));
 
-                console.log('📡 Update subcategory status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
@@ -4584,7 +4455,6 @@
                 }
 
                 const responseData = await response.json();
-                console.log('✅ Update subcategory response:', responseData);
 
                 const document = responseData?.data?.subcategory
                     ?? responseData?.data
@@ -4607,7 +4477,6 @@
                     status: cleanPayload.status ?? normalized.status
                 };
 
-                console.log('🎯 Merged data:', merged);
 
                 upsertSubcategory(targetCategoryId, merged);
                 upsertSubcategoryExtras(targetCategoryId, merged.id, {
@@ -4635,14 +4504,12 @@
                 throw new Error('بيانات الفئة الفرعية غير مكتملة.');
             }
 
-            console.log('🗑️ Deleting subcategory:', { categoryId, subcategoryId });
 
             try {
                 const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
                     method: 'DELETE'
                 }));
 
-                console.log('📡 Delete subcategory status:', response.status);
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
@@ -4689,15 +4556,12 @@
                     formData.append('image', file);
                 }
 
-                console.log('📦 FormData entries:');
                 for (let [key, value] of formData.entries()) {
-                    console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
                 }
 
                 return { body: formData, headers: null };
             }
 
-            console.log('📦 JSON payload:', dataPayload);
 
             return {
                 body: JSON.stringify(dataPayload),
@@ -4777,13 +4641,11 @@
                 return;
             }
 
-            console.log('🖼️ Selected image:', file.name, file.type, file.size);
 
             try {
                 const dataUrl = await readFileAsDataUrl(file);
                 input.dataset.previewImage = dataUrl;
                 updateCategoryImagePreview(dataUrl);
-                console.log('✅ Image preview updated');
             } catch (error) {
                 console.error('❌ Failed to preview category image:', error);
                 showToast('error', 'صورة الفئة', 'تعذر معاينة ملف الصورة المحدد');
@@ -4801,13 +4663,11 @@
                 return;
             }
 
-            console.log('🖼️ Selected subcategory image:', file.name, file.type, file.size);
 
             try {
                 const dataUrl = await readFileAsDataUrl(file);
                 input.dataset.previewImage = dataUrl;
                 updateSubcategoryImagePreview(dataUrl);
-                console.log('✅ Subcategory image preview updated');
             } catch (error) {
                 console.error('❌ Failed to preview subcategory image:', error);
                 showToast('error', 'صورة الفئة الفرعية', 'تعذر معاينة ملف الصورة المحدد');
@@ -4824,12 +4684,10 @@
                 return;
             }
 
-            console.log('🖼️ Selected brand image:', file.name, file.type, file.size);
 
             try {
                 const dataUrl = await readFileAsDataUrl(file);
                 updateBrandImagePreview(dataUrl);
-                console.log('✅ Brand image preview updated');
             } catch (error) {
                 console.error('❌ Failed to preview brand image:', error);
                 showToast('error', 'صورة العلامة التجارية', 'تعذر معاينة ملف الصورة المحدد');
@@ -4848,7 +4706,6 @@
                 return;
             }
 
-            console.log('🖼️ Selected product image:', `${file.name} (${Math.round(file.size / 1024)} KB)`);
 
             try {
                 const dataUrl = await readFileAsDataUrl(file);
@@ -4868,7 +4725,6 @@
             const form = event.target;
             if (!form || form.dataset.entity !== 'category') return;
 
-            console.log('📝 Submitting category form...');
 
             const formData = new FormData(form);
             const mode = form.dataset.mode || 'create';
@@ -6622,12 +6478,6 @@
                 }
             }
 
-            console.log('📊 Overview stats updated:', {
-                dailyOrdersCount,
-                monthlyRevenue,
-                dailyNewCustomers,
-                lowStockCount: lowStockProducts.length
-            });
         }
 
         function renderOverview() {
@@ -7034,38 +6884,7 @@
         }).join('');
     }
 
-    function renderPages() {
-        const list = document.getElementById('pagesList');
-        if (!list) return;
 
-        list.innerHTML = mockData.pages.map(page => `
-            <div class="page-item" data-id="${page.id}">
-                <i class="fas fa-file-alt"></i>
-                <div class="page-info">
-                    <h3>${page.title}</h3>
-                    <p>آخر تحديث: ${page.updatedAt}</p>
-                </div>
-                <button class="btn-secondary btn-sm" data-action="edit-page" data-entity="page" data-entity-id="${page.id}"><i class="fas fa-edit"></i></button>
-            </div>
-        `).join('');
-    }
-
-    function renderFeatures() {
-        const grid = document.getElementById('featuresGrid');
-        if (!grid) return;
-
-        grid.innerHTML = mockData.features.map(feature => `
-            <div class="feature-card" data-id="${feature.id}">
-                <i class="${feature.icon}"></i>
-                <h3>${feature.title}</h3>
-                <p>${feature.description}</p>
-                <div class="feature-actions">
-                    <button class="btn-secondary btn-sm" data-open-modal="featureModal" data-modal-mode="edit" data-entity="feature" data-entity-id="${feature.id}"><i class="fas fa-edit"></i> تعديل</button>
-                    <button class="btn-danger btn-sm" data-action="delete" data-entity="feature" data-entity-id="${feature.id}"><i class="fas fa-trash"></i> حذف</button>
-                </div>
-            </div>
-        `).join('');
-    }
 
     /**
      * عرض قائمة العملاء
@@ -7077,11 +6896,6 @@
             return;
         }
 
-        console.log('🎨 Rendering customers...', {
-            loading: state.customersLoading,
-            error: state.customersError,
-            count: state.customers?.length || 0
-        });
 
         if (state.customersLoading) {
             body.innerHTML = `
@@ -7663,8 +7477,6 @@
         renderCollections();
         renderPromotions();
         renderBanners();
-        renderPages();
-        renderFeatures();
         renderOrders();
         renderCustomers();
         renderTopProducts();
@@ -7724,7 +7536,6 @@
     // ===== Navigation =====
     // تفعيل القسم المطلوب في التنقل الجانبي وإعداد الرسوم البيانية عند الحاجة
     function switchSection(targetSection) {
-        console.log('🔀 Switching to section:', targetSection);
         
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -8813,11 +8624,8 @@
                 const formData = new FormData();
                 formData.append('image', file);
                 
-                const response = await fetch(UPLOAD_ENDPOINT, {
+                const response = await authorizedFetch(UPLOAD_ENDPOINT, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    },
                     body: formData
                 });
                 
@@ -8918,14 +8726,12 @@
     // ===== Initialize =====
     // نقطة البداية الرئيسية عند تحميل الصفحة
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Initializing dashboard...');
 
         // تهيئة السمة (الوضع الفاتح/الداكن)
         initTheme();
 
         // استعادة القسم المحفوظ أو الذهاب للنظرة العامة
         const savedSection = loadCurrentSection();
-        console.log('📌 Restoring section:', savedSection);
         switchSection(savedSection);
 
         // تحميل الرسوم البيانية الأولية بعد تأخير قصير
@@ -10814,7 +10620,7 @@
      * @param {boolean} silent - إذا كان true، لا تظهر رسالة النجاح
      */
     async function fetchCustomers(silent = false) {
-        console.log('🔄 Fetching customers from API...');
+
         state.customersLoading = true;
         state.customersError = null;
         renderCustomers();
