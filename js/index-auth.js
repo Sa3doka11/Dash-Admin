@@ -2,6 +2,7 @@ const AUTH_CONFIG = {
     apiBase: 'https://action-sports-api.vercel.app/api',
     userKey: 'actionSportsAuthUser',
     redirectKey: 'redirectAfterLogin',
+    refreshTokenKey: 'actionSportsRefreshToken',
     dashboard: 'dashAdmin.html'
 };
 
@@ -18,6 +19,7 @@ const authStorage = {
     },
     clearAuth() {
         authState.user = null;
+        this.clearRefreshToken();
     },
     setRedirect(url) {
         if (!url) return;
@@ -27,6 +29,39 @@ const authStorage = {
         const redirect = sessionStorage.getItem(AUTH_CONFIG.redirectKey);
         sessionStorage.removeItem(AUTH_CONFIG.redirectKey);
         return redirect;
+    },
+    setRefreshToken(token) {
+        const secureFlag = (typeof window !== 'undefined' && window.location?.protocol === 'https:') ? '; Secure' : '';
+
+        if (token) {
+            // Set refresh token in HTTP-only cookie via server
+            // For client-side fallback, we can use document.cookie (not HTTP-only)
+            const expires = new Date();
+            expires.setDate(expires.getDate() + 30); // 30 days
+            document.cookie = `${AUTH_CONFIG.refreshTokenKey}=${token}; expires=${expires.toUTCString()}; path=/; SameSite=Strict${secureFlag}`;
+        } else {
+            document.cookie = `${AUTH_CONFIG.refreshTokenKey}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict${secureFlag}`;
+        }
+    },
+    getRefreshToken() {
+        // Get refresh token from cookies
+        const name = AUTH_CONFIG.refreshTokenKey + "=";
+        const decodedCookie = decodeURIComponent(document.cookie);
+        const ca = decodedCookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) === 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return null;
+    },
+    clearRefreshToken() {
+        const secureFlag = (typeof window !== 'undefined' && window.location?.protocol === 'https:') ? '; Secure' : '';
+        document.cookie = `${AUTH_CONFIG.refreshTokenKey}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict${secureFlag}`;
     }
 };
 
@@ -55,8 +90,51 @@ const authApi = {
 
         const user = extractUser(data) || { email };
         authStorage.setUser(user);
+        
+        // Store refresh token if available
+        if (data?.refreshToken) {
+            authStorage.setRefreshToken(data.refreshToken);
+        }
 
         return { user };
+    },
+
+    async refreshToken() {
+        const refreshToken = authStorage.getRefreshToken();
+        const url = `${AUTH_CONFIG.apiBase}/auth/token/refresh`;
+
+        const hasManualToken = Boolean(refreshToken);
+        const payload = hasManualToken ? { refreshToken } : {};
+        const fetchOptions = {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        };
+
+        const response = await fetch(url, fetchOptions);
+
+        const text = await response.text();
+        let data = {};
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (_) {
+            data = { raw: text };
+        }
+
+        if (!response.ok) {
+            // Clear invalid refresh token
+            authStorage.clearRefreshToken();
+            const message = data?.message || data?.msg || data?.error || 'فشل تحديث التوكن';
+            throw new Error(message);
+        }
+
+        // Update refresh token if provided
+        if (data?.refreshToken) {
+            authStorage.setRefreshToken(data.refreshToken);
+        }
+
+        return data;
     }
 };
 
@@ -259,7 +337,8 @@ window.adminAuth = {
     setRedirect: authStorage.setRedirect.bind(authStorage),
     consumeRedirect: authStorage.consumeRedirect.bind(authStorage),
     requireAuth: enforceDashboardAuth,
-    logout
+    logout,
+    refreshToken: authApi.refreshToken.bind(authApi)
 };
 
 document.addEventListener('DOMContentLoaded', () => {

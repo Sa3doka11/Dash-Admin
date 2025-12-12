@@ -1737,9 +1737,55 @@ function decodeJwtPayload(token) {
     }
 }
 
+let isRefreshing = false;
+let refreshSubscribers = [];
+
 function authorizedFetch(url, options = {}) {
     const baseOptions = { ...options, credentials: 'include' };
-    return fetch(url, baseOptions);
+    
+    return fetch(url, baseOptions)
+        .then(async (response) => {
+            // If response is 401, try to refresh the token
+            if (response.status === 401 && window.adminAuth) {
+                if (!isRefreshing) {
+                    isRefreshing = true;
+                    
+                    try {
+                        // Attempt to refresh the token
+                        await window.adminAuth.refreshToken();
+                        
+                        // Retry the original request with new token
+                        return fetch(url, baseOptions);
+                    } catch (refreshError) {
+                        // Refresh failed, logout and redirect to login
+                        console.error('Token refresh failed:', refreshError);
+                        window.adminAuth.logout();
+                        return Promise.reject(refreshError);
+                    } finally {
+                        isRefreshing = false;
+                        // Notify all waiting requests
+                        refreshSubscribers.forEach(callback => callback());
+                        refreshSubscribers = [];
+                    }
+                } else {
+                    // If already refreshing, wait for it to complete
+                    return new Promise((resolve, reject) => {
+                        refreshSubscribers.push(() => {
+                            fetch(url, baseOptions)
+                                .then(resolve)
+                                .catch(reject);
+                        });
+                    });
+                }
+            }
+            
+            return response;
+        })
+        .catch(error => {
+            // Handle network errors
+            console.error('Network error in authorizedFetch:', error);
+            throw error;
+        });
 }
 
 /**
