@@ -1,814 +1,814 @@
-        /**
-         * ========================================
-         * لوحة التحكم الإدارية - Action Sports
-         * ========================================
-         * 
-         * هذا الملف يحتوي على جميع وظائف لوحة التحكم الإدارية
-         * بما في ذلك:
-         * - إدارة المنتجات والفئات والطلبات
-         * - معالجة البيانات من API
-         * - عرض الرسوم البيانية والإحصائيات
-         * - التعامل مع الأحداث والنماذج
-         */
+/**
+ * ========================================
+ * لوحة التحكم الإدارية - Action Sports
+ * ========================================
+ * 
+ * هذا الملف يحتوي على جميع وظائف لوحة التحكم الإدارية
+ * بما في ذلك:
+ * - إدارة المنتجات والفئات والطلبات
+ * - معالجة البيانات من API
+ * - عرض الرسوم البيانية والإحصائيات
+ * - التعامل مع الأحداث والنماذج
+ */
 
-        // ========================================
-        // ===== 0. دوال التحميل (Loader) =====
-        // ========================================
+// ========================================
+// ===== 0. دوال التحميل (Loader) =====
+// ========================================
 
-        class DashboardLoader {
-            constructor() {
-                this.loaderScreen = document.getElementById('loadingScreen');
-                this.progressFill = document.getElementById('loaderProgressFill');
-                this.progressText = document.getElementById('loaderProgressText');
-                this.currentProgress = 0;
-            }
+class DashboardLoader {
+    constructor() {
+        this.loaderScreen = document.getElementById('loadingScreen');
+        this.progressFill = document.getElementById('loaderProgressFill');
+        this.progressText = document.getElementById('loaderProgressText');
+        this.currentProgress = 0;
+    }
 
-            /**
-             * تحديث شريط التقدم
-             */
-            setProgress(percentage) {
-                this.currentProgress = Math.min(percentage, 100);
-                if (this.progressFill) {
-                    this.progressFill.style.width = this.currentProgress + '%';
-                }
-                if (this.progressText) {
-                    this.progressText.textContent = `جاري التحميل... ${this.currentProgress}%`;
-                }
-            }
+    /**
+     * تحديث شريط التقدم
+     */
+    setProgress(percentage) {
+        this.currentProgress = Math.min(percentage, 100);
+        if (this.progressFill) {
+            this.progressFill.style.width = this.currentProgress + '%';
+        }
+        if (this.progressText) {
+            this.progressText.textContent = `جاري التحميل... ${this.currentProgress}%`;
+        }
+    }
 
-            /**
-             * تحديث خطوة التحميل
-             */
-            updateStep(stepNumber, status = 'active') {
-                const stepElement = document.getElementById(`step-${stepNumber}`);
-                if (stepElement) {
-                    stepElement.classList.remove('active', 'completed');
-                    if (status === 'active') {
-                        stepElement.classList.add('active');
-                        stepElement.textContent = `⏳ جاري تحميل البيانات...`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
-                    } else if (status === 'completed') {
-                        stepElement.classList.add('completed');
-                        stepElement.textContent = `✓ تم ${this.getStepText(stepNumber)}`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
-                    }
-                }
-            }
-
-            getStepText(stepNumber) {
-                const steps = {
-                    1: 'تحميل البيانات',
-                    2: 'تحضير الواجهة',
-                    3: 'تحميل الرسوم البيانية'
-                };
-                return steps[stepNumber] || 'تحميل النظام';
-            }
-
-            /**
-             * إخفاء شاشة التحميل
-             */
-            async hide() {
-                if (this.loaderScreen) {
-                    this.setProgress(100);
-                    // انتظر قليلاً قبل الإخفاء
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    this.loaderScreen.classList.add('hidden');
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    this.loaderScreen.style.display = 'none';
-                }
-            }
-
-            /**
-             * إظهار الـ Loader
-             */
-            show() {
-                if (this.loaderScreen) {
-                    this.loaderScreen.style.display = 'flex';
-                    this.loaderScreen.classList.remove('hidden');
-                    this.currentProgress = 0;
-                    this.setProgress(0);
-                }
+    /**
+     * تحديث خطوة التحميل
+     */
+    updateStep(stepNumber, status = 'active') {
+        const stepElement = document.getElementById(`step-${stepNumber}`);
+        if (stepElement) {
+            stepElement.classList.remove('active', 'completed');
+            if (status === 'active') {
+                stepElement.classList.add('active');
+                stepElement.textContent = `⏳ جاري تحميل البيانات...`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
+            } else if (status === 'completed') {
+                stepElement.classList.add('completed');
+                stepElement.textContent = `✓ تم ${this.getStepText(stepNumber)}`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
             }
         }
+    }
 
-        async function updateProductDiscountPrice(productId, priceAfterDiscount) {
-            if (!productId) {
-                throw new Error('معرف المنتج غير صالح لتحديث سعر الخصم');
-            }
-
-            const requestBody = priceAfterDiscount === null
-                ? { priceAfterDiscount: null }
-                : { priceAfterDiscount: Number(priceAfterDiscount) };
-
-            const response = await authorizedFetch(PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId), {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                const errorMessage = data.message || 'تعذر تحديث سعر المنتج بعد الخصم';
-                throw new Error(errorMessage);
-            }
-
-            return response.json().catch(() => ({}));
-        }
-
-        // إنشاء instance من الـ Loader
-        const dashboardLoader = new DashboardLoader();
-        
-        // ========================================
-        // ===== 1. إعدادات API =====
-        // ========================================
-
-        const ADMIN_API_BASE_URL = 'https://action-sports-api.vercel.app/api';
-        const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
-        const BANNER_API = `${ADMIN_API_BASE_URL}/banners`;
-        const SHIPPING_ZONES_ENDPOINT = `${ADMIN_API_BASE_URL}/shipping-zones`;
-        const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
-        const CUSTOMER_ENDPOINT = `${ADMIN_API_BASE_URL}/customers`;
-        const CATEGORY_ENDPOINT = `${ADMIN_API_BASE_URL}/categories`;
-        const SUBCATEGORY_ENDPOINT = (categoryId) => `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}/subcategories`;
-        const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) => `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
-        const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
-        const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
-        const PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT = (productId) => `${PRODUCT_ENDPOINT}/price-after-discount/${encodeURIComponent(productId)}`;
-        const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
-        const PAYMENT_TOGGLE_ENDPOINTS = {
-            cod: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payOnDelivery`,
-            visa: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payWithCard`,
-            installments: `${ADMIN_API_BASE_URL}/payment-settings/toggle/installments`
+    getStepText(stepNumber) {
+        const steps = {
+            1: 'تحميل البيانات',
+            2: 'تحضير الواجهة',
+            3: 'تحميل الرسوم البيانية'
         };
-        const PAYMENT_SETTINGS_ENDPOINT = `${ADMIN_API_BASE_URL}/payment-settings`;
-        const PAYMENT_STATUS_FIELD_BY_ID = {
-            cod: 'payOnDelivery',
-            visa: 'payWithCard',
-            installments: 'installments'
+        return steps[stepNumber] || 'تحميل النظام';
+    }
+
+    /**
+     * إخفاء شاشة التحميل
+     */
+    async hide() {
+        if (this.loaderScreen) {
+            this.setProgress(100);
+            // انتظر قليلاً قبل الإخفاء
+            await new Promise(resolve => setTimeout(resolve, 300));
+            this.loaderScreen.classList.add('hidden');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            this.loaderScreen.style.display = 'none';
+        }
+    }
+
+    /**
+     * إظهار الـ Loader
+     */
+    show() {
+        if (this.loaderScreen) {
+            this.loaderScreen.style.display = 'flex';
+            this.loaderScreen.classList.remove('hidden');
+            this.currentProgress = 0;
+            this.setProgress(0);
+        }
+    }
+}
+
+async function updateProductDiscountPrice(productId, priceAfterDiscount) {
+    if (!productId) {
+        throw new Error('معرف المنتج غير صالح لتحديث سعر الخصم');
+    }
+
+    const requestBody = priceAfterDiscount === null
+        ? { priceAfterDiscount: null }
+        : { priceAfterDiscount: Number(priceAfterDiscount) };
+
+    const response = await authorizedFetch(PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId), {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const errorMessage = data.message || 'تعذر تحديث سعر المنتج بعد الخصم';
+        throw new Error(errorMessage);
+    }
+
+    return response.json().catch(() => ({}));
+}
+
+// إنشاء instance من الـ Loader
+const dashboardLoader = new DashboardLoader();
+
+// ========================================
+// ===== 1. إعدادات API =====
+// ========================================
+
+const ADMIN_API_BASE_URL = 'https://action-sports-api.vercel.app/api';
+const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
+const BANNER_API = `${ADMIN_API_BASE_URL}/banners`;
+const SHIPPING_ZONES_ENDPOINT = `${ADMIN_API_BASE_URL}/shipping-zones`;
+const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
+const CUSTOMER_ENDPOINT = `${ADMIN_API_BASE_URL}/customers`;
+const CATEGORY_ENDPOINT = `${ADMIN_API_BASE_URL}/categories`;
+const SUBCATEGORY_ENDPOINT = (categoryId) => `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}/subcategories`;
+const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) => `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
+const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
+const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
+const PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT = (productId) => `${PRODUCT_ENDPOINT}/price-after-discount/${encodeURIComponent(productId)}`;
+const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
+const PAYMENT_TOGGLE_ENDPOINTS = {
+    cod: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payOnDelivery`,
+    visa: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payWithCard`,
+    installments: `${ADMIN_API_BASE_URL}/payment-settings/toggle/installments`
+};
+const PAYMENT_SETTINGS_ENDPOINT = `${ADMIN_API_BASE_URL}/payment-settings`;
+const PAYMENT_STATUS_FIELD_BY_ID = {
+    cod: 'payOnDelivery',
+    visa: 'payWithCard',
+    installments: 'installments'
+};
+const PAYMENT_ID_BY_STATUS_FIELD = Object.fromEntries(
+    Object.entries(PAYMENT_STATUS_FIELD_BY_ID).map(([id, field]) => [field, id])
+);
+const DESCRIPTION_MAX_LENGTH = 700;
+
+let cachedAdminId = null;
+
+// ========================================
+// ===== 1.a. دوال مساعدة للعملاء والعناوين =====
+// ========================================
+
+const ADDRESS_TYPE_LABELS = {
+    home: 'المنزل',
+    work: 'العمل',
+    office: 'المكتب',
+    billing: 'عنوان الفواتير',
+    shipping: 'عنوان الشحن',
+    other: 'عنوان آخر'
+};
+
+function getAddressTypeLabel(type) {
+    if (!type) return ADDRESS_TYPE_LABELS.other;
+    const normalized = String(type).toLowerCase();
+    return ADDRESS_TYPE_LABELS[normalized] || type;
+}
+
+function updateBannerImagePreview(image) {
+    const preview = document.getElementById('bannerImagePreview');
+    if (!preview) return;
+
+    if (!image) {
+        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        return;
+    }
+
+    preview.innerHTML = `<img src="${image}" alt="Banner Preview">`;
+}
+
+function prepareBannerCreateForm() {
+    const form = document.getElementById('bannerForm');
+    if (!form) return;
+
+    form.reset();
+    form.dataset.mode = 'create';
+    setFieldValue(form, 'id', '');
+    setFieldValue(form, 'title', '');
+    setFieldValue(form, 'description', '');
+
+    const descriptionField = form.querySelector('#bannerDescription');
+    if (descriptionField) {
+        updateDescriptionCounter(descriptionField);
+    }
+
+    const imageInput = form.querySelector('#bannerImage');
+    if (imageInput) {
+        imageInput.value = '';
+        delete imageInput.dataset.originalImage;
+        delete imageInput.dataset.previewImage;
+        imageInput.required = true;
+    }
+
+    updateBannerImagePreview('');
+}
+
+function populateBannerModal(bannerId) {
+    const form = document.getElementById('bannerForm');
+    if (!form) return;
+
+    const source = getBannerSource();
+    const banner = source.find(entry => (entry._id === bannerId || entry.id === bannerId));
+    if (!banner) {
+        showToast('error', 'تعديل البانر', 'تعذر العثور على البانر المحدد');
+        return;
+    }
+
+    form.dataset.mode = 'edit';
+    setFieldValue(form, 'id', banner._id || banner.id || '');
+    setFieldValue(form, 'title', banner.title || '');
+    setFieldValue(form, 'description', banner.description || '');
+
+    const descriptionField = form.querySelector('#bannerDescription');
+    if (descriptionField) {
+        updateDescriptionCounter(descriptionField);
+    }
+
+    const imageInput = form.querySelector('#bannerImage');
+    const resolvedImage = banner.image || banner.raw?.image || BANNER_IMAGE_PLACEHOLDER;
+    if (imageInput) {
+        imageInput.value = '';
+        imageInput.dataset.originalImage = resolvedImage;
+        delete imageInput.dataset.previewImage;
+        imageInput.required = false;
+    }
+
+    updateBannerImagePreview(resolvedImage);
+}
+
+async function handleBannerImageChange(event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+    const file = input.files?.[0];
+    if (!file) {
+        const fallback = input.dataset.previewImage || input.dataset.originalImage || '';
+        updateBannerImagePreview(fallback);
+        return;
+    }
+
+    try {
+        const dataUrl = await readFileAsDataUrl(file);
+        input.dataset.previewImage = dataUrl;
+        updateBannerImagePreview(dataUrl);
+    } catch (error) {
+        showToast('error', 'صورة البانر', 'تعذر معاينة ملف الصورة المحدد');
+        input.value = '';
+        const fallback = input.dataset.originalImage || '';
+        updateBannerImagePreview(fallback);
+    }
+}
+
+async function handleBannerFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form || form.dataset.entity !== 'banner') return;
+
+    const formData = new FormData(form);
+    const mode = form.dataset.mode || 'create';
+    const id = getFormValue(formData, 'id');
+    const title = getFormValue(formData, 'title');
+    const description = getFormValue(formData, 'description');
+    const imageInput = form.querySelector('#bannerImage');
+    const imageFile = imageInput?.files?.[0] || null;
+    const originalImage = imageInput?.dataset.originalImage || '';
+
+    if (!title) {
+        showToast('error', 'حفظ البانر', 'يرجى إدخال عنوان للبانر');
+        return;
+    }
+
+    if (!description) {
+        showToast('error', 'حفظ البانر', 'يرجى إدخال وصف للبانر');
+        return;
+    }
+
+    if (!imageFile && mode === 'create') {
+        showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+        return;
+    }
+
+    if (!imageFile && mode === 'edit' && !originalImage) {
+        showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+        return;
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton?.innerHTML;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    }
+
+    const payload = { title, description };
+
+    try {
+        if (mode === 'edit') {
+            if (!id) {
+                throw new Error('تعذر تحديد البانر الذي ترغب في تعديله');
+            }
+            await updateBanner(id, payload, imageFile);
+            showToast('success', 'تحديث البانر', 'تم تحديث البانر بنجاح');
+        } else {
+            await createBanner(payload, imageFile);
+            showToast('success', 'إضافة البانر', 'تمت إضافة البانر بنجاح');
+        }
+
+        closeModal('bannerModal');
+        prepareBannerCreateForm();
+        await fetchBanners({ force: true });
+    } catch (error) {
+        const message = error?.message || 'حدث خطأ أثناء حفظ البانر';
+        showToast('error', 'خطأ', message);
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText || 'حفظ البانر';
+        }
+    }
+}
+
+function normalizeCustomerAddress(rawAddress = {}, index = 0) {
+    if (!rawAddress) return null;
+
+    if (typeof rawAddress === 'string') {
+        const trimmed = rawAddress.trim();
+        if (!trimmed) return null;
+        return {
+            id: `address-${index}`,
+            type: 'other',
+            label: ADDRESS_TYPE_LABELS.other,
+            details: trimmed,
+            city: '',
+            region: '',
+            country: '',
+            postalCode: '',
+            phone: '',
+            name: '',
+            raw: rawAddress
         };
-        const PAYMENT_ID_BY_STATUS_FIELD = Object.fromEntries(
-            Object.entries(PAYMENT_STATUS_FIELD_BY_ID).map(([id, field]) => [field, id])
-        );
-        const DESCRIPTION_MAX_LENGTH = 700;
+    }
 
-        let cachedAdminId = null;
+    if (Array.isArray(rawAddress)) {
+        return rawAddress
+            .map((entry, arrayIndex) => normalizeCustomerAddress(entry, index + arrayIndex))
+            .filter(Boolean);
+    }
 
-        // ========================================
-        // ===== 1.a. دوال مساعدة للعملاء والعناوين =====
-        // ========================================
+    if (typeof rawAddress !== 'object') {
+        return null;
+    }
 
-        const ADDRESS_TYPE_LABELS = {
-            home: 'المنزل',
-            work: 'العمل',
-            office: 'المكتب',
-            billing: 'عنوان الفواتير',
-            shipping: 'عنوان الشحن',
-            other: 'عنوان آخر'
-        };
+    const id = rawAddress._id
+        || rawAddress.id
+        || rawAddress.addressId
+        || rawAddress.slug
+        || rawAddress.reference
+        || `address-${index}`;
 
-        function getAddressTypeLabel(type) {
-            if (!type) return ADDRESS_TYPE_LABELS.other;
-            const normalized = String(type).toLowerCase();
-            return ADDRESS_TYPE_LABELS[normalized] || type;
+    const type = rawAddress.type
+        || rawAddress.addressType
+        || rawAddress.tag
+        || rawAddress.label
+        || rawAddress.kind
+        || 'other';
+
+    const details = rawAddress.details
+        || rawAddress.detail
+        || rawAddress.street
+        || rawAddress.street1
+        || rawAddress.addressLine1
+        || rawAddress.address1
+        || rawAddress.line1
+        || rawAddress.fullAddress
+        || rawAddress.address
+        || '';
+
+    const city = rawAddress.city
+        || rawAddress.town
+        || rawAddress.cityName
+        || rawAddress.governorate
+        || rawAddress.state
+        || '';
+
+    const baseRegion = rawAddress.region
+        || rawAddress.state
+        || rawAddress.province
+        || rawAddress.area
+        || rawAddress.district
+        || '';
+
+    const postalCode = rawAddress.postalCode
+        || rawAddress.zip
+        || rawAddress.zipCode
+        || rawAddress.postal
+        || '';
+
+    const country = rawAddress.country
+        || rawAddress.countryName
+        || rawAddress.country_code
+        || '';
+
+    const phone = rawAddress.phone
+        || rawAddress.mobile
+        || rawAddress.phoneNumber
+        || rawAddress.contactPhone
+        || '';
+
+    const name = rawAddress.name
+        || rawAddress.contactName
+        || rawAddress.receiverName
+        || rawAddress.recipient
+        || '';
+
+    const zoneInfo = typeof resolveShippingZone === 'function'
+        ? resolveShippingZone({}, rawAddress)
+        : { zoneName: '', shippingRate: null, zoneId: '' };
+
+    const zoneIdCandidate = rawAddress.zoneId
+        || rawAddress.shippingZoneId
+        || (typeof rawAddress.shippingZone === 'string' ? rawAddress.shippingZone : '')
+        || (typeof rawAddress.zone === 'string' ? rawAddress.zone : '')
+        || zoneInfo.zoneId;
+
+    let zoneName = zoneInfo.zoneName
+        || rawAddress.zoneName
+        || rawAddress.shippingZoneName
+        || rawAddress.shippingZone?.name
+        || rawAddress.zone?.name
+        || rawAddress.areaName
+        || '';
+
+    if (!zoneName && zoneIdCandidate && typeof getShippingZoneById === 'function') {
+        const matchedZone = getShippingZoneById(zoneIdCandidate);
+        if (matchedZone?.zoneName) {
+            zoneName = matchedZone.zoneName;
+        }
+    }
+
+    const rateCandidate = zoneInfo.shippingRate
+        ?? rawAddress.shippingRate
+        ?? rawAddress.rate
+        ?? rawAddress.price
+        ?? rawAddress.cost
+        ?? rawAddress.shippingCost
+        ?? rawAddress.deliveryFee
+        ?? null;
+
+    const numericRate = Number(rateCandidate);
+    const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
+
+    const zoneId = zoneIdCandidate
+        || rawAddress.shippingZone?._id
+        || rawAddress.shippingZone?.id
+        || rawAddress.zone?._id
+        || rawAddress.zone?.id
+        || zoneInfo.zoneId
+        || '';
+
+    const region = zoneName || baseRegion;
+
+    return {
+        id,
+        type,
+        label: getAddressTypeLabel(type),
+        details,
+        city,
+        region,
+        postalCode,
+        country,
+        phone,
+        name,
+        zoneName,
+        shippingRate,
+        zoneId,
+        raw: rawAddress
+    };
+}
+
+function collectCustomerAddresses(customer = {}) {
+    const addresses = [];
+
+    const isAddressFromApi = (normalizedAddress) => {
+        if (!normalizedAddress) return false;
+
+        const raw = normalizedAddress.raw;
+        if (!raw || typeof raw !== 'object') {
+            return false;
         }
 
-        function updateBannerImagePreview(image) {
-            const preview = document.getElementById('bannerImagePreview');
-            if (!preview) return;
-
-            if (!image) {
-                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                return;
-            }
-
-            preview.innerHTML = `<img src="${image}" alt="Banner Preview">`;
+        if (raw.source === 'api' || raw.fromApi === true || raw.__fromApi === true) {
+            return true;
         }
 
-        function prepareBannerCreateForm() {
-            const form = document.getElementById('bannerForm');
-            if (!form) return;
+        const identifierCandidates = [
+            raw._id,
+            raw.id,
+            raw.addressId,
+            raw.address_id,
+            raw.addressID,
+            raw.slug
+        ];
 
-            form.reset();
-            form.dataset.mode = 'create';
-            setFieldValue(form, 'id', '');
-            setFieldValue(form, 'title', '');
-            setFieldValue(form, 'description', '');
-
-            const descriptionField = form.querySelector('#bannerDescription');
-            if (descriptionField) {
-                updateDescriptionCounter(descriptionField);
-            }
-
-            const imageInput = form.querySelector('#bannerImage');
-            if (imageInput) {
-                imageInput.value = '';
-                delete imageInput.dataset.originalImage;
-                delete imageInput.dataset.previewImage;
-                imageInput.required = true;
-            }
-
-            updateBannerImagePreview('');
+        if (identifierCandidates.some(value => typeof value === 'string' ? value.trim() : value)) {
+            return true;
         }
 
-        function populateBannerModal(bannerId) {
-            const form = document.getElementById('bannerForm');
-            if (!form) return;
-
-            const source = getBannerSource();
-            const banner = source.find(entry => (entry._id === bannerId || entry.id === bannerId));
-            if (!banner) {
-                showToast('error', 'تعديل البانر', 'تعذر العثور على البانر المحدد');
-                return;
-            }
-
-            form.dataset.mode = 'edit';
-            setFieldValue(form, 'id', banner._id || banner.id || '');
-            setFieldValue(form, 'title', banner.title || '');
-            setFieldValue(form, 'description', banner.description || '');
-
-            const descriptionField = form.querySelector('#bannerDescription');
-            if (descriptionField) {
-                updateDescriptionCounter(descriptionField);
-            }
-
-            const imageInput = form.querySelector('#bannerImage');
-            const resolvedImage = banner.image || banner.raw?.image || BANNER_IMAGE_PLACEHOLDER;
-            if (imageInput) {
-                imageInput.value = '';
-                imageInput.dataset.originalImage = resolvedImage;
-                delete imageInput.dataset.previewImage;
-                imageInput.required = false;
-            }
-
-            updateBannerImagePreview(resolvedImage);
+        if (typeof normalizedAddress.id === 'string' && !normalizedAddress.id.startsWith('address-')) {
+            return true;
         }
 
-        async function handleBannerImageChange(event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+        return false;
+    };
 
-            const file = input.files?.[0];
-            if (!file) {
-                const fallback = input.dataset.previewImage || input.dataset.originalImage || '';
-                updateBannerImagePreview(fallback);
-                return;
-            }
-
-            try {
-                const dataUrl = await readFileAsDataUrl(file);
-                input.dataset.previewImage = dataUrl;
-                updateBannerImagePreview(dataUrl);
-            } catch (error) {
-                showToast('error', 'صورة البانر', 'تعذر معاينة ملف الصورة المحدد');
-                input.value = '';
-                const fallback = input.dataset.originalImage || '';
-                updateBannerImagePreview(fallback);
-            }
+    const pushAddress = (entry) => {
+        if (!entry) return;
+        const normalized = normalizeCustomerAddress(entry, addresses.length);
+        if (Array.isArray(normalized)) {
+            normalized.forEach(pushAddress);
+            return;
         }
+        if (!normalized) return;
 
-        async function handleBannerFormSubmit(event) {
-            event.preventDefault();
-            const form = event.target;
-            if (!form || form.dataset.entity !== 'banner') return;
+        const raw = normalized.raw;
 
-            const formData = new FormData(form);
-            const mode = form.dataset.mode || 'create';
-            const id = getFormValue(formData, 'id');
-            const title = getFormValue(formData, 'title');
-            const description = getFormValue(formData, 'description');
-            const imageInput = form.querySelector('#bannerImage');
-            const imageFile = imageInput?.files?.[0] || null;
-            const originalImage = imageInput?.dataset.originalImage || '';
-
-            if (!title) {
-                showToast('error', 'حفظ البانر', 'يرجى إدخال عنوان للبانر');
-                return;
-            }
-
-            if (!description) {
-                showToast('error', 'حفظ البانر', 'يرجى إدخال وصف للبانر');
-                return;
-            }
-
-            if (!imageFile && mode === 'create') {
-                showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
-                return;
-            }
-
-            if (!imageFile && mode === 'edit' && !originalImage) {
-                showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
-                return;
-            }
-
-            const submitButton = form.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton?.innerHTML;
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
-            }
-
-            const payload = { title, description };
-
-            try {
-                if (mode === 'edit') {
-                    if (!id) {
-                        throw new Error('تعذر تحديد البانر الذي ترغب في تعديله');
-                    }
-                    await updateBanner(id, payload, imageFile);
-                    showToast('success', 'تحديث البانر', 'تم تحديث البانر بنجاح');
-                } else {
-                    await createBanner(payload, imageFile);
-                    showToast('success', 'إضافة البانر', 'تمت إضافة البانر بنجاح');
-                }
-
-                closeModal('bannerModal');
-                prepareBannerCreateForm();
-                await fetchBanners({ force: true });
-            } catch (error) {
-                const message = error?.message || 'حدث خطأ أثناء حفظ البانر';
-                showToast('error', 'خطأ', message);
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalButtonText || 'حفظ البانر';
-                }
-            }
-        }
-
-        function normalizeCustomerAddress(rawAddress = {}, index = 0) {
-            if (!rawAddress) return null;
-
-            if (typeof rawAddress === 'string') {
-                const trimmed = rawAddress.trim();
-                if (!trimmed) return null;
-                return {
-                    id: `address-${index}`,
-                    type: 'other',
-                    label: ADDRESS_TYPE_LABELS.other,
-                    details: trimmed,
-                    city: '',
-                    region: '',
-                    country: '',
-                    postalCode: '',
-                    phone: '',
-                    name: '',
-                    raw: rawAddress
-                };
-            }
-
-            if (Array.isArray(rawAddress)) {
-                return rawAddress
-                    .map((entry, arrayIndex) => normalizeCustomerAddress(entry, index + arrayIndex))
-                    .filter(Boolean);
-            }
-
-            if (typeof rawAddress !== 'object') {
-                return null;
-            }
-
-            const id = rawAddress._id
-                || rawAddress.id
-                || rawAddress.addressId
-                || rawAddress.slug
-                || rawAddress.reference
-                || `address-${index}`;
-
-            const type = rawAddress.type
-                || rawAddress.addressType
-                || rawAddress.tag
-                || rawAddress.label
-                || rawAddress.kind
-                || 'other';
-
-            const details = rawAddress.details
-                || rawAddress.detail
-                || rawAddress.street
-                || rawAddress.street1
-                || rawAddress.addressLine1
-                || rawAddress.address1
-                || rawAddress.line1
-                || rawAddress.fullAddress
-                || rawAddress.address
-                || '';
-
-            const city = rawAddress.city
-                || rawAddress.town
-                || rawAddress.cityName
-                || rawAddress.governorate
-                || rawAddress.state
-                || '';
-
-            const baseRegion = rawAddress.region
-                || rawAddress.state
-                || rawAddress.province
-                || rawAddress.area
-                || rawAddress.district
-                || '';
-
-            const postalCode = rawAddress.postalCode
-                || rawAddress.zip
-                || rawAddress.zipCode
-                || rawAddress.postal
-                || '';
-
-            const country = rawAddress.country
-                || rawAddress.countryName
-                || rawAddress.country_code
-                || '';
-
-            const phone = rawAddress.phone
-                || rawAddress.mobile
-                || rawAddress.phoneNumber
-                || rawAddress.contactPhone
-                || '';
-
-            const name = rawAddress.name
-                || rawAddress.contactName
-                || rawAddress.receiverName
-                || rawAddress.recipient
-                || '';
-
-            const zoneInfo = typeof resolveShippingZone === 'function'
-                ? resolveShippingZone({}, rawAddress)
-                : { zoneName: '', shippingRate: null, zoneId: '' };
-
-            const zoneIdCandidate = rawAddress.zoneId
-                || rawAddress.shippingZoneId
-                || (typeof rawAddress.shippingZone === 'string' ? rawAddress.shippingZone : '')
-                || (typeof rawAddress.zone === 'string' ? rawAddress.zone : '')
-                || zoneInfo.zoneId;
-
-            let zoneName = zoneInfo.zoneName
-                || rawAddress.zoneName
-                || rawAddress.shippingZoneName
-                || rawAddress.shippingZone?.name
-                || rawAddress.zone?.name
-                || rawAddress.areaName
-                || '';
-
-            if (!zoneName && zoneIdCandidate && typeof getShippingZoneById === 'function') {
-                const matchedZone = getShippingZoneById(zoneIdCandidate);
-                if (matchedZone?.zoneName) {
-                    zoneName = matchedZone.zoneName;
-                }
-            }
-
-            const rateCandidate = zoneInfo.shippingRate
-                ?? rawAddress.shippingRate
-                ?? rawAddress.rate
-                ?? rawAddress.price
-                ?? rawAddress.cost
-                ?? rawAddress.shippingCost
-                ?? rawAddress.deliveryFee
-                ?? null;
-
-            const numericRate = Number(rateCandidate);
-            const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
-
-            const zoneId = zoneIdCandidate
-                || rawAddress.shippingZone?._id
-                || rawAddress.shippingZone?.id
-                || rawAddress.zone?._id
-                || rawAddress.zone?.id
-                || zoneInfo.zoneId
-                || '';
-
-            const region = zoneName || baseRegion;
-
-            return {
-                id,
-                type,
-                label: getAddressTypeLabel(type),
-                details,
-                city,
-                region,
-                postalCode,
-                country,
-                phone,
-                name,
-                zoneName,
-                shippingRate,
-                zoneId,
-                raw: rawAddress
-            };
-        }
-
-        function collectCustomerAddresses(customer = {}) {
-            const addresses = [];
-
-            const isAddressFromApi = (normalizedAddress) => {
-                if (!normalizedAddress) return false;
-
-                const raw = normalizedAddress.raw;
-                if (!raw || typeof raw !== 'object') {
-                    return false;
-                }
-
-                if (raw.source === 'api' || raw.fromApi === true || raw.__fromApi === true) {
-                    return true;
-                }
-
-                const identifierCandidates = [
-                    raw._id,
-                    raw.id,
-                    raw.addressId,
-                    raw.address_id,
-                    raw.addressID,
-                    raw.slug
-                ];
-
-                if (identifierCandidates.some(value => typeof value === 'string' ? value.trim() : value)) {
-                    return true;
-                }
-
-                if (typeof normalizedAddress.id === 'string' && !normalizedAddress.id.startsWith('address-')) {
-                    return true;
-                }
-
-                return false;
-            };
-
-            const pushAddress = (entry) => {
-                if (!entry) return;
-                const normalized = normalizeCustomerAddress(entry, addresses.length);
-                if (Array.isArray(normalized)) {
-                    normalized.forEach(pushAddress);
-                    return;
-                }
-                if (!normalized) return;
-
-                const raw = normalized.raw;
-
-                if (raw && typeof raw === 'object') {
-                    const hasOrderSignature = Boolean(
-                        raw.orderId
-                        || raw.order_id
-                        || raw.order
-                        || raw.orderReference
-                        || raw.orderRef
-                        || raw.cartId
-                    );
-
-                    if (hasOrderSignature) {
-                        return;
-                    }
-                }
-
-                const zoneRef = normalized.zoneId || normalized.raw?.zoneId || normalized.raw?.shippingZoneId;
-                if (!normalized.zoneName && zoneRef && typeof getShippingZoneById === 'function') {
-                    const zone = getShippingZoneById(zoneRef);
-                    if (zone?.zoneName) {
-                        normalized.zoneName = zone.zoneName;
-                        if (!normalized.region || normalized.region === normalized.zoneId || normalized.region === zoneRef) {
-                            normalized.region = zone.zoneName;
-                        }
-                        if (!normalized.zoneId) {
-                            normalized.zoneId = zone.id;
-                        }
-                    }
-                }
-
-                if (normalized.region && normalized.zoneId && normalized.region === normalized.zoneId) {
-                    normalized.region = normalized.zoneName || '';
-                }
-
-                const signature = JSON.stringify([
-                    normalized.details,
-                    normalized.city,
-                    normalized.region,
-                    normalized.postalCode,
-                    normalized.country,
-                    normalized.phone
-                ]);
-
-                if (!isAddressFromApi(normalized)) {
-                    return;
-                }
-
-                const isDuplicate = addresses.some(existing => existing.signature === signature);
-                if (!isDuplicate) {
-                    addresses.push({ ...normalized, signature });
-                }
-            };
-
-            const candidateSources = [
-                customer.addresses,
-                customer.addressList,
-                customer.addressesList,
-                customer.profile?.addresses,
-                customer.data?.addresses,
-                customer.user?.addresses
-            ];
-
-            candidateSources.forEach(source => {
-                if (!source) return;
-                if (Array.isArray(source)) {
-                    source.forEach(item => pushAddress(item));
-                } else {
-                    pushAddress(source);
-                }
-            });
-
-            if (!addresses.length) {
-                const fallbackDetails = customer.fullAddress
-                    || customer.address
-                    || customer.location
-                    || '';
-
-                if (
-                    fallbackDetails
-                    || customer.city
-                    || customer.region
-                    || customer.country
-                    || customer.postalCode
-                ) {
-                    pushAddress({
-                        type: 'other',
-                        details: fallbackDetails,
-                        city: customer.city,
-                        region: customer.region || customer.state,
-                        postalCode: customer.postalCode,
-                        country: customer.country,
-                        phone: customer.phone
-                    });
-                }
-            }
-
-            return addresses.map(({ signature, ...rest }) => rest);
-        }
-
-        function isUserLikeObject(candidate) {
-            if (!candidate || typeof candidate !== 'object') return false;
-            return Boolean(
-                candidate.email
-                || candidate.phone
-                || candidate.name
-                || candidate.fullName
-                || candidate.address
-                || candidate.addresses
+        if (raw && typeof raw === 'object') {
+            const hasOrderSignature = Boolean(
+                raw.orderId
+                || raw.order_id
+                || raw.order
+                || raw.orderReference
+                || raw.orderRef
+                || raw.cartId
             );
+
+            if (hasOrderSignature) {
+                return;
+            }
         }
 
-        function pickFirstUserLikeObject(payload) {
-            if (!payload) return null;
-
-            if (Array.isArray(payload)) {
-                for (const item of payload) {
-                    const candidate = pickFirstUserLikeObject(item);
-                    if (candidate) return candidate;
+        const zoneRef = normalized.zoneId || normalized.raw?.zoneId || normalized.raw?.shippingZoneId;
+        if (!normalized.zoneName && zoneRef && typeof getShippingZoneById === 'function') {
+            const zone = getShippingZoneById(zoneRef);
+            if (zone?.zoneName) {
+                normalized.zoneName = zone.zoneName;
+                if (!normalized.region || normalized.region === normalized.zoneId || normalized.region === zoneRef) {
+                    normalized.region = zone.zoneName;
                 }
-                return null;
-            }
-
-            if (isUserLikeObject(payload)) {
-                return payload;
-            }
-
-            if (typeof payload !== 'object') {
-                return null;
-            }
-
-            const nestedCandidates = [
-                payload.data,
-                payload.user,
-                payload.customer,
-                payload.profile,
-                payload.result,
-                payload.record,
-                payload.document,
-                payload.entry,
-                payload.payload
-            ];
-
-            for (const nested of nestedCandidates) {
-                const candidate = pickFirstUserLikeObject(nested);
-                if (candidate) return candidate;
-            }
-
-            for (const value of Object.values(payload)) {
-                if (Array.isArray(value)) {
-                    const candidate = pickFirstUserLikeObject(value);
-                    if (candidate) return candidate;
+                if (!normalized.zoneId) {
+                    normalized.zoneId = zone.id;
                 }
             }
-
-            return null;
         }
 
-        function extractSingleUserFromPayload(payload) {
-            if (!payload) return null;
-
-            if (isUserLikeObject(payload)) {
-                return payload;
-            }
-
-            const candidateObjects = [
-                payload?.data?.user,
-                payload?.data?.customer,
-                payload?.data?.profile,
-                payload?.data?.record,
-                payload?.user,
-                payload?.customer,
-                payload?.profile,
-                payload?.record,
-                payload?.result,
-                payload?.document,
-                payload?.entry
-            ];
-
-            for (const candidate of candidateObjects) {
-                if (isUserLikeObject(candidate)) {
-                    return candidate;
-                }
-            }
-
-            const candidateArrays = [
-                payload?.data?.users,
-                payload?.data?.customers,
-                payload?.data?.documents,
-                payload?.data?.items,
-                payload?.users,
-                payload?.customers,
-                payload?.documents,
-                payload?.items,
-                Array.isArray(payload?.data) ? payload.data : null,
-                Array.isArray(payload) ? payload : null
-            ];
-
-            for (const collection of candidateArrays) {
-                if (!Array.isArray(collection)) continue;
-                const candidate = collection.find(isUserLikeObject);
-                if (candidate) {
-                    return candidate;
-                }
-            }
-
-            return pickFirstUserLikeObject(payload);
+        if (normalized.region && normalized.zoneId && normalized.region === normalized.zoneId) {
+            normalized.region = normalized.zoneName || '';
         }
 
-        async function fetchCustomerProfileFromApi(customerId) {
-            if (!customerId) return null;
+        const signature = JSON.stringify([
+            normalized.details,
+            normalized.city,
+            normalized.region,
+            normalized.postalCode,
+            normalized.country,
+            normalized.phone
+        ]);
 
-            const targetId = encodeURIComponent(customerId);
-            const endpoints = [
-                `${USERS_ENDPOINT}/${targetId}`,
-                `${CUSTOMER_ENDPOINT}/${targetId}`
-            ];
-
-            for (const endpoint of endpoints) {
-                try {
-                    const response = await authorizedFetch(endpoint);
-
-                    if (response?.status === 404) {
-                        continue;
-                    }
-
-                    if (!response?.ok) {
-                        const message = `${response.status} ${response.statusText || ''}`.trim();
-                        throw new Error(message || 'تعذر جلب بيانات العميل');
-                    }
-
-                    const payload = await response.json().catch(() => null);
-                    const extracted = extractSingleUserFromPayload(payload);
-
-                    if (extracted) {
-                        return {
-                            ...extracted,
-                            _id: extracted._id || extracted.id || customerId,
-                            id: extracted.id || extracted._id || customerId
-                        };
-                    }
-                } catch (error) {
-                    if (error?.message?.includes('401')) {
-                        throw error;
-                    }
-                }
-            }
-
-            return null;
+        if (!isAddressFromApi(normalized)) {
+            return;
         }
 
-        async function getFreshCustomerData(customerId) {
-            const freshProfile = await fetchCustomerProfileFromApi(customerId);
-            if (!freshProfile) return null;
+        const isDuplicate = addresses.some(existing => existing.signature === signature);
+        if (!isDuplicate) {
+            addresses.push({ ...normalized, signature });
+        }
+    };
 
-            const addresses = collectCustomerAddresses(freshProfile);
+    const candidateSources = [
+        customer.addresses,
+        customer.addressList,
+        customer.addressesList,
+        customer.profile?.addresses,
+        customer.data?.addresses,
+        customer.user?.addresses
+    ];
 
-            if (!Array.isArray(addresses) || !addresses.length) {
-                freshProfile.addresses = [];
-            } else {
-                freshProfile.addresses = addresses.map(address => ({
-                    ...address,
-                    label: address.label || getAddressTypeLabel(address.type)
-                }));
+    candidateSources.forEach(source => {
+        if (!source) return;
+        if (Array.isArray(source)) {
+            source.forEach(item => pushAddress(item));
+        } else {
+            pushAddress(source);
+        }
+    });
+
+    if (!addresses.length) {
+        const fallbackDetails = customer.fullAddress
+            || customer.address
+            || customer.location
+            || '';
+
+        if (
+            fallbackDetails
+            || customer.city
+            || customer.region
+            || customer.country
+            || customer.postalCode
+        ) {
+            pushAddress({
+                type: 'other',
+                details: fallbackDetails,
+                city: customer.city,
+                region: customer.region || customer.state,
+                postalCode: customer.postalCode,
+                country: customer.country,
+                phone: customer.phone
+            });
+        }
+    }
+
+    return addresses.map(({ signature, ...rest }) => rest);
+}
+
+function isUserLikeObject(candidate) {
+    if (!candidate || typeof candidate !== 'object') return false;
+    return Boolean(
+        candidate.email
+        || candidate.phone
+        || candidate.name
+        || candidate.fullName
+        || candidate.address
+        || candidate.addresses
+    );
+}
+
+function pickFirstUserLikeObject(payload) {
+    if (!payload) return null;
+
+    if (Array.isArray(payload)) {
+        for (const item of payload) {
+            const candidate = pickFirstUserLikeObject(item);
+            if (candidate) return candidate;
+        }
+        return null;
+    }
+
+    if (isUserLikeObject(payload)) {
+        return payload;
+    }
+
+    if (typeof payload !== 'object') {
+        return null;
+    }
+
+    const nestedCandidates = [
+        payload.data,
+        payload.user,
+        payload.customer,
+        payload.profile,
+        payload.result,
+        payload.record,
+        payload.document,
+        payload.entry,
+        payload.payload
+    ];
+
+    for (const nested of nestedCandidates) {
+        const candidate = pickFirstUserLikeObject(nested);
+        if (candidate) return candidate;
+    }
+
+    for (const value of Object.values(payload)) {
+        if (Array.isArray(value)) {
+            const candidate = pickFirstUserLikeObject(value);
+            if (candidate) return candidate;
+        }
+    }
+
+    return null;
+}
+
+function extractSingleUserFromPayload(payload) {
+    if (!payload) return null;
+
+    if (isUserLikeObject(payload)) {
+        return payload;
+    }
+
+    const candidateObjects = [
+        payload?.data?.user,
+        payload?.data?.customer,
+        payload?.data?.profile,
+        payload?.data?.record,
+        payload?.user,
+        payload?.customer,
+        payload?.profile,
+        payload?.record,
+        payload?.result,
+        payload?.document,
+        payload?.entry
+    ];
+
+    for (const candidate of candidateObjects) {
+        if (isUserLikeObject(candidate)) {
+            return candidate;
+        }
+    }
+
+    const candidateArrays = [
+        payload?.data?.users,
+        payload?.data?.customers,
+        payload?.data?.documents,
+        payload?.data?.items,
+        payload?.users,
+        payload?.customers,
+        payload?.documents,
+        payload?.items,
+        Array.isArray(payload?.data) ? payload.data : null,
+        Array.isArray(payload) ? payload : null
+    ];
+
+    for (const collection of candidateArrays) {
+        if (!Array.isArray(collection)) continue;
+        const candidate = collection.find(isUserLikeObject);
+        if (candidate) {
+            return candidate;
+        }
+    }
+
+    return pickFirstUserLikeObject(payload);
+}
+
+async function fetchCustomerProfileFromApi(customerId) {
+    if (!customerId) return null;
+
+    const targetId = encodeURIComponent(customerId);
+    const endpoints = [
+        `${USERS_ENDPOINT}/${targetId}`,
+        `${CUSTOMER_ENDPOINT}/${targetId}`
+    ];
+
+    for (const endpoint of endpoints) {
+        try {
+            const response = await authorizedFetch(endpoint);
+
+            if (response?.status === 404) {
+                continue;
             }
 
-            return freshProfile;
-        }
+            if (!response?.ok) {
+                const message = `${response.status} ${response.statusText || ''}`.trim();
+                throw new Error(message || 'تعذر جلب بيانات العميل');
+            }
 
-        function buildCustomerDetailsContent({ customer, loading = false, error = null, customerId }) {
-            if (!customer && loading) {
-                return `
+            const payload = await response.json().catch(() => null);
+            const extracted = extractSingleUserFromPayload(payload);
+
+            if (extracted) {
+                return {
+                    ...extracted,
+                    _id: extracted._id || extracted.id || customerId,
+                    id: extracted.id || extracted._id || customerId
+                };
+            }
+        } catch (error) {
+            if (error?.message?.includes('401')) {
+                throw error;
+            }
+        }
+    }
+
+    return null;
+}
+
+async function getFreshCustomerData(customerId) {
+    const freshProfile = await fetchCustomerProfileFromApi(customerId);
+    if (!freshProfile) return null;
+
+    const addresses = collectCustomerAddresses(freshProfile);
+
+    if (!Array.isArray(addresses) || !addresses.length) {
+        freshProfile.addresses = [];
+    } else {
+        freshProfile.addresses = addresses.map(address => ({
+            ...address,
+            label: address.label || getAddressTypeLabel(address.type)
+        }));
+    }
+
+    return freshProfile;
+}
+
+function buildCustomerDetailsContent({ customer, loading = false, error = null, customerId }) {
+    if (!customer && loading) {
+        return `
                     <div class="customer-details-loading" style="min-width: 320px; min-height: 220px; display: flex; align-items: center; justify-content: center;">
                         <div class="loading-state">
                             <i class="fas fa-spinner fa-spin"></i>
@@ -816,48 +816,48 @@
                         </div>
                     </div>
                 `;
-            }
+    }
 
-            if (!customer) {
-                return `
+    if (!customer) {
+        return `
                     <div class="customer-details-error" style="min-width: 320px; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #e74c3c;"></i>
                         <p style="margin-top: 12px;">تعذر العثور على بيانات العميل</p>
                         ${error ? `<p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(error)}</p>` : ''}
                     </div>
                 `;
-            }
+    }
 
-            const normalizedName = escapeHtml(customer.name || customer.fullName || '-');
-            const email = escapeHtml(customer.email || '-');
-            const segment = customer.segment ? escapeHtml(customer.segment) : null;
-            const createdDate = getCustomerCreatedDate?.(customer);
-            const createdDateText = createdDate ? new Date(createdDate).toLocaleDateString('ar-EG') : null;
+    const normalizedName = escapeHtml(customer.name || customer.fullName || '-');
+    const email = escapeHtml(customer.email || '-');
+    const segment = customer.segment ? escapeHtml(customer.segment) : null;
+    const createdDate = getCustomerCreatedDate?.(customer);
+    const createdDateText = createdDate ? new Date(createdDate).toLocaleDateString('ar-EG') : null;
 
-            const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
+    const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
 
-            let addressesContent = '';
+    let addressesContent = '';
 
-            if (loading && !addresses.length) {
-                addressesContent = `
+    if (loading && !addresses.length) {
+        addressesContent = `
                     <div class="loading-state" style="padding: 20px;">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>جارٍ تحميل العناوين المسجلة...</p>
                     </div>
                 `;
-            } else if (addresses.length) {
-                addressesContent = addresses.map((address, index) => {
-                    const label = escapeHtml(address.label || getAddressTypeLabel(address.type));
-                    const contactName = address.name ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>` : '';
-                    const details = address.details ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>` : '';
-                    const postalLine = address.postalCode ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>` : '';
-                    const countryLine = address.country ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>` : '';
-                    const zoneLine = address.zoneName ? `<p style="margin: 6px 0;"><strong>منطقة الشحن:</strong> ${escapeHtml(address.zoneName)}</p>` : '';
-                    const phoneLine = address.phone
-                        ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
-                        : '';
+    } else if (addresses.length) {
+        addressesContent = addresses.map((address, index) => {
+            const label = escapeHtml(address.label || getAddressTypeLabel(address.type));
+            const contactName = address.name ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>` : '';
+            const details = address.details ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>` : '';
+            const postalLine = address.postalCode ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>` : '';
+            const countryLine = address.country ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>` : '';
+            const zoneLine = address.zoneName ? `<p style="margin: 6px 0;"><strong>منطقة الشحن:</strong> ${escapeHtml(address.zoneName)}</p>` : '';
+            const phoneLine = address.phone
+                ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
+                : '';
 
-                    return `
+            return `
                         <div class="customer-address-card" style="background: var(--bg-light); color: var(--text-main); padding: 16px; border-radius: 10px; border-right: 4px solid var(--primary); margin-bottom: 12px;">
                             <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #e74c3c;">
                                 <i class="fas fa-map-marker-alt"></i>
@@ -871,27 +871,27 @@
                             ${phoneLine}
                         </div>
                     `;
-                }).join('');
-            } else {
-                addressesContent = '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة لهذا العميل.</p>';
-            }
+        }).join('');
+    } else {
+        addressesContent = '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة لهذا العميل.</p>';
+    }
 
-            const ordersButton = customerId
-                ? `<button class="btn-primary" data-action="view-customer-orders" data-customer-id="${escapeHtml(customerId)}" style="margin-left: 10px;"><i class="fas fa-shopping-cart"></i> عرض طلبات العميل</button>`
-                : '';
+    const ordersButton = customerId
+        ? `<button class="btn-primary" data-action="view-customer-orders" data-customer-id="${escapeHtml(customerId)}" style="margin-left: 10px;"><i class="fas fa-shopping-cart"></i> عرض طلبات العميل</button>`
+        : '';
 
-            const errorBlock = error
-                ? `<div class="customer-details-error" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: rgba(231, 76, 60, 0.15); color: #c0392b;">
+    const errorBlock = error
+        ? `<div class="customer-details-error" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: rgba(231, 76, 60, 0.15); color: #c0392b;">
                         <i class="fas fa-exclamation-circle"></i>
                         <span style="margin-right: 8px;">${escapeHtml(error)}</span>
                     </div>`
-                : '';
+        : '';
 
-            const loadingBadge = loading && addresses.length
-                ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
-                : '';
+    const loadingBadge = loading && addresses.length
+        ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
+        : '';
 
-            return `
+    return `
                 <div style="min-width: 320px;">
                     ${errorBlock}
                     <div style="margin-bottom: 24px;">
@@ -916,354 +916,354 @@
                     ${ordersButton ? `<div style="text-align: center; margin-top: 20px;">${ordersButton}</div>` : ''}
                 </div>
             `;
-        }
+}
 
-        // ========================================
-        // ===== 2. التحقق من المصادقة =====
-        // ========================================
+// ========================================
+// ===== 2. التحقق من المصادقة =====
+// ========================================
 
-        // التحقق من تحميل وحدة المصادقة (يعتمد على window.adminAuth من js/index-auth.js)
-        if (!window.adminAuth) {
-            console.error('⚠️ لم يتم تحميل وحدة المصادقة adminAuth. لن تعمل حماية لوحة التحكم.');
-        } else {
-            window.adminAuth.requireAuth();
-        }
+// التحقق من تحميل وحدة المصادقة (يعتمد على window.adminAuth من js/index-auth.js)
+if (!window.adminAuth) {
+    console.error('⚠️ لم يتم تحميل وحدة المصادقة adminAuth. لن تعمل حماية لوحة التحكم.');
+} else {
+    window.adminAuth.requireAuth();
+}
 
-        function setPaymentToggleState(toggleElement, enabled) {
-            if (!toggleElement) return;
+function setPaymentToggleState(toggleElement, enabled) {
+    if (!toggleElement) return;
 
-            const checked = Boolean(enabled);
-            toggleElement.checked = checked;
+    const checked = Boolean(enabled);
+    toggleElement.checked = checked;
 
-            const card = toggleElement.closest('.payment-method-card');
-            if (card) {
-                card.dataset.enabled = String(checked);
-                card.classList.toggle('is-enabled', checked);
-            }
-        }
+    const card = toggleElement.closest('.payment-method-card');
+    if (card) {
+        card.dataset.enabled = String(checked);
+        card.classList.toggle('is-enabled', checked);
+    }
+}
 
-        async function handleCreateAdminSubmit(event) {
-            event.preventDefault();
+async function handleCreateAdminSubmit(event) {
+    event.preventDefault();
 
-            const form = event.currentTarget;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const nameInput = form.querySelector('#adminName');
-            const emailInput = form.querySelector('#adminCreateEmail');
-            const passwordInput = form.querySelector('#adminCreatePassword');
-            const confirmInput = form.querySelector('#adminCreatePasswordConfirm');
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const nameInput = form.querySelector('#adminName');
+    const emailInput = form.querySelector('#adminCreateEmail');
+    const passwordInput = form.querySelector('#adminCreatePassword');
+    const confirmInput = form.querySelector('#adminCreatePasswordConfirm');
 
-            const name = nameInput?.value?.trim();
-            const email = emailInput?.value?.trim();
-            const password = passwordInput?.value?.trim();
-            const passwordConfirm = confirmInput?.value?.trim();
+    const name = nameInput?.value?.trim();
+    const email = emailInput?.value?.trim();
+    const password = passwordInput?.value?.trim();
+    const passwordConfirm = confirmInput?.value?.trim();
 
-            if (!name || !email || !password || !passwordConfirm) {
-                showToast('error', 'إنشاء مدير', 'يرجى ملء جميع الحقول المطلوبة.');
-                return;
-            }
+    if (!name || !email || !password || !passwordConfirm) {
+        showToast('error', 'إنشاء مدير', 'يرجى ملء جميع الحقول المطلوبة.');
+        return;
+    }
 
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showToast('error', 'إنشاء مدير', 'صيغة البريد الإلكتروني غير صحيحة.');
-                emailInput?.focus();
-                return;
-            }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('error', 'إنشاء مدير', 'صيغة البريد الإلكتروني غير صحيحة.');
+        emailInput?.focus();
+        return;
+    }
 
-            if (password.length < 8) {
-                showToast('error', 'إنشاء مدير', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
-                passwordInput?.focus();
-                return;
-            }
+    if (password.length < 8) {
+        showToast('error', 'إنشاء مدير', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+        passwordInput?.focus();
+        return;
+    }
 
-            if (password !== passwordConfirm) {
-                showToast('error', 'إنشاء مدير', 'تأكيد كلمة المرور لا يطابق المدخلة.');
-                confirmInput?.focus();
-                return;
-            }
+    if (password !== passwordConfirm) {
+        showToast('error', 'إنشاء مدير', 'تأكيد كلمة المرور لا يطابق المدخلة.');
+        confirmInput?.focus();
+        return;
+    }
 
-            const setLoading = (loading) => {
-                if (!submitBtn) return;
-                submitBtn.disabled = loading;
-                submitBtn.classList.toggle('is-loading', loading);
-            };
+    const setLoading = (loading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = loading;
+        submitBtn.classList.toggle('is-loading', loading);
+    };
 
-            setLoading(true);
+    setLoading(true);
 
-            try {
-                const response = await authorizedFetch(USERS_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name,
-                        email,
-                        password,
-                        passwordConfirm,
-                        role: 'admin'
-                    })
-                });
-
-                if (!response?.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || errorBody?.msg || `HTTP ${response?.status}`;
-                    throw new Error(message);
-                }
-
-                showToast('success', 'إنشاء مدير', 'تم إنشاء حساب المدير الجديد بنجاح.');
-                form.reset();
-            } catch (error) {
-                console.error('Error:', error);
-                const message = error?.message || 'حدث خطأ أثناء إنشاء حساب المدير.';
-                showToast('error', 'إنشاء مدير', message);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function getMessageStatusLabel(status) {
-            const labels = {
-                new: 'جديدة',
-                pending: 'قيد المراجعة',
-                resolved: 'تمت المعالجة',
-                archived: 'مؤرشفة',
-                read: 'مقروءة'
-            };
-            return labels[status] || status;
-        }
-
-        // ===== Messages Panel =====
-        const MESSAGE_FETCH_TTL = 60 * 1000;
-        const DEFAULT_MESSAGES_LIMIT = 50;
-
-        const mockMessages = [
-            {
-                id: 'msg-001',
-                name: 'أحمد فؤاد',
-                email: 'ahmed@example.com',
-                phone: '+201001234567',
-                subject: 'استفسار عن الشحن',
-                message: 'مرحباً، هل يتوفر شحن مجاني للطلبات فوق 1000 ريال؟',
-                createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-                status: 'new',
-                isRead: false
-            }
-        ];
-
-        function normalizeMessage(rawMessage = {}, index = 0) {
-            if (!rawMessage || typeof rawMessage !== 'object') return null;
-
-            const id = String(
-                rawMessage._id
-                || rawMessage.id
-                || rawMessage.messageId
-                || rawMessage.slug
-                || rawMessage.uid
-                || rawMessage.uuid
-                || rawMessage.reference
-                || `message-${index}`
-            );
-
-            const name = rawMessage.name
-                || rawMessage.fullName
-                || rawMessage.sender
-                || rawMessage.senderName
-                || rawMessage.user?.name
-                || 'مستخدم مجهول';
-
-            const email = rawMessage.email
-                || rawMessage.mail
-                || rawMessage.user?.email
-                || '';
-
-            const phone = rawMessage.phone
-                || rawMessage.mobile
-                || rawMessage.phoneNumber
-                || rawMessage.user?.phone
-                || '';
-
-            const subject = rawMessage.subject
-                || rawMessage.title
-                || rawMessage.topic
-                || 'بدون عنوان';
-
-            const content = rawMessage.message
-                || rawMessage.body
-                || rawMessage.content
-                || rawMessage.details
-                || '';
-
-            const createdAt = rawMessage.createdAt
-                || rawMessage.created_at
-                || rawMessage.createdOn
-                || rawMessage.submittedAt
-                || rawMessage.date
-                || null;
-
-            const status = rawMessage.status
-                || (rawMessage.isWatched ? 'read' : 'new');
-
-            const isRead = Boolean(rawMessage.isWatched || rawMessage.read || rawMessage.status === 'read');
-
-            return {
-                id,
+    try {
+        const response = await authorizedFetch(USERS_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
                 name,
                 email,
-                phone,
-                subject,
-                message: content,
-                createdAt,
-                status,
-                isRead,
-                raw: rawMessage
-            };
+                password,
+                passwordConfirm,
+                role: 'admin'
+            })
+        });
+
+        if (!response?.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || errorBody?.msg || `HTTP ${response?.status}`;
+            throw new Error(message);
         }
 
-        function extractMessagesFromResponse(payload) {
-            if (!payload) return [];
+        showToast('success', 'إنشاء مدير', 'تم إنشاء حساب المدير الجديد بنجاح.');
+        form.reset();
+    } catch (error) {
+        console.error('Error:', error);
+        const message = error?.message || 'حدث خطأ أثناء إنشاء حساب المدير.';
+        showToast('error', 'إنشاء مدير', message);
+    } finally {
+        setLoading(false);
+    }
+}
 
-            const candidateArrays = [
-                payload.data?.documents,
-                payload.data?.messages,
-                payload.data?.items,
-                payload.data,
-                payload.messages,
-                payload.items,
-                payload.results,
-                Array.isArray(payload) ? payload : null
-            ];
+function getMessageStatusLabel(status) {
+    const labels = {
+        new: 'جديدة',
+        pending: 'قيد المراجعة',
+        resolved: 'تمت المعالجة',
+        archived: 'مؤرشفة',
+        read: 'مقروءة'
+    };
+    return labels[status] || status;
+}
 
-            for (const candidate of candidateArrays) {
-                if (Array.isArray(candidate) && candidate.length) {
-                    return candidate;
-                }
-            }
+// ===== Messages Panel =====
+const MESSAGE_FETCH_TTL = 60 * 1000;
+const DEFAULT_MESSAGES_LIMIT = 50;
 
-            return [];
+const mockMessages = [
+    {
+        id: 'msg-001',
+        name: 'أحمد فؤاد',
+        email: 'ahmed@example.com',
+        phone: '+201001234567',
+        subject: 'استفسار عن الشحن',
+        message: 'مرحباً، هل يتوفر شحن مجاني للطلبات فوق 1000 ريال؟',
+        createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        status: 'new',
+        isRead: false
+    }
+];
+
+function normalizeMessage(rawMessage = {}, index = 0) {
+    if (!rawMessage || typeof rawMessage !== 'object') return null;
+
+    const id = String(
+        rawMessage._id
+        || rawMessage.id
+        || rawMessage.messageId
+        || rawMessage.slug
+        || rawMessage.uid
+        || rawMessage.uuid
+        || rawMessage.reference
+        || `message-${index}`
+    );
+
+    const name = rawMessage.name
+        || rawMessage.fullName
+        || rawMessage.sender
+        || rawMessage.senderName
+        || rawMessage.user?.name
+        || 'مستخدم مجهول';
+
+    const email = rawMessage.email
+        || rawMessage.mail
+        || rawMessage.user?.email
+        || '';
+
+    const phone = rawMessage.phone
+        || rawMessage.mobile
+        || rawMessage.phoneNumber
+        || rawMessage.user?.phone
+        || '';
+
+    const subject = rawMessage.subject
+        || rawMessage.title
+        || rawMessage.topic
+        || 'بدون عنوان';
+
+    const content = rawMessage.message
+        || rawMessage.body
+        || rawMessage.content
+        || rawMessage.details
+        || '';
+
+    const createdAt = rawMessage.createdAt
+        || rawMessage.created_at
+        || rawMessage.createdOn
+        || rawMessage.submittedAt
+        || rawMessage.date
+        || null;
+
+    const status = rawMessage.status
+        || (rawMessage.isWatched ? 'read' : 'new');
+
+    const isRead = Boolean(rawMessage.isWatched || rawMessage.read || rawMessage.status === 'read');
+
+    return {
+        id,
+        name,
+        email,
+        phone,
+        subject,
+        message: content,
+        createdAt,
+        status,
+        isRead,
+        raw: rawMessage
+    };
+}
+
+function extractMessagesFromResponse(payload) {
+    if (!payload) return [];
+
+    const candidateArrays = [
+        payload.data?.documents,
+        payload.data?.messages,
+        payload.data?.items,
+        payload.data,
+        payload.messages,
+        payload.items,
+        payload.results,
+        Array.isArray(payload) ? payload : null
+    ];
+
+    for (const candidate of candidateArrays) {
+        if (Array.isArray(candidate) && candidate.length) {
+            return candidate;
+        }
+    }
+
+    return [];
+}
+
+function setMessagesLoading(isLoading) {
+    state.messagesLoading = Boolean(isLoading);
+}
+
+function setMessagesError(error) {
+    state.messagesError = error ? String(error) : null;
+}
+
+async function fetchMessages({ force = false, query = {} } = {}) {
+    if (state.messagesLoading) return;
+
+    const shouldSkip = !force
+        && state.messagesLoaded
+        && Date.now() - state.messagesLastFetched < MESSAGE_FETCH_TTL;
+
+    if (shouldSkip) {
+        renderMessagesList(state.filters.messagesSearch || '');
+        return;
+    }
+
+    setMessagesLoading(true);
+    setMessagesError(null);
+    renderMessagesList(state.filters.messagesSearch || '');
+
+    try {
+        const params = new URLSearchParams();
+        const limit = Number.isFinite(query.limit) ? query.limit : DEFAULT_MESSAGES_LIMIT;
+        if (limit) params.set('limit', String(limit));
+
+        if (query.page) params.set('page', String(query.page));
+        if (query.isWatched !== undefined && query.isWatched !== null) {
+            params.set('isWatched', String(query.isWatched));
         }
 
-        function setMessagesLoading(isLoading) {
-            state.messagesLoading = Boolean(isLoading);
+        const searchTerm = (state.filters.messagesSearch || '').trim();
+        if (searchTerm && query.search !== false) {
+            params.set('search', searchTerm);
         }
 
-        function setMessagesError(error) {
-            state.messagesError = error ? String(error) : null;
+        const url = params.toString()
+            ? `${MESSAGE_ENDPOINT}?${params.toString()}`
+            : MESSAGE_ENDPOINT;
+
+        const response = await authorizedFetch(url);
+        const handled = handleUnauthorized(response);
+        if (handled !== response) {
+            setMessagesLoading(false);
+            return;
         }
 
-        async function fetchMessages({ force = false, query = {} } = {}) {
-            if (state.messagesLoading) return;
-
-            const shouldSkip = !force
-                && state.messagesLoaded
-                && Date.now() - state.messagesLastFetched < MESSAGE_FETCH_TTL;
-
-            if (shouldSkip) {
-                renderMessagesList(state.filters.messagesSearch || '');
-                return;
-            }
-
-            setMessagesLoading(true);
-            setMessagesError(null);
-            renderMessagesList(state.filters.messagesSearch || '');
-
-            try {
-                const params = new URLSearchParams();
-                const limit = Number.isFinite(query.limit) ? query.limit : DEFAULT_MESSAGES_LIMIT;
-                if (limit) params.set('limit', String(limit));
-
-                if (query.page) params.set('page', String(query.page));
-                if (query.isWatched !== undefined && query.isWatched !== null) {
-                    params.set('isWatched', String(query.isWatched));
-                }
-
-                const searchTerm = (state.filters.messagesSearch || '').trim();
-                if (searchTerm && query.search !== false) {
-                    params.set('search', searchTerm);
-                }
-
-                const url = params.toString()
-                    ? `${MESSAGE_ENDPOINT}?${params.toString()}`
-                    : MESSAGE_ENDPOINT;
-
-                const response = await authorizedFetch(url);
-                const handled = handleUnauthorized(response);
-                if (handled !== response) {
-                    setMessagesLoading(false);
-                    return;
-                }
-
-                if (!response.ok) {
-                    const message = `${response.status} ${response.statusText || ''}`.trim();
-                    throw new Error(message || 'فشل جلب الرسائل');
-                }
-
-                const payload = await response.json().catch(() => null);
-                const rawMessages = extractMessagesFromResponse(payload);
-
-                const normalizedMessages = rawMessages
-                    .map((entry, index) => normalizeMessage(entry, index))
-                    .filter(Boolean);
-
-                if (!normalizedMessages.length && !state.messagesLoaded && mockMessages.length) {
-                    state.messagesLoaded = true;
-                    state.messagesLastFetched = Date.now();
-                }
-
-                state.messages = normalizedMessages;
-                state.messagesLoaded = true;
-                state.messagesLastFetched = Date.now();
-
-                renderMessagesList(state.filters.messagesSearch || '');
-                updateMessagesBadge();
-            } catch (error) {
-                setMessagesError(error?.message || 'تعذر تحميل الرسائل.');
-
-                if (!state.messagesLoaded && !state.messages.length && mockMessages.length) {
-                    state.messages = normalizeMessages(mockMessages);
-                }
-            } finally {
-                setMessagesLoading(false);
-                renderMessagesList(state.filters.messagesSearch || '');
-                updateMessagesBadge();
-            }
+        if (!response.ok) {
+            const message = `${response.status} ${response.statusText || ''}`.trim();
+            throw new Error(message || 'فشل جلب الرسائل');
         }
 
-        function initMessagesPanel() {
-            state.messages = [];
-            state.unreadMessages = 0;
-            state.messagesLoaded = false;
-            state.messagesLastFetched = 0;
-            renderMessagesList(state.filters.messagesSearch || '');
-            fetchMessages({ force: true }).catch(error => {
-                console.error('Error:', error);
-            });
+        const payload = await response.json().catch(() => null);
+        const rawMessages = extractMessagesFromResponse(payload);
+
+        const normalizedMessages = rawMessages
+            .map((entry, index) => normalizeMessage(entry, index))
+            .filter(Boolean);
+
+        if (!normalizedMessages.length && !state.messagesLoaded && mockMessages.length) {
+            state.messagesLoaded = true;
+            state.messagesLastFetched = Date.now();
         }
 
-        function updateMessagesBadge() {
-            const badge = document.getElementById('messagesBadge');
-            if (!badge) return;
-            badge.textContent = state.unreadMessages > 9 ? '9+' : String(state.unreadMessages || 0);
-            badge.hidden = state.unreadMessages === 0;
+        state.messages = normalizedMessages;
+        state.messagesLoaded = true;
+        state.messagesLastFetched = Date.now();
+
+        renderMessagesList(state.filters.messagesSearch || '');
+        updateMessagesBadge();
+    } catch (error) {
+        setMessagesError(error?.message || 'تعذر تحميل الرسائل.');
+
+        if (!state.messagesLoaded && !state.messages.length && mockMessages.length) {
+            state.messages = normalizeMessages(mockMessages);
         }
+    } finally {
+        setMessagesLoading(false);
+        renderMessagesList(state.filters.messagesSearch || '');
+        updateMessagesBadge();
+    }
+}
 
-        function renderMessagesList(filterValue = '') {
-            const list = document.getElementById('messagesList');
-            if (!list) return;
+function initMessagesPanel() {
+    state.messages = [];
+    state.unreadMessages = 0;
+    state.messagesLoaded = false;
+    state.messagesLastFetched = 0;
+    renderMessagesList(state.filters.messagesSearch || '');
+    fetchMessages({ force: true }).catch(error => {
+        console.error('Error:', error);
+    });
+}
 
-            const filter = String(filterValue || state.filters.messagesSearch || '').trim();
-            state.filters.messagesSearch = filter;
+function updateMessagesBadge() {
+    const badge = document.getElementById('messagesBadge');
+    if (!badge) return;
+    badge.textContent = state.unreadMessages > 9 ? '9+' : String(state.unreadMessages || 0);
+    badge.hidden = state.unreadMessages === 0;
+}
 
-            if (state.messagesLoading) {
-                list.innerHTML = `
+function renderMessagesList(filterValue = '') {
+    const list = document.getElementById('messagesList');
+    if (!list) return;
+
+    const filter = String(filterValue || state.filters.messagesSearch || '').trim();
+    state.filters.messagesSearch = filter;
+
+    if (state.messagesLoading) {
+        list.innerHTML = `
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>جاري تحميل الرسائل...</p>
                     </div>
                 `;
-                return;
-            }
+        return;
+    }
 
-            if (state.messagesError) {
-                list.innerHTML = `
+    if (state.messagesError) {
+        list.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>تعذر تحميل الرسائل</h3>
@@ -1273,48 +1273,48 @@
                         </button>
                     </div>
                 `;
-                return;
-            }
+        return;
+    }
 
-            const baseMessages = Array.isArray(state.messages) ? state.messages : [];
+    const baseMessages = Array.isArray(state.messages) ? state.messages : [];
 
-            const filteredMessages = !filter
-                ? baseMessages
-                : baseMessages.filter(msg => [
-                    msg.name,
-                    msg.email,
-                    msg.phone,
-                    msg.subject,
-                    msg.message
-                ].some(field => String(field || '').toLowerCase().includes(filter.toLowerCase())));
+    const filteredMessages = !filter
+        ? baseMessages
+        : baseMessages.filter(msg => [
+            msg.name,
+            msg.email,
+            msg.phone,
+            msg.subject,
+            msg.message
+        ].some(field => String(field || '').toLowerCase().includes(filter.toLowerCase())));
 
-            if (!filteredMessages.length) {
-                list.innerHTML = '<p class="empty-state">لا توجد رسائل مطابقة.</p>';
-                return;
-            }
+    if (!filteredMessages.length) {
+        list.innerHTML = '<p class="empty-state">لا توجد رسائل مطابقة.</p>';
+        return;
+    }
 
-            list.innerHTML = filteredMessages.map(msg => createMessageItemMarkup(msg)).join('');
-        }
+    list.innerHTML = filteredMessages.map(msg => createMessageItemMarkup(msg)).join('');
+}
 
-        function createMessageItemMarkup(message) {
-            const createdDate = message.createdAt ? new Date(message.createdAt) : null;
-            const relativeTime = createdDate ? formatRelativeTime(createdDate) : 'غير معروف';
-            const isUnread = !message.isRead;
-            const statusKey = message.status ? String(message.status).toLowerCase() : '';
-            const statusBadge = statusKey
-                ? `<span class="message-badge message-badge--${escapeHtml(statusKey)}">${escapeHtml(getMessageStatusLabel(statusKey))}</span>`
-                : '';
+function createMessageItemMarkup(message) {
+    const createdDate = message.createdAt ? new Date(message.createdAt) : null;
+    const relativeTime = createdDate ? formatRelativeTime(createdDate) : 'غير معروف';
+    const isUnread = !message.isRead;
+    const statusKey = message.status ? String(message.status).toLowerCase() : '';
+    const statusBadge = statusKey
+        ? `<span class="message-badge message-badge--${escapeHtml(statusKey)}">${escapeHtml(getMessageStatusLabel(statusKey))}</span>`
+        : '';
 
-            const nameMarkup = escapeHtml(message.name || 'مستخدم مجهول');
-            const emailMarkup = escapeHtml(message.email || '-');
-            const subjectMarkup = escapeHtml(message.subject || 'بدون عنوان');
-            const bodyMarkup = escapeHtml(message.message || '').replace(/\n/g, '<br>');
+    const nameMarkup = escapeHtml(message.name || 'مستخدم مجهول');
+    const emailMarkup = escapeHtml(message.email || '-');
+    const subjectMarkup = escapeHtml(message.subject || 'بدون عنوان');
+    const bodyMarkup = escapeHtml(message.message || '').replace(/\n/g, '<br>');
 
-            const markReadButton = isUnread
-                ? `<button type="button" data-action="mark-read" data-message-id="${escapeHtml(message.id)}"><i class="fas fa-check"></i> تعيين كمقروء</button>`
-                : `<span class="message-status-label"><i class="fas fa-check-circle"></i> مقروءة</span>`;
+    const markReadButton = isUnread
+        ? `<button type="button" data-action="mark-read" data-message-id="${escapeHtml(message.id)}"><i class="fas fa-check"></i> تعيين كمقروء</button>`
+        : `<span class="message-status-label"><i class="fas fa-check-circle"></i> مقروءة</span>`;
 
-            return `
+    return `
                 <article class="message-item ${isUnread ? 'unread' : ''}" data-message-id="${escapeHtml(message.id)}" role="listitem">
                     <header class="message-item-header">
                         <div>
@@ -1341,184 +1341,184 @@
                     </footer>
                 </article>
             `;
-        }
+}
 
-        function toggleMessagesPanel(forceState = null) {
-            const panel = document.getElementById('messagesPanel');
-            const overlay = document.getElementById('messagesOverlay');
-            const targetState = forceState !== null
-                ? Boolean(forceState)
-                : !panel?.classList.contains('active');
+function toggleMessagesPanel(forceState = null) {
+    const panel = document.getElementById('messagesPanel');
+    const overlay = document.getElementById('messagesOverlay');
+    const targetState = forceState !== null
+        ? Boolean(forceState)
+        : !panel?.classList.contains('active');
 
-            if (panel) {
-                panel.classList.toggle('active', targetState);
-            }
-            if (overlay) {
-                overlay.hidden = !targetState;
-                overlay.style.opacity = targetState ? '1' : '0';
-            }
+    if (panel) {
+        panel.classList.toggle('active', targetState);
+    }
+    if (overlay) {
+        overlay.hidden = !targetState;
+        overlay.style.opacity = targetState ? '1' : '0';
+    }
 
-            document.body.classList.toggle('messages-open', targetState);
+    document.body.classList.toggle('messages-open', targetState);
 
-            if (targetState) {
-                if (!state.messagesLoaded && !state.messagesLoading) {
-                    fetchMessages({ force: true }).catch(error => {
-                        console.error('Error:', error);
-                    });
-                } else {
-                    renderMessagesList(state.filters.messagesSearch || '');
-                }
-            }
-        }
-
-        async function markMessageWatchState(messageId) {
-            if (!messageId) return false;
-
-            try {
-                const response = await authorizedFetch(`${MESSAGE_ENDPOINT}/${encodeURIComponent(messageId)}/watch`, {
-                    method: 'PATCH'
-                });
-
-                const handled = handleUnauthorized(response);
-                if (handled !== response) {
-                    throw new Error('تم إنهاء الطلب بسبب انتهاء صلاحية الجلسة.');
-                }
-
-                if (!response.ok) {
-                    const message = `${response.status} ${response.statusText || ''}`.trim();
-                    throw new Error(message || 'تعذر تحديث حالة الرسالة');
-                }
-
-                return true;
-            } catch (error) {
+    if (targetState) {
+        if (!state.messagesLoaded && !state.messagesLoading) {
+            fetchMessages({ force: true }).catch(error => {
                 console.error('Error:', error);
-                throw error;
-            }
+            });
+        } else {
+            renderMessagesList(state.filters.messagesSearch || '');
+        }
+    }
+}
+
+async function markMessageWatchState(messageId) {
+    if (!messageId) return false;
+
+    try {
+        const response = await authorizedFetch(`${MESSAGE_ENDPOINT}/${encodeURIComponent(messageId)}/watch`, {
+            method: 'PATCH'
+        });
+
+        const handled = handleUnauthorized(response);
+        if (handled !== response) {
+            throw new Error('تم إنهاء الطلب بسبب انتهاء صلاحية الجلسة.');
         }
 
-        async function markMessagesAsRead() {
-            const unreadMessages = state.messages.filter(msg => !msg.isRead);
-            if (!unreadMessages.length) {
-                showToast('info', 'الرسائل', 'لا توجد رسائل غير مقروءة حالياً.');
-                return;
-            }
+        if (!response.ok) {
+            const message = `${response.status} ${response.statusText || ''}`.trim();
+            throw new Error(message || 'تعذر تحديث حالة الرسالة');
+        }
 
-            setMessagesLoading(true);
-            renderMessagesList(state.filters.messagesSearch || '');
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
 
-            const results = await Promise.allSettled(unreadMessages.map(msg => markMessageWatchState(msg.id)));
+async function markMessagesAsRead() {
+    const unreadMessages = state.messages.filter(msg => !msg.isRead);
+    if (!unreadMessages.length) {
+        showToast('info', 'الرسائل', 'لا توجد رسائل غير مقروءة حالياً.');
+        return;
+    }
 
-            const succeededIds = [];
-            const failedIds = [];
+    setMessagesLoading(true);
+    renderMessagesList(state.filters.messagesSearch || '');
 
-            results.forEach((result, index) => {
-                const targetId = unreadMessages[index].id;
-                if (result.status === 'fulfilled' && result.value) {
-                    succeededIds.push(targetId);
-                } else {
-                    failedIds.push(targetId);
-                }
-            });
+    const results = await Promise.allSettled(unreadMessages.map(msg => markMessageWatchState(msg.id)));
 
-            state.messages = state.messages.map(msg => succeededIds.includes(msg.id)
-                ? { ...msg, isRead: true, status: msg.status === 'new' ? 'read' : (msg.status || 'read') }
-                : msg
-            );
+    const succeededIds = [];
+    const failedIds = [];
 
+    results.forEach((result, index) => {
+        const targetId = unreadMessages[index].id;
+        if (result.status === 'fulfilled' && result.value) {
+            succeededIds.push(targetId);
+        } else {
+            failedIds.push(targetId);
+        }
+    });
+
+    state.messages = state.messages.map(msg => succeededIds.includes(msg.id)
+        ? { ...msg, isRead: true, status: msg.status === 'new' ? 'read' : (msg.status || 'read') }
+        : msg
+    );
+
+    state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+    setMessagesLoading(false);
+    renderMessagesList(state.filters.messagesSearch || '');
+    updateMessagesBadge();
+
+    if (succeededIds.length) {
+        showToast('success', 'الرسائل', `تم تعيين ${succeededIds.length} رسالة كمقروءة.`);
+    }
+
+    if (failedIds.length) {
+        showToast('warning', 'الرسائل', `تعذر تحديث ${failedIds.length} رسالة. حاول مجدداً لاحقاً.`);
+    }
+}
+
+async function handleMessageAction(action, messageId) {
+    const index = state.messages.findIndex(msg => msg.id === messageId);
+    if (index === -1) return;
+
+    const message = state.messages[index];
+
+    if (action === 'mark-read') {
+        if (message.isRead) {
+            showToast('info', 'الرسائل', 'هذه الرسالة مقروءة بالفعل.');
+            return;
+        }
+
+        try {
+            await markMessageWatchState(messageId);
+            state.messages[index] = {
+                ...message,
+                isRead: true,
+                status: message.status === 'new' ? 'read' : (message.status || 'read')
+            };
             state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
-            setMessagesLoading(false);
             renderMessagesList(state.filters.messagesSearch || '');
             updateMessagesBadge();
-
-            if (succeededIds.length) {
-                showToast('success', 'الرسائل', `تم تعيين ${succeededIds.length} رسالة كمقروءة.`);
-            }
-
-            if (failedIds.length) {
-                showToast('warning', 'الرسائل', `تعذر تحديث ${failedIds.length} رسالة. حاول مجدداً لاحقاً.`);
-            }
+            showToast('success', 'الرسائل', 'تم تعيين الرسالة كمقروءة.');
+        } catch (error) {
+            showToast('error', 'الرسائل', error?.message || 'تعذر تحديث حالة الرسالة.');
         }
+    } else if (action === 'refresh') {
+        fetchMessages({ force: true }).catch(error => {
+            console.error('Error:', error);
+        });
+    }
+}
 
-        async function handleMessageAction(action, messageId) {
-            const index = state.messages.findIndex(msg => msg.id === messageId);
-            if (index === -1) return;
+// ========================================
+// ===== 3. دوال العرض (Rendering) =====
+// ========================================
 
-            const message = state.messages[index];
+/**
+ * عرض العلامات التجارية
+ */
+function renderBrands() {
 
-            if (action === 'mark-read') {
-                if (message.isRead) {
-                    showToast('info', 'الرسائل', 'هذه الرسالة مقروءة بالفعل.');
-                    return;
-                }
+    const list = document.getElementById('brandsList');
+    const emptyState = document.getElementById('brandsEmptyState');
 
-                try {
-                    await markMessageWatchState(messageId);
-                    state.messages[index] = {
-                        ...message,
-                        isRead: true,
-                        status: message.status === 'new' ? 'read' : (message.status || 'read')
-                    };
-                    state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
-                    renderMessagesList(state.filters.messagesSearch || '');
-                    updateMessagesBadge();
-                    showToast('success', 'الرسائل', 'تم تعيين الرسالة كمقروءة.');
-                } catch (error) {
-                    showToast('error', 'الرسائل', error?.message || 'تعذر تحديث حالة الرسالة.');
-                }
-            } else if (action === 'refresh') {
-                fetchMessages({ force: true }).catch(error => {
-                    console.error('Error:', error);
-                });
-            }
-        }
+    if (!list) {
+        console.error('Error:', new Error('brandsList element not found'));
+        return;
+    }
+    if (!emptyState) {
+        console.error('Error:', new Error('brandsEmptyState element not found'));
+        return;
+    }
 
-        // ========================================
-        // ===== 3. دوال العرض (Rendering) =====
-        // ========================================
+    // التأكد من أن brands هو array
+    if (!Array.isArray(state.brands)) {
+        console.error('Error:', new Error('state.brands is not an array'));
+        state.brands = [];
+    }
 
-        /**
-         * عرض العلامات التجارية
-         */
-        function renderBrands() {
-            
-            const list = document.getElementById('brandsList');
-            const emptyState = document.getElementById('brandsEmptyState');
-            
-            if (!list) {
-                console.error('Error:', new Error('brandsList element not found'));
-                return;
-            }
-            if (!emptyState) {
-                console.error('Error:', new Error('brandsEmptyState element not found'));
-                return;
-            }
+    // تصفية العلامات التجارية بناءً على البحث
+    const searchTerm = state.filters.brandSearch?.toLowerCase() || '';
+    const filteredBrands = state.brands.filter(brand =>
+        brand.name?.toLowerCase().includes(searchTerm)
+    );
 
-            // التأكد من أن brands هو array
-            if (!Array.isArray(state.brands)) {
-                console.error('Error:', new Error('state.brands is not an array'));
-                state.brands = [];
-            }
+    if (filteredBrands.length === 0) {
+        list.innerHTML = '';
+        emptyState.style.display = 'flex';
+        return;
+    }
 
-            // تصفية العلامات التجارية بناءً على البحث
-            const searchTerm = state.filters.brandSearch?.toLowerCase() || '';
-            const filteredBrands = state.brands.filter(brand => 
-                brand.name?.toLowerCase().includes(searchTerm)
-            );
+    emptyState.style.display = 'none';
 
-            if (filteredBrands.length === 0) {
-                list.innerHTML = '';
-                emptyState.style.display = 'flex';
-                return;
-            }
+    list.innerHTML = filteredBrands.map(brand => {
+        const brandId = brand._id || brand.id;
+        const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || 'img/placeholder.png';
+        const description = brand.description || '';
 
-            emptyState.style.display = 'none';
-            
-            list.innerHTML = filteredBrands.map(brand => {
-                const brandId = brand._id || brand.id;
-                const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || 'img/placeholder.png';
-                const description = brand.description || '';
-
-                return `
+        return `
                 <div class="brand-card" data-brand-id="${brandId}">
                     <div class="brand-image">
                         <img src="${imageUrl}" alt="${brand.name}" onerror="this.src='img/placeholder.png'">
@@ -1537,105 +1537,105 @@
                     </div>
                 </div>
                 `;
-            }).join('');
+    }).join('');
 
-            // ربط أحداث الأزرار
-            list.querySelectorAll('.edit-brand').forEach(btn => {
-                btn.addEventListener('click', () => handleEditBrand(btn.dataset.brandId));
-            });
+    // ربط أحداث الأزرار
+    list.querySelectorAll('.edit-brand').forEach(btn => {
+        btn.addEventListener('click', () => handleEditBrand(btn.dataset.brandId));
+    });
 
-            list.querySelectorAll('.delete-brand').forEach(btn => {
-                btn.addEventListener('click', () => handleDeleteBrand(btn.dataset.brandId));
-            });
-        }
+    list.querySelectorAll('.delete-brand').forEach(btn => {
+        btn.addEventListener('click', () => handleDeleteBrand(btn.dataset.brandId));
+    });
+}
 
-        /**
-         * عرض الفئات الفرعية
-         * @param {string} categoryId - معرف الفئة الرئيسية
-         */
-        function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
-            const list = document.getElementById('subcategoriesList');
-            const emptyState = document.getElementById('subcategoriesEmptyState');
-            if (!list || !emptyState) return;
+/**
+ * عرض الفئات الفرعية
+ * @param {string} categoryId - معرف الفئة الرئيسية
+ */
+function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
+    const list = document.getElementById('subcategoriesList');
+    const emptyState = document.getElementById('subcategoriesEmptyState');
+    if (!list || !emptyState) return;
 
-            const selectedCategoryId = categoryId || 'all';
+    const selectedCategoryId = categoryId || 'all';
 
-            let loading;
-            let error;
-            let subcategories;
+    let loading;
+    let error;
+    let subcategories;
 
-            if (selectedCategoryId === 'all') {
-                const categoryIds = state.categories.map(category => category.id);
-                loading = categoryIds.some(id => state.subcategoriesLoading[id]);
-                const errors = categoryIds
-                    .map(id => getSubcategoryError(id))
-                    .filter(Boolean);
-                error = errors.length ? errors[0] : null;
-                subcategories = categoryIds.flatMap(id => {
-                    const items = state.subcategories[id] || [];
-                    return items.map(item => ({ ...item, categoryId: id }));
-                });
-            } else {
-                loading = !!state.subcategoriesLoading[selectedCategoryId];
-                error = getSubcategoryError(selectedCategoryId);
-                subcategories = (state.subcategories[selectedCategoryId] || []).map(item => ({ ...item, categoryId: selectedCategoryId }));
-            }
+    if (selectedCategoryId === 'all') {
+        const categoryIds = state.categories.map(category => category.id);
+        loading = categoryIds.some(id => state.subcategoriesLoading[id]);
+        const errors = categoryIds
+            .map(id => getSubcategoryError(id))
+            .filter(Boolean);
+        error = errors.length ? errors[0] : null;
+        subcategories = categoryIds.flatMap(id => {
+            const items = state.subcategories[id] || [];
+            return items.map(item => ({ ...item, categoryId: id }));
+        });
+    } else {
+        loading = !!state.subcategoriesLoading[selectedCategoryId];
+        error = getSubcategoryError(selectedCategoryId);
+        subcategories = (state.subcategories[selectedCategoryId] || []).map(item => ({ ...item, categoryId: selectedCategoryId }));
+    }
 
-            emptyState.hidden = true;
-            list.hidden = false;
+    emptyState.hidden = true;
+    list.hidden = false;
 
-            if (loading) {
-                list.innerHTML = `
+    if (loading) {
+        list.innerHTML = `
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>جاري تحميل الفئات الفرعية...</p>
                     </div>
                 `;
-                return;
-            }
+        return;
+    }
 
-            if (error) {
-                list.innerHTML = `
+    if (error) {
+        list.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>حدث خطأ أثناء تحميل الفئات الفرعية</h3>
                         <p>${escapeHtml(error)}</p>
                     </div>
                 `;
-                return;
-            }
+        return;
+    }
 
-            const filteredSubcategories = applyFilters(subcategories, [
-                filterBySearch(state.filters.subcategorySearch, ['name', 'description'])
-            ]);
+    const filteredSubcategories = applyFilters(subcategories, [
+        filterBySearch(state.filters.subcategorySearch, ['name', 'description'])
+    ]);
 
-            if (!filteredSubcategories.length) {
-                list.innerHTML = `
+    if (!filteredSubcategories.length) {
+        list.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-sitemap"></i>
                         <h3>${state.filters.subcategorySearch
-                            ? 'لا توجد نتائج مطابقة لبحثك'
-                            : selectedCategoryId === 'all'
-                                ? 'لا توجد فئات فرعية حالياً'
-                                : 'لا توجد فئات فرعية لهذه الفئة'}</h3>
+                ? 'لا توجد نتائج مطابقة لبحثك'
+                : selectedCategoryId === 'all'
+                    ? 'لا توجد فئات فرعية حالياً'
+                    : 'لا توجد فئات فرعية لهذه الفئة'}</h3>
                         <p>${state.filters.subcategorySearch
-                            ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.'
-                            : selectedCategoryId === 'all'
-                                ? 'استخدم زر "إضافة فئة فرعية جديدة" لإنشاء أول فئة.'
-                                : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'}</p>
+                ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.'
+                : selectedCategoryId === 'all'
+                    ? 'استخدم زر "إضافة فئة فرعية جديدة" لإنشاء أول فئة.'
+                    : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'}</p>
                     </div>
                 `;
-                return;
-            }
+        return;
+    }
 
-            list.innerHTML = filteredSubcategories.map(subcategory => {
-                const parentCategoryId = subcategory.categoryId || selectedCategoryId;
-                const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
-                const image = subcategory.image || extras.image;
-                const description = subcategory.description || extras.description || 'لا يوجد وصف متاح لهذه الفئة الفرعية حالياً.';
-                const parentCategory = getCategoryById(parentCategoryId);
+    list.innerHTML = filteredSubcategories.map(subcategory => {
+        const parentCategoryId = subcategory.categoryId || selectedCategoryId;
+        const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
+        const image = subcategory.image || extras.image;
+        const description = subcategory.description || extras.description || 'لا يوجد وصف متاح لهذه الفئة الفرعية حالياً.';
+        const parentCategory = getCategoryById(parentCategoryId);
 
-                return `
+        return `
                     <div class="subcategory-card" data-category-id="${parentCategoryId}" data-subcategory-id="${subcategory.id}">
                         <div class="subcategory-thumb ${image ? 'has-image' : ''}">
                             ${image ? `<img src="${image}" alt="${escapeHtml(subcategory.name)}">` : '<i class="fas fa-sitemap"></i>'}
@@ -1651,2287 +1651,2286 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+    }).join('');
+}
+
+// ========================================
+// ===== 4. دوال تطبيع البيانات (Normalization) =====
+// ========================================
+
+/**
+ * تطبيع بيانات الفئة الفرعية من API
+ * @param {Object} rawSubcategory - البيانات الخام من API
+ * @param {number} index - الفهرس
+ * @param {string} fallbackCategoryId - معرف الفئة الاحتياطي
+ * @returns {Object|null} - الفئة الفرعية المطبعة
+ */
+function normalizeSubcategory(rawSubcategory = {}, index = 0, fallbackCategoryId = '') {
+    if (!rawSubcategory || typeof rawSubcategory !== 'object') return null;
+
+    const id = rawSubcategory._id || rawSubcategory.id || rawSubcategory.slug || `subcategory-${index}`;
+    const name = rawSubcategory.name || rawSubcategory.title || 'فئة فرعية بدون اسم';
+    const slug = rawSubcategory.slug || slugify(name);
+    const description = rawSubcategory.description || rawSubcategory.summary || rawSubcategory.details || '';
+    const status = rawSubcategory.status || 'active';
+
+    const categoryField = rawSubcategory.category
+        ?? rawSubcategory.categoryId
+        ?? rawSubcategory.parent
+        ?? fallbackCategoryId;
+
+    let categoryId = '';
+    if (typeof categoryField === 'string') {
+        categoryId = categoryField;
+    } else if (categoryField && typeof categoryField === 'object') {
+        categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
+    }
+
+    return {
+        id,
+        name,
+        slug,
+        description,
+        status,
+        image: extractCategoryImage(rawSubcategory),
+        categoryId,
+        raw: rawSubcategory
+    };
+}
+
+// تتبع طلب جلب العلامات التجارية لتفادي التكرار
+let brandsFetchPromise = null;
+let bannersFetchPromise = null;
+let shippingZonesFetchPromise = null;
+
+// ========================================
+// ===== 5. دوال المصادقة والطلبات =====
+// ========================================
+
+/**
+ * إرسال طلب HTTP مع رأس المصادقة
+ * @param {string} url - عنوان URL
+ * @param {Object} options - خيارات الطلب
+ * @returns {Promise} - وعد بالاستجابة
+ */
+function decodeJwtPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+
+        let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (payload.length % 4 !== 0) {
+            payload += '=';
         }
 
-        // ========================================
-        // ===== 4. دوال تطبيع البيانات (Normalization) =====
-        // ========================================
-
-        /**
-         * تطبيع بيانات الفئة الفرعية من API
-         * @param {Object} rawSubcategory - البيانات الخام من API
-         * @param {number} index - الفهرس
-         * @param {string} fallbackCategoryId - معرف الفئة الاحتياطي
-         * @returns {Object|null} - الفئة الفرعية المطبعة
-         */
-        function normalizeSubcategory(rawSubcategory = {}, index = 0, fallbackCategoryId = '') {
-            if (!rawSubcategory || typeof rawSubcategory !== 'object') return null;
-
-            const id = rawSubcategory._id || rawSubcategory.id || rawSubcategory.slug || `subcategory-${index}`;
-            const name = rawSubcategory.name || rawSubcategory.title || 'فئة فرعية بدون اسم';
-            const slug = rawSubcategory.slug || slugify(name);
-            const description = rawSubcategory.description || rawSubcategory.summary || rawSubcategory.details || '';
-            const status = rawSubcategory.status || 'active';
-
-            const categoryField = rawSubcategory.category
-                ?? rawSubcategory.categoryId
-                ?? rawSubcategory.parent
-                ?? fallbackCategoryId;
-
-            let categoryId = '';
-            if (typeof categoryField === 'string') {
-                categoryId = categoryField;
-            } else if (categoryField && typeof categoryField === 'object') {
-                categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
-            }
-
-            return {
-                id,
-                name,
-                slug,
-                description,
-                status,
-                image: extractCategoryImage(rawSubcategory),
-                categoryId,
-                raw: rawSubcategory
-            };
+        const decoded = atob(payload);
+        try {
+            return JSON.parse(decodeURIComponent(decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        } catch (_) {
+            return JSON.parse(decoded);
         }
+    } catch (error) {
+        console.warn('⚠️ Failed to decode JWT token:', error);
+        return null;
+    }
+}
 
-        // تتبع طلب جلب العلامات التجارية لتفادي التكرار
-        let brandsFetchPromise = null;
-        let bannersFetchPromise = null;
-        let shippingZonesFetchPromise = null;
+function authorizedFetch(url, options = {}) {
+    const baseOptions = { ...options, credentials: 'include' };
+    return fetch(url, baseOptions);
+}
 
-        // ========================================
-        // ===== 5. دوال المصادقة والطلبات =====
-        // ========================================
+/**
+ * معالجة الاستجابات غير المصرح بها (401)
+ * @param {Response} response - استجابة HTTP
+ * @returns {Response} - نفس الاستجابة
+ */
+function extractIdFromObject(entity) {
+    if (!entity || typeof entity !== 'object') return null;
 
-        /**
-         * إرسال طلب HTTP مع رأس المصادقة
-         * @param {string} url - عنوان URL
-         * @param {Object} options - خيارات الطلب
-         * @returns {Promise} - وعد بالاستجابة
-         */
-        function decodeJwtPayload(token) {
-            if (!token || typeof token !== 'string') return null;
+    const candidates = [
+        entity._id,
+        entity.id,
+        entity.userId,
+        entity.uid,
+        entity.sub,
+        entity?.user?._id,
+        entity?.user?.id,
+        entity?.user?.userId,
+        entity?.data?._id,
+        entity?.data?.id,
+        entity?.data?.user?._id,
+        entity?.data?.user?.id,
+        entity?.profile?._id,
+        entity?.profile?.id
+    ];
 
-            try {
-                const parts = token.split('.');
-                if (parts.length < 2) return null;
-
-                let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-                while (payload.length % 4 !== 0) {
-                    payload += '=';
-                }
-
-                const decoded = atob(payload);
-                try {
-                    return JSON.parse(decodeURIComponent(decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
-                } catch (_) {
-                    return JSON.parse(decoded);
-                }
-            } catch (error) {
-                console.warn('⚠️ Failed to decode JWT token:', error);
-                return null;
-            }
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
         }
-
-        function authorizedFetch(url, options = {}) {
-            const baseOptions = { ...options, credentials: 'include' };
-            return fetch(url, baseOptions);
+        if (typeof candidate === 'object' && candidate.$oid) {
+            return String(candidate.$oid);
         }
-
-        /**
-         * معالجة الاستجابات غير المصرح بها (401)
-         * @param {Response} response - استجابة HTTP
-         * @returns {Response} - نفس الاستجابة
-         */
-        function extractIdFromObject(entity) {
-            if (!entity || typeof entity !== 'object') return null;
-
-            const candidates = [
-                entity._id,
-                entity.id,
-                entity.userId,
-                entity.uid,
-                entity.sub,
-                entity?.user?._id,
-                entity?.user?.id,
-                entity?.user?.userId,
-                entity?.data?._id,
-                entity?.data?.id,
-                entity?.data?.user?._id,
-                entity?.data?.user?.id,
-                entity?.profile?._id,
-                entity?.profile?.id
-            ];
-
-            for (const candidate of candidates) {
-                if (!candidate) continue;
-                if (typeof candidate === 'string' && candidate.trim()) {
-                    return candidate.trim();
-                }
-                if (typeof candidate === 'object' && candidate.$oid) {
-                    return String(candidate.$oid);
-                }
-                if (typeof candidate === 'number') {
-                    return String(candidate);
-                }
-            }
-
-            return null;
+        if (typeof candidate === 'number') {
+            return String(candidate);
         }
+    }
 
-        function setCachedAdminId(value) {
-            if (value && typeof value === 'string' && value.trim()) {
-                cachedAdminId = value.trim();
-            }
+    return null;
+}
+
+function setCachedAdminId(value) {
+    if (value && typeof value === 'string' && value.trim()) {
+        cachedAdminId = value.trim();
+    }
+}
+
+async function resolveCurrentAdminId(forceRefresh = false) {
+    if (!forceRefresh && cachedAdminId) {
+        return cachedAdminId;
+    }
+
+    const auth = window.adminAuth;
+    if (!auth) return null;
+
+    let authUser;
+    try {
+        authUser = auth.getUser?.() || null;
+        const extractedFromUser = extractIdFromObject(authUser);
+        if (extractedFromUser && !forceRefresh) {
+            setCachedAdminId(extractedFromUser);
+            return cachedAdminId;
         }
+    } catch (error) {
+        console.warn('⚠️ Failed to read stored admin user:', error);
+    }
 
-        async function resolveCurrentAdminId(forceRefresh = false) {
-            if (!forceRefresh && cachedAdminId) {
+    const token = auth.getToken?.();
+    const payload = decodeJwtPayload(token);
+    const extractedFromPayload = extractIdFromObject(payload) || extractIdFromObject(payload?.user);
+    if (extractedFromPayload && !forceRefresh) {
+        setCachedAdminId(extractedFromPayload);
+        return cachedAdminId;
+    }
+    if (payload?.sub && typeof payload.sub === 'string' && !forceRefresh) {
+        setCachedAdminId(payload.sub);
+        return cachedAdminId;
+    }
+
+    const candidateEndpoints = [
+        `${ADMIN_API_BASE_URL}/auth/profile`,
+        `${ADMIN_API_BASE_URL}/auth/me`,
+        `${USERS_ENDPOINT}/me`
+    ];
+
+    for (const endpoint of candidateEndpoints) {
+        try {
+            const response = await authorizedFetch(endpoint);
+            if (!response?.ok) continue;
+            const data = await response.json().catch(() => null);
+            const extracted = extractIdFromObject(data) || extractIdFromObject(data?.data) || extractIdFromObject(data?.user);
+            if (extracted) {
+                setCachedAdminId(extracted);
                 return cachedAdminId;
             }
+        } catch (error) {
+            console.warn(`⚠️ Failed to fetch admin identity from ${endpoint}:`, error);
+        }
+    }
 
-            const auth = window.adminAuth;
-            if (!auth) return null;
-
-            let authUser;
-            try {
-                authUser = auth.getUser?.() || null;
-                const extractedFromUser = extractIdFromObject(authUser);
-                if (extractedFromUser && !forceRefresh) {
-                    setCachedAdminId(extractedFromUser);
+    const email = authUser?.email ? String(authUser.email).toLowerCase() : null;
+    if (email) {
+        try {
+            const response = await authorizedFetch(`${USERS_ENDPOINT}?email=${encodeURIComponent(email)}`);
+            if (response?.ok) {
+                const data = await response.json().catch(() => null);
+                const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+                const matched = list.find(item => String(item.email || '').toLowerCase() === email);
+                const extracted = extractIdFromObject(matched);
+                if (extracted) {
+                    setCachedAdminId(extracted);
                     return cachedAdminId;
                 }
-            } catch (error) {
-                console.warn('⚠️ Failed to read stored admin user:', error);
             }
-
-            const token = auth.getToken?.();
-            const payload = decodeJwtPayload(token);
-            const extractedFromPayload = extractIdFromObject(payload) || extractIdFromObject(payload?.user);
-            if (extractedFromPayload && !forceRefresh) {
-                setCachedAdminId(extractedFromPayload);
-                return cachedAdminId;
-            }
-            if (payload?.sub && typeof payload.sub === 'string' && !forceRefresh) {
-                setCachedAdminId(payload.sub);
-                return cachedAdminId;
-            }
-
-            const candidateEndpoints = [
-                `${ADMIN_API_BASE_URL}/auth/profile`,
-                `${ADMIN_API_BASE_URL}/auth/me`,
-                `${USERS_ENDPOINT}/me`
-            ];
-
-            for (const endpoint of candidateEndpoints) {
-                try {
-                    const response = await authorizedFetch(endpoint);
-                    if (!response?.ok) continue;
-                    const data = await response.json().catch(() => null);
-                    const extracted = extractIdFromObject(data) || extractIdFromObject(data?.data) || extractIdFromObject(data?.user);
-                    if (extracted) {
-                        setCachedAdminId(extracted);
-                        return cachedAdminId;
-                    }
-                } catch (error) {
-                    console.warn(`⚠️ Failed to fetch admin identity from ${endpoint}:`, error);
-                }
-            }
-
-            const email = authUser?.email ? String(authUser.email).toLowerCase() : null;
-            if (email) {
-                try {
-                    const response = await authorizedFetch(`${USERS_ENDPOINT}?email=${encodeURIComponent(email)}`);
-                    if (response?.ok) {
-                        const data = await response.json().catch(() => null);
-                        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-                        const matched = list.find(item => String(item.email || '').toLowerCase() === email);
-                        const extracted = extractIdFromObject(matched);
-                        if (extracted) {
-                            setCachedAdminId(extracted);
-                            return cachedAdminId;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Failed to lookup admin by email:', error);
-                }
-            }
-
-            console.warn('⚠️ Unable to determine current admin id. Password change request cannot proceed.');
-            return null;
+        } catch (error) {
+            console.warn('⚠️ Failed to lookup admin by email:', error);
         }
+    }
 
-        function handleUnauthorized(response) {
-            if (response?.status === 401 && window.adminAuth) {
-                console.warn('انتهت صلاحية الجلسة، يتم إعادة التوجيه إلى صفحة الدخول.');
-                window.adminAuth.logout();
-            }
-            return response;
+    console.warn('⚠️ Unable to determine current admin id. Password change request cannot proceed.');
+    return null;
+}
+
+function handleUnauthorized(response) {
+    if (response?.status === 401 && window.adminAuth) {
+        console.warn('انتهت صلاحية الجلسة، يتم إعادة التوجيه إلى صفحة الدخول.');
+        window.adminAuth.logout();
+    }
+    return response;
+}
+
+// ========================================
+// ===== 6. المتغيرات العامة =====
+// ========================================
+
+// متغيرات الرسوم البيانية
+let chartsLoaded = {
+    overview: false,
+    analytics: false
+};
+
+const chartInstances = {
+    overview: {},
+    analytics: {}
+};
+
+// ========================================
+// ===== 7. البيانات الوهمية (Mock Data) =====
+// ========================================
+
+const mockData = {
+    overviewMetrics: {
+        revenue: 452300,
+        avgOrder: 850,
+        conversionRate: 3.2,
+        returnRate: 1.8,
+        weeklyChange: {
+            revenue: 0.18,
+            avgOrder: 0.05,
+            conversionRate: -0.005,
+            returnRate: -0.003
         }
+    },
+    overviewOrders: [
+        { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', date: '2025-10-25', payment: 'cash' }
+    ],
+    products: [],
+    categories: [],
+    collections: [
+        { id: 'COL-1', name: 'حملة العودة للنادي', status: 'active', products: 12, schedule: '2025-10-01 — 2025-10-31', image: 'https://via.placeholder.com/400x200?text=Collection' }
+    ],
+    promotions: [
+        { id: 'PR-1', title: 'خصم 20% على كل الأجهزة', type: 'percentage', value: '20%', period: '2025-10-20 — 2025-10-31', status: 'active' }
+    ],
+    banners: [],
+    payments: [
+        { id: 'cod', name: 'الدفع عند الاستلام', note: '', enabled: true }
+    ],
+    orders: [
+        { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', payment: 'cash', date: '2025-10-25', items: 3 }
+    ],
+    customers: [
+        { id: 'CUS-778', name: 'محمد أحمد', email: 'm.ahmed@example.com', segment: 'vip', orders: 12, spend: 98000, status: 'active', lastOrder: '2025-10-25' }
+    ],
+    analyticsRangeOptions: [
+        { value: '7d', label: 'آخر 7 أيام' },
+        { value: '30d', label: 'آخر 30 يوم' },
+        { value: '90d', label: 'آخر 3 أشهر' },
+        { value: 'ytd', label: 'منذ بداية العام' }
+    ],
+    auditLogs: [
+        { id: 1, createdAt: '2025-10-25 14:32:15', user: 'أحمد محمد', action: 'create', message: 'إضافة منتج جديد: "جهاز المشي"', ip: '192.168.1.1' }
+    ],
+    users: [
+        { id: 'USR-1', name: 'أحمد محمد', email: 'ahmed@admin.com', role: 'admin', status: 'active', lastActive: '2025-10-25 14:32' }
+    ],
+    orderDetails: {
+        'ORD-1042': {
+            customer: { name: 'محمد أحمد', email: 'm.ahmed@example.com', phone: '01012345678' },
+            shipping: { line: '15 شارع الجامعة', city: 'المنصورة، الدقهلية', country: 'مصر - 35516' },
+            paymentMethod: 'الدفع عند الاستلام',
+            date: '2025-10-25 14:30',
+            items: [
+                { name: 'جهاز المشي الكهربائي', quantity: 1, price: 8500 },
+                { name: 'حبل القفز الرياضي', quantity: 2, price: 120 }
+            ],
+            summary: { subtotal: 8740, shipping: 50, discount: 100, total: 8690 },
+            status: 'processing',
+            notes: ''
+        }
+    }
+};
 
-        // ========================================
-        // ===== 6. المتغيرات العامة =====
-        // ========================================
+// ========================================
+// ===== 8. حالة التطبيق (Application State) =====
+// ========================================
 
-        // متغيرات الرسوم البيانية
-        let chartsLoaded = {
-            overview: false,
-            analytics: false
+const state = {
+    // الفلاتر
+    filters: {
+        productSearch: '',
+        productCategory: 'all',
+        productStatus: 'all',
+        orderSearch: '',
+        orderStatus: 'all',
+        orderDate: '',
+        customerSearch: '',
+        customerSegment: 'all',
+        auditSearch: '',
+        auditAction: 'all',
+        auditDate: '',
+        analyticsRange: '30',
+        analyticsDays: 30,
+        analyticsStart: null,
+        analyticsEnd: null,
+        categorySearch: '',
+        subcategoryCategory: 'all',
+        subcategorySearch: '',
+        brandSearch: '',
+        messagesSearch: ''
+    },
+    // الفئات
+    categories: [],
+    categoriesLoading: false,
+    categoriesError: null,
+    categoryExtras: {},
+    // الفئات الفرعية
+    subcategories: {},
+    subcategoriesLoading: {},
+    subcategoriesError: {},
+    subcategoryExtras: {},
+    // المنتجات
+    products: [],
+    productsLoading: false,
+    productsError: null,
+    productExtras: {},
+    // العلامات التجارية
+    brands: [],
+    brandsLoading: false,
+    brandsError: null,
+    // العملاء
+    customers: [],
+    customersLoading: false,
+    customersError: null,
+    // البانرات
+    banners: [],
+    bannersLoading: false,
+    bannersError: null,
+    // القسم الحالي
+    currentSection: 'overview',
+    messages: [],
+    unreadMessages: 0,
+    messagesLoading: false,
+    messagesError: null,
+    messagesLoaded: false,
+    messagesLastFetched: 0,
+    orders: [],
+    ordersLoading: false,
+    ordersError: null,
+    ordersPagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalOrders: 0
+    },
+    shippingZones: [],
+    shippingZonesLoading: false,
+    shippingZonesError: null,
+    selectedShippingZoneId: ''
+};
+
+// ========================================
+// ===== 9. بيانات الحالات (Status Metadata) =====
+// ========================================
+
+const STATUS_META = {
+    new: { label: 'جديد', class: 'status-new' },
+    preparing: { label: 'قيد التجهيز', class: 'status-preparing' },
+    in_transit: { label: 'قيد التوصيل', class: 'status-in_transit' },
+    delivered: { label: 'تم التوصيل', class: 'status-delivered' },
+    // cancelled: { label: 'ملغي', class: 'status-cancelled' },
+    processing: { label: 'قيد المعالجة', class: 'status-processing' },
+    shipped: { label: 'تم الشحن', class: 'status-shipped' },
+    completed: { label: 'مكتمل', class: 'status-completed' },
+    active: { label: 'نشط', class: 'status-active' },
+    inactive: { label: 'غير نشط', class: 'status-inactive' },
+    scheduled: { label: 'مجدول', class: 'status-scheduled' },
+    paused: { label: 'متوقف', class: 'status-paused' },
+    low_stock: { label: 'مخزون منخفض', class: 'status-warning' },
+    login: { label: 'تسجيل دخول', class: 'action-login' },
+    create: { label: 'إضافة', class: 'action-create' },
+    update: { label: 'تعديل', class: 'action-update' },
+    delete: { label: 'حذف', class: 'action-delete' }
+};
+
+const ORDER_STATUS_FLOW = ['new', 'preparing', 'in_transit', 'delivered'];
+
+function normalizeStatusKey(status) {
+    if (status === undefined || status === null) return '';
+    const normalized = String(status).trim().toLowerCase();
+    if (!normalized) return '';
+
+    const collapsed = normalized.replace(/[\s-]+/g, '_');
+    const aliases = {
+        canceled: 'cancelled',
+        cancelled: 'cancelled',
+        cancel: 'cancelled',
+        in_preparation: 'preparing',
+        preparation: 'preparing',
+        preparing: 'preparing',
+        pending: 'preparing',
+        processing: 'preparing',
+        in_delivery: 'in_transit',
+        indelivery: 'in_transit',
+        in_transit: 'in_transit',
+        delivery: 'in_transit',
+        shipped: 'in_transit',
+        out_for_delivery: 'in_transit'
+    };
+
+    if (aliases[collapsed]) {
+        return aliases[collapsed];
+    }
+
+    if (ORDER_STATUS_FLOW.includes(collapsed)) {
+        return collapsed;
+    }
+
+    return collapsed;
+}
+
+function getOrderStatusOptions() {
+    return ORDER_STATUS_FLOW.map(statusKey => ({
+        value: statusKey,
+        label: STATUS_META[statusKey]?.label || statusKey
+    }));
+}
+
+// ===== Session Management =====
+// حفظ القسم الحالي في sessionStorage لاستعادته عند إعادة تحميل الصفحة
+function saveCurrentSection(section) {
+    state.currentSection = section;
+    try {
+        sessionStorage.setItem('currentSection', section);
+    } catch (error) {
+        console.warn('Failed to save current section', error);
+    }
+}
+
+function hydrateSubcategoryCategoryOptions() {
+    const categories = state.categories;
+    const filterSelect = document.getElementById('subcategoryCategoryFilter');
+    const formSelect = document.getElementById('subcategoryCategory');
+
+    const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
+    const availableIds = new Set(categories.map(category => category.id));
+
+    if (filterSelect) {
+        const currentFilter = state.filters.subcategoryCategory;
+        filterSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
+        if (currentFilter && availableIds.has(currentFilter)) {
+            filterSelect.value = currentFilter;
+        } else {
+            filterSelect.value = '';
+            if (currentFilter && !availableIds.has(currentFilter)) {
+                state.filters.subcategoryCategory = '';
+            }
+        }
+    }
+
+    if (formSelect) {
+        const previousValue = formSelect.value;
+        formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
+
+        const preferredValue = previousValue && availableIds.has(previousValue)
+            ? previousValue
+            : (state.filters.subcategoryCategory && availableIds.has(state.filters.subcategoryCategory)
+                ? state.filters.subcategoryCategory
+                : '');
+
+        formSelect.value = preferredValue;
+    }
+}
+
+function populateSubcategoryModal(categoryId, subcategoryId = null) {
+    const form = document.getElementById('subcategoryForm');
+    if (!form) return;
+
+    hydrateSubcategoryCategoryOptions();
+
+    const subcategory = subcategoryId ? getSubcategoryById(categoryId, subcategoryId) : null;
+    const resolvedCategoryId = categoryId
+        || subcategory?.categoryId
+        || state.filters.subcategoryCategory
+        || state.categories[0]?.id
+        || '';
+    const extras = subcategory ? getSubcategoryExtras(subcategory.categoryId || resolvedCategoryId, subcategory.id) : null;
+
+
+
+    form.dataset.mode = subcategory ? 'edit' : 'create';
+
+    setFieldValue(form, 'id', subcategory?.id || '');
+    setFieldValue(form, 'categoryId', resolvedCategoryId);
+    setFieldValue(form, 'originalCategoryId', subcategory?.categoryId || resolvedCategoryId);
+    setFieldValue(form, 'name', subcategory?.name || '');
+    const resolvedName = subcategory?.name || '';
+    const resolvedSlug = subcategory?.slug || (resolvedName ? slugify(resolvedName) : '');
+    setFieldValue(form, 'slug', resolvedSlug);
+    const subcategoryDescriptionField = form.querySelector('[name="description"]');
+    const initialDescription = extras?.description || subcategory?.description || '';
+    setFieldValue(form, 'description', truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)));
+    if (subcategoryDescriptionField) {
+        updateDescriptionCounter(subcategoryDescriptionField);
+    }
+
+    const statusField = form.elements['status'];
+    if (statusField) {
+        statusField.value = subcategory?.status || 'active';
+    }
+
+    const imageInput = form.querySelector('#subcategoryImage');
+    const targetImage = extras?.image ?? subcategory?.image ?? '';
+    if (imageInput) {
+        imageInput.value = '';
+        imageInput.dataset.originalImage = targetImage;
+        imageInput.dataset.previewImage = '';
+    }
+    updateSubcategoryImagePreview(targetImage);
+
+    const submitBtn = form.querySelector('[type="submit"]');
+    if (submitBtn) {
+        submitBtn.textContent = subcategory ? 'حفظ التعديلات' : 'حفظ الفئة الفرعية';
+    }
+
+    if (subcategory) {
+        const snapshot = {
+            name: resolvedName,
+            slug: resolvedSlug,
+            description: truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)) || '',
+            status: subcategory?.status || 'active',
+            categoryId: subcategory?.categoryId || resolvedCategoryId
         };
 
-        const chartInstances = {
-            overview: {},
-            analytics: {}
-        };
+        try {
+            form.dataset.originalSubcategory = JSON.stringify(snapshot);
+        } catch (error) {
+            console.error('Error:', error);
+            delete form.dataset.originalSubcategory;
+        }
+    } else {
+        delete form.dataset.originalSubcategory;
+    }
+}
 
-        // ========================================
-        // ===== 7. البيانات الوهمية (Mock Data) =====
-        // ========================================
+async function handleProductFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target.closest('form');
+    if (!form || form.dataset.entity !== 'product') {
+        console.error('❌ Invalid form element');
+        return;
+    }
 
-        const mockData = {
-            overviewMetrics: {
-                revenue: 452300,
-                avgOrder: 850,
-                conversionRate: 3.2,
-                returnRate: 1.8,
-                weeklyChange: {
-                    revenue: 0.18,
-                    avgOrder: 0.05,
-                    conversionRate: -0.005,
-                    returnRate: -0.003
+    // إظهار مؤشر التحميل
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton?.innerHTML || 'حفظ';
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    }
+
+    try {
+        // التحقق من الحقول المطلوبة
+        const requiredFields = [
+            { name: 'name', message: 'يرجى إدخال اسم المنتج' },
+            { name: 'price', message: 'يرجى إدخال سعر المنتج' },
+            { name: 'brand', message: 'يرجى اختيار علامة تجارية' },
+            { name: 'category', message: 'يرجى اختيار الفئة الرئيسية' },
+            { name: 'description', message: 'يرجى إدخال وصف للمنتج' }
+        ];
+
+        // التحقق من الحقول المطلوبة
+        for (const field of requiredFields) {
+            const input = form.querySelector(`[name="${field.name}"]`);
+            if (input && !input.value.trim()) {
+                showToast('error', 'خطأ في الإدخال', field.message);
+                input.focus();
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
                 }
-            },
-            overviewOrders: [
-                { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', date: '2025-10-25', payment: 'cash' }
-            ],
-            products: [],
-            categories: [],
-            collections: [
-                { id: 'COL-1', name: 'حملة العودة للنادي', status: 'active', products: 12, schedule: '2025-10-01 — 2025-10-31', image: 'https://via.placeholder.com/400x200?text=Collection' }
-            ],
-            promotions: [
-                { id: 'PR-1', title: 'خصم 20% على كل الأجهزة', type: 'percentage', value: '20%', period: '2025-10-20 — 2025-10-31', status: 'active' }
-            ],
-            banners: [],
-            payments: [
-                { id: 'cod', name: 'الدفع عند الاستلام', note: '', enabled: true }
-            ],
-            orders: [
-                { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', payment: 'cash', date: '2025-10-25', items: 3 }
-            ],
-            customers: [
-                { id: 'CUS-778', name: 'محمد أحمد', email: 'm.ahmed@example.com', segment: 'vip', orders: 12, spend: 98000, status: 'active', lastOrder: '2025-10-25' }
-            ],
-            analyticsRangeOptions: [
-                { value: '7d', label: 'آخر 7 أيام' },
-                { value: '30d', label: 'آخر 30 يوم' },
-                { value: '90d', label: 'آخر 3 أشهر' },
-                { value: 'ytd', label: 'منذ بداية العام' }
-            ],
-            auditLogs: [
-                { id: 1, createdAt: '2025-10-25 14:32:15', user: 'أحمد محمد', action: 'create', message: 'إضافة منتج جديد: "جهاز المشي"', ip: '192.168.1.1' }
-            ],
-            users: [
-                { id: 'USR-1', name: 'أحمد محمد', email: 'ahmed@admin.com', role: 'admin', status: 'active', lastActive: '2025-10-25 14:32' }
-            ],
-            orderDetails: {
-                'ORD-1042': {
-                    customer: { name: 'محمد أحمد', email: 'm.ahmed@example.com', phone: '01012345678' },
-                    shipping: { line: '15 شارع الجامعة', city: 'المنصورة، الدقهلية', country: 'مصر - 35516' },
-                    paymentMethod: 'الدفع عند الاستلام',
-                    date: '2025-10-25 14:30',
-                    items: [
-                        { name: 'جهاز المشي الكهربائي', quantity: 1, price: 8500 },
-                        { name: 'حبل القفز الرياضي', quantity: 2, price: 120 }
-                    ],
-                    summary: { subtotal: 8740, shipping: 50, discount: 100, total: 8690 },
-                    status: 'processing',
-                    notes: ''
-                }
-            }
-        };
-
-        // ========================================
-        // ===== 8. حالة التطبيق (Application State) =====
-        // ========================================
-
-        const state = {
-            // الفلاتر
-            filters: {
-                productSearch: '',
-                productCategory: 'all',
-                productStatus: 'all',
-                orderSearch: '',
-                orderStatus: 'all',
-                orderDate: '',
-                customerSearch: '',
-                customerSegment: 'all',
-                auditSearch: '',
-                auditAction: 'all',
-                auditDate: '',
-                analyticsRange: '30',
-                analyticsDays: 30,
-                analyticsStart: null,
-                analyticsEnd: null,
-                categorySearch: '',
-                subcategoryCategory: 'all',
-                subcategorySearch: '',
-                brandSearch: '',
-                messagesSearch: ''
-            },
-            // الفئات
-            categories: [],
-            categoriesLoading: false,
-            categoriesError: null,
-            categoryExtras: {},
-            // الفئات الفرعية
-            subcategories: {},
-            subcategoriesLoading: {},
-            subcategoriesError: {},
-            subcategoryExtras: {},
-            // المنتجات
-            products: [],
-            productsLoading: false,
-            productsError: null,
-            productExtras: {},
-            // العلامات التجارية
-            brands: [],
-            brandsLoading: false,
-            brandsError: null,
-            // العملاء
-            customers: [],
-            customersLoading: false,
-            customersError: null,
-            // البانرات
-            banners: [],
-            bannersLoading: false,
-            bannersError: null,
-            // القسم الحالي
-            currentSection: 'overview',
-            messages: [],
-            unreadMessages: 0,
-            messagesLoading: false,
-            messagesError: null,
-            messagesLoaded: false,
-            messagesLastFetched: 0,
-            orders: [],
-            ordersLoading: false,
-            ordersError: null,
-            ordersPagination: {
-                currentPage: 1,
-                totalPages: 1,
-                totalOrders: 0
-            },
-            shippingZones: [],
-            shippingZonesLoading: false,
-            shippingZonesError: null,
-            selectedShippingZoneId: ''
-        };
-
-        // ========================================
-        // ===== 9. بيانات الحالات (Status Metadata) =====
-        // ========================================
-
-        const STATUS_META = {
-            new: { label: 'جديد', class: 'status-new' },
-            preparing: { label: 'قيد التجهيز', class: 'status-preparing' },
-            in_transit: { label: 'قيد التوصيل', class: 'status-in_transit' },
-            delivered: { label: 'تم التوصيل', class: 'status-delivered' },
-            // cancelled: { label: 'ملغي', class: 'status-cancelled' },
-            processing: { label: 'قيد المعالجة', class: 'status-processing' },
-            shipped: { label: 'تم الشحن', class: 'status-shipped' },
-            completed: { label: 'مكتمل', class: 'status-completed' },
-            active: { label: 'نشط', class: 'status-active' },
-            inactive: { label: 'غير نشط', class: 'status-inactive' },
-            scheduled: { label: 'مجدول', class: 'status-scheduled' },
-            paused: { label: 'متوقف', class: 'status-paused' },
-            low_stock: { label: 'مخزون منخفض', class: 'status-warning' },
-            login: { label: 'تسجيل دخول', class: 'action-login' },
-            create: { label: 'إضافة', class: 'action-create' },
-            update: { label: 'تعديل', class: 'action-update' },
-            delete: { label: 'حذف', class: 'action-delete' }
-        };
-
-        const ORDER_STATUS_FLOW = ['new', 'preparing', 'in_transit', 'delivered'];
-
-        function normalizeStatusKey(status) {
-            if (status === undefined || status === null) return '';
-            const normalized = String(status).trim().toLowerCase();
-            if (!normalized) return '';
-
-            const collapsed = normalized.replace(/[\s-]+/g, '_');
-            const aliases = {
-                canceled: 'cancelled',
-                cancelled: 'cancelled',
-                cancel: 'cancelled',
-                in_preparation: 'preparing',
-                preparation: 'preparing',
-                preparing: 'preparing',
-                pending: 'preparing',
-                processing: 'preparing',
-                in_delivery: 'in_transit',
-                indelivery: 'in_transit',
-                in_transit: 'in_transit',
-                delivery: 'in_transit',
-                shipped: 'in_transit',
-                out_for_delivery: 'in_transit'
-            };
-
-            if (aliases[collapsed]) {
-                return aliases[collapsed];
-            }
-
-            if (ORDER_STATUS_FLOW.includes(collapsed)) {
-                return collapsed;
-            }
-
-            return collapsed;
-        }
-
-        function getOrderStatusOptions() {
-            return ORDER_STATUS_FLOW.map(statusKey => ({
-                value: statusKey,
-                label: STATUS_META[statusKey]?.label || statusKey
-            }));
-        }
-
-        // ===== Session Management =====
-        // حفظ القسم الحالي في sessionStorage لاستعادته عند إعادة تحميل الصفحة
-        function saveCurrentSection(section) {
-            state.currentSection = section;
-            try {
-                sessionStorage.setItem('currentSection', section);
-            } catch (error) {
-                console.warn('Failed to save current section', error);
-            }
-        }
-
-        function hydrateSubcategoryCategoryOptions() {
-            const categories = state.categories;
-            const filterSelect = document.getElementById('subcategoryCategoryFilter');
-            const formSelect = document.getElementById('subcategoryCategory');
-
-            const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
-            const availableIds = new Set(categories.map(category => category.id));
-
-            if (filterSelect) {
-                const currentFilter = state.filters.subcategoryCategory;
-                filterSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
-                if (currentFilter && availableIds.has(currentFilter)) {
-                    filterSelect.value = currentFilter;
-                } else {
-                    filterSelect.value = '';
-                    if (currentFilter && !availableIds.has(currentFilter)) {
-                        state.filters.subcategoryCategory = '';
-                    }
-                }
-            }
-
-            if (formSelect) {
-                const previousValue = formSelect.value;
-                formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
-
-                const preferredValue = previousValue && availableIds.has(previousValue)
-                    ? previousValue
-                    : (state.filters.subcategoryCategory && availableIds.has(state.filters.subcategoryCategory)
-                        ? state.filters.subcategoryCategory
-                        : '');
-
-                formSelect.value = preferredValue;
-            }
-        }
-
-        function populateSubcategoryModal(categoryId, subcategoryId = null) {
-            const form = document.getElementById('subcategoryForm');
-            if (!form) return;
-
-            hydrateSubcategoryCategoryOptions();
-
-            const subcategory = subcategoryId ? getSubcategoryById(categoryId, subcategoryId) : null;
-            const resolvedCategoryId = categoryId
-                || subcategory?.categoryId
-                || state.filters.subcategoryCategory
-                || state.categories[0]?.id
-                || '';
-            const extras = subcategory ? getSubcategoryExtras(subcategory.categoryId || resolvedCategoryId, subcategory.id) : null;
-
-            console.log('📝 Populating subcategory form:', { categoryId: resolvedCategoryId, subcategory, extras });
-
-            form.dataset.mode = subcategory ? 'edit' : 'create';
-
-            setFieldValue(form, 'id', subcategory?.id || '');
-            setFieldValue(form, 'categoryId', resolvedCategoryId);
-            setFieldValue(form, 'originalCategoryId', subcategory?.categoryId || resolvedCategoryId);
-            setFieldValue(form, 'name', subcategory?.name || '');
-            const resolvedName = subcategory?.name || '';
-            const resolvedSlug = subcategory?.slug || (resolvedName ? slugify(resolvedName) : '');
-            setFieldValue(form, 'slug', resolvedSlug);
-            const subcategoryDescriptionField = form.querySelector('[name="description"]');
-            const initialDescription = extras?.description || subcategory?.description || '';
-            setFieldValue(form, 'description', truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)));
-            if (subcategoryDescriptionField) {
-                updateDescriptionCounter(subcategoryDescriptionField);
-            }
-
-            const statusField = form.elements['status'];
-            if (statusField) {
-                statusField.value = subcategory?.status || 'active';
-            }
-
-            const imageInput = form.querySelector('#subcategoryImage');
-            const targetImage = extras?.image ?? subcategory?.image ?? '';
-            if (imageInput) {
-                imageInput.value = '';
-                imageInput.dataset.originalImage = targetImage;
-                imageInput.dataset.previewImage = '';
-            }
-            updateSubcategoryImagePreview(targetImage);
-
-            const submitBtn = form.querySelector('[type="submit"]');
-            if (submitBtn) {
-                submitBtn.textContent = subcategory ? 'حفظ التعديلات' : 'حفظ الفئة الفرعية';
-            }
-
-            if (subcategory) {
-                const snapshot = {
-                    name: resolvedName,
-                    slug: resolvedSlug,
-                    description: truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)) || '',
-                    status: subcategory?.status || 'active',
-                    categoryId: subcategory?.categoryId || resolvedCategoryId
-                };
-
-                try {
-                    form.dataset.originalSubcategory = JSON.stringify(snapshot);
-                } catch (error) {
-                    console.error('Error:', error);
-                    delete form.dataset.originalSubcategory;
-                }
-            } else {
-                delete form.dataset.originalSubcategory;
-            }
-        }
-
-        async function handleProductFormSubmit(event) {
-            event.preventDefault();
-            const form = event.target.closest('form');
-            if (!form || form.dataset.entity !== 'product') {
-                console.error('❌ Invalid form element');
                 return;
             }
+        }
 
-            // إظهار مؤشر التحميل
-            const submitButton = form.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton?.innerHTML || 'حفظ';
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
-            }
+        const mode = form.dataset.mode || 'create';
+        const id = form.querySelector('[name="id"]')?.value;
+        const discountInputValue = form.querySelector('[name="priceAfterDiscount"]')?.value.trim() ?? '';
+        const originalDiscountValue = form.dataset.originalPriceAfterDiscount ?? '';
+        const normalizedCurrentDiscount = discountInputValue || '';
+        const normalizedOriginalDiscount = originalDiscountValue || '';
+        const discountNeedsUpdate = mode === 'edit' && id && normalizedCurrentDiscount !== normalizedOriginalDiscount;
+
+        try {
+            // بناء بيانات المنتج
+            const payload = buildProductPayload(form);
+
+            // الحصول على ملفات الصور
+            const imageInput = form.querySelector('#productImage');
+            const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];
 
             try {
-                // التحقق من الحقول المطلوبة
-                const requiredFields = [
-                    { name: 'name', message: 'يرجى إدخال اسم المنتج' },
-                    { name: 'price', message: 'يرجى إدخال سعر المنتج' },
-                    { name: 'brand', message: 'يرجى اختيار علامة تجارية' },
-                    { name: 'category', message: 'يرجى اختيار الفئة الرئيسية' },
-                    { name: 'description', message: 'يرجى إدخال وصف للمنتج' }
-                ];
+                // طباعة البيانات للتشخيص
+                // إضافة رسالة تحميل
+                showToast('info', 'جاري الحفظ', 'جاري حفظ المنتج، يرجى الانتظار...', 2000);
 
-                // التحقق من الحقول المطلوبة
-                for (const field of requiredFields) {
-                    const input = form.querySelector(`[name="${field.name}"]`);
-                    if (input && !input.value.trim()) {
-                        showToast('error', 'خطأ في الإدخال', field.message);
-                        input.focus();
-                        if (submitButton) {
-                            submitButton.disabled = false;
-                            submitButton.innerHTML = originalButtonText;
-                        }
-                        return;
+                if (mode === 'edit' && id) {
+                    await updateProduct(id, payload, imageFiles);
+
+                    if (discountNeedsUpdate) {
+                        const numericDiscount = normalizedCurrentDiscount === '' ? null : Number(normalizedCurrentDiscount);
+                        await updateProductDiscountPrice(id, numericDiscount);
                     }
-                }
 
-                const mode = form.dataset.mode || 'create';
-                const id = form.querySelector('[name="id"]')?.value;
-                const discountInputValue = form.querySelector('[name="priceAfterDiscount"]')?.value.trim() ?? '';
-                const originalDiscountValue = form.dataset.originalPriceAfterDiscount ?? '';
-                const normalizedCurrentDiscount = discountInputValue || '';
-                const normalizedOriginalDiscount = originalDiscountValue || '';
-                const discountNeedsUpdate = mode === 'edit' && id && normalizedCurrentDiscount !== normalizedOriginalDiscount;
-                
-                try {
-                    // بناء بيانات المنتج
-                    const payload = buildProductPayload(form);
-                    
-                    // الحصول على ملفات الصور
-                    const imageInput = form.querySelector('#productImage');
-                    const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];
-
-                    try {
-                        // طباعة البيانات للتشخيص
-                        // إضافة رسالة تحميل
-                        showToast('info', 'جاري الحفظ', 'جاري حفظ المنتج، يرجى الانتظار...', 2000);
-                        
-                        if (mode === 'edit' && id) {
-                            await updateProduct(id, payload, imageFiles);
-
-                            if (discountNeedsUpdate) {
-                                const numericDiscount = normalizedCurrentDiscount === '' ? null : Number(normalizedCurrentDiscount);
-                                await updateProductDiscountPrice(id, numericDiscount);
-                            }
-
-                            form.dataset.originalPriceAfterDiscount = normalizedCurrentDiscount;
-                            showToast('success', 'تم التحديث', 'تم تحديث المنتج بنجاح');
-                        } else {
-                            await createProduct(payload, imageFiles);
-                            showToast('success', 'تمت الإضافة', 'تمت إضافة المنتج بنجاح');
-                            form.reset(); // إعادة تعيين النموذج بعد الإضافة
-                            form.dataset.originalPriceAfterDiscount = '';
-                        }
-                        
-                        // إغلاق المودال بعد الحفظ
-                        closeModal('addProductModal');
-                        
-                        // تحديث قائمة المنتجات
-                        await fetchProducts();
-                        renderProducts();
-                        
-                    } catch (error) {
-                        console.error('Error:', error);
-                        let errorMessage = 'حدث خطأ أثناء محاولة حفظ المنتج';
-                        
-                        if (error.response) {
-                            // معالجة أخطاء API
-                            const errorData = error.response.data || {};
-                            errorMessage = errorData.message || errorMessage;
-                            
-                            // معالجة أخطاء التحقق من الصحة
-                            if (errorData.errors) {
-                                const errorMessages = Object.values(errorData.errors).flat();
-                                errorMessage = errorMessages.join('\n');
-                            }
-                        } else if (error.request) {
-                            errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
-                        }
-                        
-                        showToast('error', 'خطأ', errorMessage);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    let errorMessage = error.message || 'الرجاء التحقق من البيانات المدخلة';
-                    
-                    // تحسين رسائل الخطأ
-                    if (error.message.includes('brand') || error.message.includes('علامة تجارية')) {
-                        errorMessage = 'يجب اختيار علامة تجارية صالحة';
-                        const brandSelect = form.querySelector('#productBrand');
-                        if (brandSelect) brandSelect.focus();
-                    } else if (error.message.includes('category')) {
-                        errorMessage = 'يجب اختيار فئة رئيسية صالحة';
-                        const categorySelect = form.querySelector('#productCategory');
-                        if (categorySelect) categorySelect.focus();
-                    } else if (error.message.includes('price')) {
-                        errorMessage = 'يجب إدخال سعر صحيح';
-                        const priceInput = form.querySelector('[name="price"]');
-                        if (priceInput) priceInput.focus();
-                    }
-                    
-                    showToast('error', 'خطأ في البيانات', errorMessage);
-                    return;
-                } finally {
-                    // إعادة تفعيل زر الحفظ
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = originalButtonText;
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                
-                // معالجة أخطاء التحقق من صحة البيانات
-                if (error.message.includes('validation failed')) {
-                    const errorMessage = error.message.split(':').pop().trim();
-                    showToast('error', 'خطأ في التحقق من صحة البيانات', errorMessage);
+                    form.dataset.originalPriceAfterDiscount = normalizedCurrentDiscount;
+                    showToast('success', 'تم التحديث', 'تم تحديث المنتج بنجاح');
                 } else {
-                    showToast('error', 'خطأ', 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى');
+                    await createProduct(payload, imageFiles);
+                    showToast('success', 'تمت الإضافة', 'تمت إضافة المنتج بنجاح');
+                    form.reset(); // إعادة تعيين النموذج بعد الإضافة
+                    form.dataset.originalPriceAfterDiscount = '';
                 }
-            }
-        }
 
-        // تحميل القسم المحفوظ أو الافتراضي عند بدء التطبيق
-        function loadCurrentSection() {
-            try {
-                return sessionStorage.getItem('currentSection') || 'overview';
+                // إغلاق المودال بعد الحفظ
+                closeModal('addProductModal');
+
+                // تحديث قائمة المنتجات
+                await fetchProducts();
+                renderProducts();
+
             } catch (error) {
                 console.error('Error:', error);
-                return 'overview';
-            }
-        }
+                let errorMessage = 'حدث خطأ أثناء محاولة حفظ المنتج';
 
-        // ===== Utility Helpers =====
-        function escapeHtml(value = '') {
-            return value
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
+                if (error.response) {
+                    // معالجة أخطاء API
+                    const errorData = error.response.data || {};
+                    errorMessage = errorData.message || errorMessage;
 
-        function resolveAssetUrl(path = '') {
-            if (!path || typeof path !== 'string') return '';
-            const trimmed = path.trim();
-
-            if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:')) {
-                return trimmed;
-            }
-
-            try {
-                const base = new URL(ADMIN_API_BASE_URL);
-                const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-                base.pathname = normalizedPath;
-                base.search = '';
-                base.hash = '';
-                return base.toString();
-            } catch (error) {
-                console.warn('Failed to resolve asset url:', path, error);
-                return trimmed;
-            }
-        }
-
-        function extractCategoryImage(rawCategory = {}) {
-            const candidates = [];
-
-            const addCandidate = (value) => {
-                if (!value) return;
-                if (typeof value === 'string') {
-                    candidates.push(value);
-                    return;
-                }
-
-                if (Array.isArray(value)) {
-                    value.forEach(addCandidate);
-                    return;
-                }
-
-                if (typeof value === 'object') {
-                    const candidate = value.secure_url
-                        || value.url
-                        || value.src
-                        || value.path
-                        || value.href;
-                    if (candidate) {
-                        candidates.push(candidate);
+                    // معالجة أخطاء التحقق من الصحة
+                    if (errorData.errors) {
+                        const errorMessages = Object.values(errorData.errors).flat();
+                        errorMessage = errorMessages.join('\n');
                     }
-                }
-            };
-
-            addCandidate(rawCategory.image);
-            addCandidate(rawCategory.thumbnail);
-            addCandidate(rawCategory.cover);
-            addCandidate(rawCategory.media);
-            if (Array.isArray(rawCategory.images)) {
-                rawCategory.images.forEach(addCandidate);
-            }
-
-            const resolved = candidates
-                .map(candidate => resolveAssetUrl(candidate))
-                .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
-
-            return resolved || '';
-        }
-
-        const PRODUCT_PLACEHOLDER_IMAGE = 'https://via.placeholder.com/320x200?text=Product';
-        const BANNER_IMAGE_PLACEHOLDER = 'https://via.placeholder.com/1200x400?text=Banner';
-
-        function extractProductImage(rawProduct = {}) {
-            const candidates = [];
-
-            const addCandidate = (value) => {
-                if (!value) return;
-                if (typeof value === 'string') {
-                    candidates.push(value);
-                    return;
+                } else if (error.request) {
+                    errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
                 }
 
-                if (Array.isArray(value)) {
-                    value.forEach(addCandidate);
-                    return;
-                }
+                showToast('error', 'خطأ', errorMessage);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            let errorMessage = error.message || 'الرجاء التحقق من البيانات المدخلة';
 
-                if (typeof value === 'object') {
-                    const candidate = value.secure_url
-                        || value.url
-                        || value.src
-                        || value.path
-                        || value.href
-                        || value.preview;
-                    if (candidate) {
-                        candidates.push(candidate);
-                    }
-                }
-            };
-
-            addCandidate(rawProduct.image);
-            addCandidate(rawProduct.thumbnail);
-            addCandidate(rawProduct.mainImage);
-            addCandidate(rawProduct.cover);
-            addCandidate(rawProduct.featuredImage);
-
-            if (Array.isArray(rawProduct.images)) {
-                rawProduct.images.forEach(addCandidate);
+            // تحسين رسائل الخطأ
+            if (error.message.includes('brand') || error.message.includes('علامة تجارية')) {
+                errorMessage = 'يجب اختيار علامة تجارية صالحة';
+                const brandSelect = form.querySelector('#productBrand');
+                if (brandSelect) brandSelect.focus();
+            } else if (error.message.includes('category')) {
+                errorMessage = 'يجب اختيار فئة رئيسية صالحة';
+                const categorySelect = form.querySelector('#productCategory');
+                if (categorySelect) categorySelect.focus();
+            } else if (error.message.includes('price')) {
+                errorMessage = 'يجب إدخال سعر صحيح';
+                const priceInput = form.querySelector('[name="price"]');
+                if (priceInput) priceInput.focus();
             }
 
-            const resolved = candidates
-                .map(candidate => resolveAssetUrl(candidate))
-                .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
-
-            return resolved || PRODUCT_PLACEHOLDER_IMAGE;
-        }
-
-        function slugifyProduct(value = '') {
-            return value
-                .toString()
-                .trim()
-                .toLowerCase()
-                .replace(/[^\w\u0600-\u06FF]+/g, '-')
-                .replace(/^-+|-+$/g, '')
-                || `product-${Date.now()}`;
-        }
-
-        function normalizeProduct(rawProduct = {}, index = 0) {
-            if (!rawProduct || typeof rawProduct !== 'object') return null;
-
-            const id = rawProduct._id || rawProduct.id || rawProduct.slug || `product-${index}`;
-            const name = rawProduct.name || rawProduct.title || 'منتج بدون اسم';
-            const title = rawProduct.name || rawProduct.title || name;
-            const slug = rawProduct.slug || rawProduct.handle || slugifyProduct(title || name);
-            const sku = rawProduct.sku || rawProduct.code || '';
-            const priceSource = rawProduct.price?.current
-                ?? rawProduct.price?.value
-                ?? rawProduct.price?.amount
-                ?? rawProduct.price
-                ?? rawProduct.currentPrice
-                ?? rawProduct.salePrice;
-            const price = Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
-
-            const priceAfterDiscountSource = rawProduct.priceAfterDiscount
-                ?? rawProduct.discountedPrice
-                ?? rawProduct.discountPrice
-                ?? rawProduct.discount_value
-                ?? rawProduct.discount
-                ?? rawProduct.price?.afterDiscount
-                ?? rawProduct.price?.discounted
-                ?? rawProduct.salePriceAfterDiscount
-                ?? null;
-            const parsedDiscountPrice = Number(priceAfterDiscountSource);
-            const priceAfterDiscount = Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= 0
-                ? parsedDiscountPrice
-                : null;
-
-            const installationPriceSource = rawProduct.installationPrice
-                ?? rawProduct.installation_price
-                ?? rawProduct.installation?.price
-                ?? rawProduct.installation?.value
-                ?? null;
-            const installationPrice = Number.isFinite(Number(installationPriceSource)) && Number(installationPriceSource) >= 0
-                ? Number(installationPriceSource)
-                : null;
-
-            const quantitySource = rawProduct.quantity
-                ?? rawProduct.stock
-                ?? rawProduct.availableQuantity
-                ?? rawProduct.inventory
-                ?? 0;
-            const quantity = Number.isFinite(Number(quantitySource)) ? Number(quantitySource) : 0;
-
-            const status = rawProduct.status || (quantity > 0 ? 'active' : 'inactive');
-
-            const categoryField = rawProduct.category ?? rawProduct.mainCategory;
-            let categoryId = 'uncategorized';
-            let categorySlug = 'uncategorized';
-            let categoryName = 'فئة غير محددة';
-
-            if (typeof categoryField === 'string') {
-                categoryId = categoryField;
-                categorySlug = categoryField;
-            } else if (categoryField && typeof categoryField === 'object') {
-                categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
-                categorySlug = categoryField.slug || categoryField._id || categorySlug;
-                categoryName = categoryField.name || categoryField.title || categoryName;
-            }
-
-            const subCategoryField = rawProduct.subCategory || rawProduct.subcategory || rawProduct.subCategoryId;
-            let subCategoryId = 'all';
-            let subCategorySlug = 'all';
-            let subCategoryName = '';
-
-            if (typeof subCategoryField === 'string') {
-                subCategoryId = subCategoryField;
-                subCategorySlug = subCategoryField;
-            } else if (subCategoryField && typeof subCategoryField === 'object') {
-                subCategoryId = subCategoryField._id || subCategoryField.id || subCategoryField.slug || subCategoryId;
-                subCategorySlug = subCategoryField.slug || subCategoryField._id || subCategorySlug;
-                subCategoryName = subCategoryField.name || subCategoryField.title || subCategoryName;
-            }
-
-            const description = rawProduct.description || rawProduct.summary || rawProduct.shortDescription || '';
-            const image = extractProductImage(rawProduct);
-            const sold = rawProduct.sold ?? rawProduct.sales ?? 0;
-            const rating = rawProduct.rating?.average ?? rawProduct.ratingAverage ?? rawProduct.averageRating ?? rawProduct.rating ?? 0;
-            const colors = Array.isArray(rawProduct.colors)
-                ? rawProduct.colors.map(color => String(color).trim()).filter(Boolean)
-                : [];
-            const brandId = rawProduct.brand?._id || rawProduct.brand?.id || '';
-            const brandName = rawProduct.brand?.name || rawProduct.brand || '';
-
-            return {
-                id,
-                name,
-                title,
-                slug,
-                sku,
-                price,
-                stock: quantity,
-                category: categoryId,
-                categoryId,
-                categorySlug,
-                categoryName,
-                subCategoryId,
-                subCategorySlug,
-                subCategoryName,
-                status,
-                image,
-                images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
-                description,
-                brand: rawProduct.brand?.name || rawProduct.brand || '',
-                brandId,
-                brandName,
-                colors,
-                sold,
-                rating,
-                installationPrice,
-                raw: rawProduct,
-                priceAfterDiscount
-            };
-        }
-
-        function syncProductExtras(products = []) {
-            state.productExtras = products.reduce((acc, product) => {
-                acc[product.id] = {
-                    image: product.image,
-                    description: product.description
-                };
-                return acc;
-            }, {});
-        }
-
-        function upsertProductExtras(productId, extras = {}) {
-            if (!productId) return;
-            state.productExtras[productId] = {
-                ...(state.productExtras[productId] || {}),
-                ...extras
-            };
-        }
-
-        function getProductsSource() {
-            if (Array.isArray(state.products) && state.products.length) {
-                return state.products;
-            }
-            return Array.isArray(mockData.products) ? mockData.products : [];
-        }
-
-        function getBannerSource() {
-            if (Array.isArray(state.banners) && state.banners.length) {
-                return state.banners;
-            }
-            return Array.isArray(mockData.banners) ? mockData.banners : [];
-        }
-
-        function normalizeBanner(rawBanner = {}, index = 0) {
-            if (!rawBanner || typeof rawBanner !== 'object') return null;
-
-            const id = rawBanner._id
-                || rawBanner.id
-                || rawBanner.bannerId
-                || rawBanner.slug
-                || rawBanner.reference
-                || rawBanner.uuid
-                || `banner-${Date.now()}-${index}`;
-
-            const title = rawBanner.title || rawBanner.name || 'بانر بدون عنوان';
-            const description = rawBanner.description || rawBanner.subtitle || rawBanner.details || '';
-            const placement = rawBanner.placement || rawBanner.position || rawBanner.location || 'home_hero';
-            const status = rawBanner.status || rawBanner.state || 'active';
-            const link = rawBanner.link || rawBanner.url || rawBanner.targetUrl || rawBanner.href || '';
-            const order = rawBanner.order ?? rawBanner.sortOrder ?? rawBanner.priority ?? 0;
-
-            const imageCandidates = [
-                rawBanner.image?.secure_url,
-                rawBanner.image?.url,
-                rawBanner.image,
-                rawBanner.imageUrl,
-                rawBanner.bannerImage,
-                rawBanner.thumbnail,
-                rawBanner.cover,
-                rawBanner.mediaUrl
-            ];
-
-            const image = imageCandidates
-                .map(candidate => resolveAssetUrl(candidate))
-                .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0)
-                || BANNER_IMAGE_PLACEHOLDER;
-
-            const scheduleStart = rawBanner.schedule?.start
-                || rawBanner.startDate
-                || rawBanner.start_at
-                || rawBanner.validFrom
-                || null;
-
-            const scheduleEnd = rawBanner.schedule?.end
-                || rawBanner.endDate
-                || rawBanner.end_at
-                || rawBanner.validTo
-                || null;
-
-            return {
-                id,
-                title,
-                description,
-                placement,
-                status,
-                link,
-                image,
-                order,
-                schedule: {
-                    start: scheduleStart,
-                    end: scheduleEnd
-                },
-                createdAt: rawBanner.createdAt,
-                updatedAt: rawBanner.updatedAt,
-                raw: rawBanner
-            };
-        }
-
-        function slugify(value = '') {
-            return value
-                .toString()
-                .trim()
-                .toLowerCase()
-                .replace(/[^\w\u0600-\u06FF]+/g, '-')
-                .replace(/^-+|-+$/g, '')
-                || `category-${Date.now()}`;
-        }
-
-        function normalizeCategory(rawCategory = {}, index = 0) {
-            if (!rawCategory || typeof rawCategory !== 'object') return null;
-
-            const id = rawCategory._id || rawCategory.id || rawCategory.slug || `category-${index}`;
-            const name = rawCategory.name || rawCategory.title || 'فئة بدون اسم';
-            const slug = rawCategory.slug || slugify(name);
-
-            return {
-                id,
-                name,
-                slug,
-                image: extractCategoryImage(rawCategory),
-                status: rawCategory.status || 'active',
-                subcategoriesCount: rawCategory.subcategoriesCount
-                    ?? rawCategory.subCategoriesCount
-                    ?? rawCategory.subCategories?.length
-                    ?? rawCategory.subcategories?.length
-                    ?? rawCategory.children?.length
-                    ?? 0,
-                productsCount: rawCategory.productsCount
-                    ?? rawCategory.productsNumber
-                    ?? rawCategory.products?.length
-                    ?? rawCategory.count
-                    ?? 0,
-                createdAt: rawCategory.createdAt,
-                updatedAt: rawCategory.updatedAt,
-                description: rawCategory.description || rawCategory.summary || rawCategory.details || ''
-            };
-        }
-
-        function normalizeOrderId(orderId) {
-            if (!orderId) return '';
-            return String(orderId).trim();
-        }
-
-        function getDefaultCategoryExtras() {
-            return {
-                image: '',
-                description: ''
-            };
-        }
-
-        function upsertCategoryExtras(categoryId, extras = {}) {
-            if (!categoryId) return;
-
-            const current = state.categoryExtras[categoryId] || getDefaultCategoryExtras();
-
-            const next = {
-                image: extras.image ?? current.image ?? '',
-                description: extras.description ?? current.description ?? ''
-            };
-
-            state.categoryExtras[categoryId] = next;
-
-            const index = state.categories.findIndex(category => category.id === categoryId);
-            if (index !== -1) {
-                const existing = state.categories[index];
-                state.categories[index] = {
-                    ...existing,
-                    image: next.image,
-                    description: next.description || existing.description || ''
-                };
-            }
-
-            syncCategoriesCache(state.categories);
-        }
-
-        function syncCategoryExtras(categories = []) {
-            state.categoryExtras = categories.reduce((acc, category) => {
-                const base = getDefaultCategoryExtras();
-                acc[category.id] = {
-                    image: category.image ?? base.image,
-                    description: category.description ?? base.description
-                };
-                return acc;
-            }, {});
-        }
-
-        function syncCategoriesCache(categories = []) {
-            // لا نقوم باستبدال البيانات الوهمية عند جلب بيانات حقيقية من الـ API
-        }
-
-        function getCategorySource() {
-            return state.categories.length > 0 ? state.categories : mockData.categories;
-        }
-
-        function getCategoryById(categoryId) {
-            const source = getCategorySource();
-            return source.find(category => category.id === categoryId);
-        }
-
-        function ensureCategorySubcategories(categoryId) {
-            if (!categoryId) return [];
-            if (!state.subcategories[categoryId]) {
-                state.subcategories[categoryId] = [];
-            }
-            if (!state.subcategoryExtras[categoryId]) {
-                state.subcategoryExtras[categoryId] = {};
-            }
-            return state.subcategories[categoryId];
-        }
-
-        function getSubcategories(categoryId, { fallback = [] } = {}) {
-            if (!categoryId) return fallback;
-            const collection = state.subcategories[categoryId];
-            return Array.isArray(collection) && collection.length ? collection : fallback;
-        }
-
-        function getSubcategoryById(categoryId, subcategoryId) {
-            if (!categoryId || !subcategoryId) return null;
-            const collection = getSubcategories(categoryId);
-            return collection.find(entry => entry.id === subcategoryId) || null;
-        }
-
-        function upsertSubcategory(categoryId, subcategory = {}) {
-            if (!categoryId || !subcategory?.id) return;
-            const collection = ensureCategorySubcategories(categoryId);
-            const index = collection.findIndex(entry => entry.id === subcategory.id);
-            if (index === -1) {
-                collection.push(subcategory);
-            } else {
-                collection[index] = { ...collection[index], ...subcategory };
+            showToast('error', 'خطأ في البيانات', errorMessage);
+            return;
+        } finally {
+            // إعادة تفعيل زر الحفظ
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
             }
         }
+    } catch (error) {
+        console.error('Error:', error);
 
-        function removeSubcategory(categoryId, subcategoryId) {
-            if (!categoryId || !subcategoryId) return;
-            const collection = ensureCategorySubcategories(categoryId);
-            const index = collection.findIndex(entry => entry.id === subcategoryId);
-            if (index !== -1) {
-                collection.splice(index, 1);
-            }
-            if (state.subcategoryExtras[categoryId]) {
-                delete state.subcategoryExtras[categoryId][subcategoryId];
-            }
+        // معالجة أخطاء التحقق من صحة البيانات
+        if (error.message.includes('validation failed')) {
+            const errorMessage = error.message.split(':').pop().trim();
+            showToast('error', 'خطأ في التحقق من صحة البيانات', errorMessage);
+        } else {
+            showToast('error', 'خطأ', 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى');
+        }
+    }
+}
+
+// تحميل القسم المحفوظ أو الافتراضي عند بدء التطبيق
+function loadCurrentSection() {
+    try {
+        return sessionStorage.getItem('currentSection') || 'overview';
+    } catch (error) {
+        console.error('Error:', error);
+        return 'overview';
+    }
+}
+
+// ===== Utility Helpers =====
+function escapeHtml(value = '') {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function resolveAssetUrl(path = '') {
+    if (!path || typeof path !== 'string') return '';
+    const trimmed = path.trim();
+
+    if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:')) {
+        return trimmed;
+    }
+
+    try {
+        const base = new URL(ADMIN_API_BASE_URL);
+        const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+        base.pathname = normalizedPath;
+        base.search = '';
+        base.hash = '';
+        return base.toString();
+    } catch (error) {
+        console.warn('Failed to resolve asset url:', path, error);
+        return trimmed;
+    }
+}
+
+function extractCategoryImage(rawCategory = {}) {
+    const candidates = [];
+
+    const addCandidate = (value) => {
+        if (!value) return;
+        if (typeof value === 'string') {
+            candidates.push(value);
+            return;
         }
 
-        function upsertSubcategoryExtras(categoryId, subcategoryId, extras = {}) {
-            if (!categoryId || !subcategoryId) return;
-            if (!state.subcategoryExtras[categoryId]) {
-                state.subcategoryExtras[categoryId] = {};
-            }
-            const current = state.subcategoryExtras[categoryId][subcategoryId] || { image: '', description: '' };
-            state.subcategoryExtras[categoryId][subcategoryId] = {
-                image: extras.image ?? current.image ?? '',
-                description: extras.description ?? current.description ?? ''
-            };
+        if (Array.isArray(value)) {
+            value.forEach(addCandidate);
+            return;
         }
 
-        function getSubcategoryExtras(categoryId, subcategoryId) {
-            return state.subcategoryExtras[categoryId]?.[subcategoryId] || { image: '', description: '' };
-        }
-
-        function setSubcategoryLoading(categoryId, value) {
-            if (!categoryId) return;
-            state.subcategoriesLoading[categoryId] = Boolean(value);
-        }
-
-        function setSubcategoryError(categoryId, message = null) {
-            if (!categoryId) return;
-            if (message) {
-                state.subcategoriesError[categoryId] = message;
-            } else {
-                delete state.subcategoriesError[categoryId];
+        if (typeof value === 'object') {
+            const candidate = value.secure_url
+                || value.url
+                || value.src
+                || value.path
+                || value.href;
+            if (candidate) {
+                candidates.push(candidate);
             }
         }
+    };
 
-        function getSubcategoryError(categoryId) {
-            return state.subcategoriesError[categoryId] || null;
+    addCandidate(rawCategory.image);
+    addCandidate(rawCategory.thumbnail);
+    addCandidate(rawCategory.cover);
+    addCandidate(rawCategory.media);
+    if (Array.isArray(rawCategory.images)) {
+        rawCategory.images.forEach(addCandidate);
+    }
+
+    const resolved = candidates
+        .map(candidate => resolveAssetUrl(candidate))
+        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
+
+    return resolved || '';
+}
+
+const PRODUCT_PLACEHOLDER_IMAGE = 'https://via.placeholder.com/320x200?text=Product';
+const BANNER_IMAGE_PLACEHOLDER = 'https://via.placeholder.com/1200x400?text=Banner';
+
+function extractProductImage(rawProduct = {}) {
+    const candidates = [];
+
+    const addCandidate = (value) => {
+        if (!value) return;
+        if (typeof value === 'string') {
+            candidates.push(value);
+            return;
         }
 
-        // ===== Category and Product Form Functions =====
-        function hydrateProductCategoryOptions() {
-            const select = document.getElementById('productCategory');
-            if (!select) return;
-
-            // حفظ القيمة المحددة حالياً
-            const currentValue = select.value;
-            
-            // مسح الخيارات الحالية
-            select.innerHTML = '';
-
-            // إضافة الخيار الافتراضي
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'اختر الفئة الرئيسية';
-            select.appendChild(defaultOption);
-
-            // إضافة الفئات المتاحة
-            state.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.name;
-                select.appendChild(option);
-            });
-
-            // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-            if (currentValue && state.categories.some(c => c.id === currentValue)) {
-                select.value = currentValue;
-                // تحديث قائمة الفئات الفرعية عند استعادة القيمة
-                populateSubcategoryOptions(currentValue);
-            } else if (state.categories.length > 0) {
-                // تحديد أول فئة كإفتراضية إذا لم تكن هناك قيمة حالية
-                select.value = state.categories[0].id;
-                populateSubcategoryOptions(state.categories[0].id);
-            }
+        if (Array.isArray(value)) {
+            value.forEach(addCandidate);
+            return;
         }
 
-        // ===== API Functions =====
-        
-        // Brands
-        async function fetchBrands(options = {}) {
-            const forceReload = options.force === true;
-
-            if (brandsFetchPromise) {
-                if (!forceReload) {
-                    return brandsFetchPromise;
-                }
-
-                try {
-                    await brandsFetchPromise;
-                } catch (err) {
-                    console.warn('⚠️ Previous brands fetch failed, retrying with force reload.', err);
-                }
-            }
-
-            state.brandsLoading = true;
-            state.brandsError = null;
-
-            const request = (async () => {
-                try {
-                    const response = await authorizedFetch(BRAND_API, {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    console.log('📦 Raw brands response:', data);
-
-                    const candidates = [
-                        data,
-                        data?.data,
-                        data?.data?.documents,
-                        data?.data?.rows,
-                        data?.data?.items,
-                        data?.documents,
-                        data?.brands,
-                        Array.isArray(data?.data) ? data.data : null
-                    ].filter(Array.isArray);
-
-                    if (candidates.length > 0) {
-                        state.brands = candidates[0];
-                    } else {
-                        console.warn('⚠️ Unexpected brands response format:', data);
-                        state.brands = [];
-                    }
-
-                    console.log('✅ Brands fetched:', state.brands.length, state.brands);
-                    return state.brands;
-                } catch (error) {
-                    state.brandsError = error;
-                    console.error('❌ Failed to fetch brands:', error);
-                    throw error;
-                } finally {
-                    state.brandsLoading = false;
-                    brandsFetchPromise = null;
-                }
-            })();
-
-            brandsFetchPromise = request;
-            return request;
-        }
-
-        async function createBrand(brandData, imageFile = null) {
-            try {
-                const formData = new FormData();
-                formData.append('name', brandData.name);
-                formData.append('description', brandData.description);
-                
-                if (imageFile) {
-                    formData.append('image', imageFile);
-                }
-
-                const response = await authorizedFetch(BRAND_API, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('✅ Brand created:', data);
-                return data;
-            } catch (error) {
-                console.error('❌ Failed to create brand:', error);
-                throw error;
+        if (typeof value === 'object') {
+            const candidate = value.secure_url
+                || value.url
+                || value.src
+                || value.path
+                || value.href
+                || value.preview;
+            if (candidate) {
+                candidates.push(candidate);
             }
         }
+    };
 
-        async function updateBrand(brandId, brandData = {}, imageFile = null) {
-            console.log('✏️ Updating brand:', { brandId, imageProvided: !!imageFile, brandData });
+    addCandidate(rawProduct.image);
+    addCandidate(rawProduct.thumbnail);
+    addCandidate(rawProduct.mainImage);
+    addCandidate(rawProduct.cover);
+    addCandidate(rawProduct.featuredImage);
 
-            if (!brandId) {
-                throw new Error('معرّف العلامة التجارية غير صالح');
-            }
+    if (Array.isArray(rawProduct.images)) {
+        rawProduct.images.forEach(addCandidate);
+    }
 
-            if (!brandData?.name) {
-                throw new Error('يجب إدخال اسم العلامة التجارية');
-            }
+    const resolved = candidates
+        .map(candidate => resolveAssetUrl(candidate))
+        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
 
-            const normalizedData = {
-                name: brandData.name?.trim(),
-                description: brandData.description?.trim() ?? ''
-            };
+    return resolved || PRODUCT_PLACEHOLDER_IMAGE;
+}
 
-            const requestOptions = {
-                method: 'PATCH',
+function slugifyProduct(value = '') {
+    return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\u0600-\u06FF]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || `product-${Date.now()}`;
+}
+
+function normalizeProduct(rawProduct = {}, index = 0) {
+    if (!rawProduct || typeof rawProduct !== 'object') return null;
+
+    const id = rawProduct._id || rawProduct.id || rawProduct.slug || `product-${index}`;
+    const name = rawProduct.name || rawProduct.title || 'منتج بدون اسم';
+    const title = rawProduct.name || rawProduct.title || name;
+    const slug = rawProduct.slug || rawProduct.handle || slugifyProduct(title || name);
+    const sku = rawProduct.sku || rawProduct.code || '';
+    const priceSource = rawProduct.price?.current
+        ?? rawProduct.price?.value
+        ?? rawProduct.price?.amount
+        ?? rawProduct.price
+        ?? rawProduct.currentPrice
+        ?? rawProduct.salePrice;
+    const price = Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
+
+    const priceAfterDiscountSource = rawProduct.priceAfterDiscount
+        ?? rawProduct.discountedPrice
+        ?? rawProduct.discountPrice
+        ?? rawProduct.discount_value
+        ?? rawProduct.discount
+        ?? rawProduct.price?.afterDiscount
+        ?? rawProduct.price?.discounted
+        ?? rawProduct.salePriceAfterDiscount
+        ?? null;
+    const parsedDiscountPrice = Number(priceAfterDiscountSource);
+    const priceAfterDiscount = Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= 0
+        ? parsedDiscountPrice
+        : null;
+
+    const installationPriceSource = rawProduct.installationPrice
+        ?? rawProduct.installation_price
+        ?? rawProduct.installation?.price
+        ?? rawProduct.installation?.value
+        ?? null;
+    const installationPrice = Number.isFinite(Number(installationPriceSource)) && Number(installationPriceSource) >= 0
+        ? Number(installationPriceSource)
+        : null;
+
+    const quantitySource = rawProduct.quantity
+        ?? rawProduct.stock
+        ?? rawProduct.availableQuantity
+        ?? rawProduct.inventory
+        ?? 0;
+    const quantity = Number.isFinite(Number(quantitySource)) ? Number(quantitySource) : 0;
+
+    const status = rawProduct.status || (quantity > 0 ? 'active' : 'inactive');
+
+    const categoryField = rawProduct.category ?? rawProduct.mainCategory;
+    let categoryId = 'uncategorized';
+    let categorySlug = 'uncategorized';
+    let categoryName = 'فئة غير محددة';
+
+    if (typeof categoryField === 'string') {
+        categoryId = categoryField;
+        categorySlug = categoryField;
+    } else if (categoryField && typeof categoryField === 'object') {
+        categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
+        categorySlug = categoryField.slug || categoryField._id || categorySlug;
+        categoryName = categoryField.name || categoryField.title || categoryName;
+    }
+
+    const subCategoryField = rawProduct.subCategory || rawProduct.subcategory || rawProduct.subCategoryId;
+    let subCategoryId = 'all';
+    let subCategorySlug = 'all';
+    let subCategoryName = '';
+
+    if (typeof subCategoryField === 'string') {
+        subCategoryId = subCategoryField;
+        subCategorySlug = subCategoryField;
+    } else if (subCategoryField && typeof subCategoryField === 'object') {
+        subCategoryId = subCategoryField._id || subCategoryField.id || subCategoryField.slug || subCategoryId;
+        subCategorySlug = subCategoryField.slug || subCategoryField._id || subCategorySlug;
+        subCategoryName = subCategoryField.name || subCategoryField.title || subCategoryName;
+    }
+
+    const description = rawProduct.description || rawProduct.summary || rawProduct.shortDescription || '';
+    const image = extractProductImage(rawProduct);
+    const sold = rawProduct.sold ?? rawProduct.sales ?? 0;
+    const rating = rawProduct.rating?.average ?? rawProduct.ratingAverage ?? rawProduct.averageRating ?? rawProduct.rating ?? 0;
+    const colors = Array.isArray(rawProduct.colors)
+        ? rawProduct.colors.map(color => String(color).trim()).filter(Boolean)
+        : [];
+    const brandId = rawProduct.brand?._id || rawProduct.brand?.id || '';
+    const brandName = rawProduct.brand?.name || rawProduct.brand || '';
+
+    return {
+        id,
+        name,
+        title,
+        slug,
+        sku,
+        price,
+        stock: quantity,
+        category: categoryId,
+        categoryId,
+        categorySlug,
+        categoryName,
+        subCategoryId,
+        subCategorySlug,
+        subCategoryName,
+        status,
+        image,
+        images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
+        description,
+        brand: rawProduct.brand?.name || rawProduct.brand || '',
+        brandId,
+        brandName,
+        colors,
+        sold,
+        rating,
+        installationPrice,
+        raw: rawProduct,
+        priceAfterDiscount
+    };
+}
+
+function syncProductExtras(products = []) {
+    state.productExtras = products.reduce((acc, product) => {
+        acc[product.id] = {
+            image: product.image,
+            description: product.description
+        };
+        return acc;
+    }, {});
+}
+
+function upsertProductExtras(productId, extras = {}) {
+    if (!productId) return;
+    state.productExtras[productId] = {
+        ...(state.productExtras[productId] || {}),
+        ...extras
+    };
+}
+
+function getProductsSource() {
+    if (Array.isArray(state.products) && state.products.length) {
+        return state.products;
+    }
+    return Array.isArray(mockData.products) ? mockData.products : [];
+}
+
+function getBannerSource() {
+    if (Array.isArray(state.banners) && state.banners.length) {
+        return state.banners;
+    }
+    return Array.isArray(mockData.banners) ? mockData.banners : [];
+}
+
+function normalizeBanner(rawBanner = {}, index = 0) {
+    if (!rawBanner || typeof rawBanner !== 'object') return null;
+
+    const id = rawBanner._id
+        || rawBanner.id
+        || rawBanner.bannerId
+        || rawBanner.slug
+        || rawBanner.reference
+        || rawBanner.uuid
+        || `banner-${Date.now()}-${index}`;
+
+    const title = rawBanner.title || rawBanner.name || 'بانر بدون عنوان';
+    const description = rawBanner.description || rawBanner.subtitle || rawBanner.details || '';
+    const placement = rawBanner.placement || rawBanner.position || rawBanner.location || 'home_hero';
+    const status = rawBanner.status || rawBanner.state || 'active';
+    const link = rawBanner.link || rawBanner.url || rawBanner.targetUrl || rawBanner.href || '';
+    const order = rawBanner.order ?? rawBanner.sortOrder ?? rawBanner.priority ?? 0;
+
+    const imageCandidates = [
+        rawBanner.image?.secure_url,
+        rawBanner.image?.url,
+        rawBanner.image,
+        rawBanner.imageUrl,
+        rawBanner.bannerImage,
+        rawBanner.thumbnail,
+        rawBanner.cover,
+        rawBanner.mediaUrl
+    ];
+
+    const image = imageCandidates
+        .map(candidate => resolveAssetUrl(candidate))
+        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0)
+        || BANNER_IMAGE_PLACEHOLDER;
+
+    const scheduleStart = rawBanner.schedule?.start
+        || rawBanner.startDate
+        || rawBanner.start_at
+        || rawBanner.validFrom
+        || null;
+
+    const scheduleEnd = rawBanner.schedule?.end
+        || rawBanner.endDate
+        || rawBanner.end_at
+        || rawBanner.validTo
+        || null;
+
+    return {
+        id,
+        title,
+        description,
+        placement,
+        status,
+        link,
+        image,
+        order,
+        schedule: {
+            start: scheduleStart,
+            end: scheduleEnd
+        },
+        createdAt: rawBanner.createdAt,
+        updatedAt: rawBanner.updatedAt,
+        raw: rawBanner
+    };
+}
+
+function slugify(value = '') {
+    return value
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\u0600-\u06FF]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || `category-${Date.now()}`;
+}
+
+function normalizeCategory(rawCategory = {}, index = 0) {
+    if (!rawCategory || typeof rawCategory !== 'object') return null;
+
+    const id = rawCategory._id || rawCategory.id || rawCategory.slug || `category-${index}`;
+    const name = rawCategory.name || rawCategory.title || 'فئة بدون اسم';
+    const slug = rawCategory.slug || slugify(name);
+
+    return {
+        id,
+        name,
+        slug,
+        image: extractCategoryImage(rawCategory),
+        status: rawCategory.status || 'active',
+        subcategoriesCount: rawCategory.subcategoriesCount
+            ?? rawCategory.subCategoriesCount
+            ?? rawCategory.subCategories?.length
+            ?? rawCategory.subcategories?.length
+            ?? rawCategory.children?.length
+            ?? 0,
+        productsCount: rawCategory.productsCount
+            ?? rawCategory.productsNumber
+            ?? rawCategory.products?.length
+            ?? rawCategory.count
+            ?? 0,
+        createdAt: rawCategory.createdAt,
+        updatedAt: rawCategory.updatedAt,
+        description: rawCategory.description || rawCategory.summary || rawCategory.details || ''
+    };
+}
+
+function normalizeOrderId(orderId) {
+    if (!orderId) return '';
+    return String(orderId).trim();
+}
+
+function getDefaultCategoryExtras() {
+    return {
+        image: '',
+        description: ''
+    };
+}
+
+function upsertCategoryExtras(categoryId, extras = {}) {
+    if (!categoryId) return;
+
+    const current = state.categoryExtras[categoryId] || getDefaultCategoryExtras();
+
+    const next = {
+        image: extras.image ?? current.image ?? '',
+        description: extras.description ?? current.description ?? ''
+    };
+
+    state.categoryExtras[categoryId] = next;
+
+    const index = state.categories.findIndex(category => category.id === categoryId);
+    if (index !== -1) {
+        const existing = state.categories[index];
+        state.categories[index] = {
+            ...existing,
+            image: next.image,
+            description: next.description || existing.description || ''
+        };
+    }
+
+    syncCategoriesCache(state.categories);
+}
+
+function syncCategoryExtras(categories = []) {
+    state.categoryExtras = categories.reduce((acc, category) => {
+        const base = getDefaultCategoryExtras();
+        acc[category.id] = {
+            image: category.image ?? base.image,
+            description: category.description ?? base.description
+        };
+        return acc;
+    }, {});
+}
+
+function syncCategoriesCache(categories = []) {
+    // لا نقوم باستبدال البيانات الوهمية عند جلب بيانات حقيقية من الـ API
+}
+
+function getCategorySource() {
+    return state.categories.length > 0 ? state.categories : mockData.categories;
+}
+
+function getCategoryById(categoryId) {
+    const source = getCategorySource();
+    return source.find(category => category.id === categoryId);
+}
+
+function ensureCategorySubcategories(categoryId) {
+    if (!categoryId) return [];
+    if (!state.subcategories[categoryId]) {
+        state.subcategories[categoryId] = [];
+    }
+    if (!state.subcategoryExtras[categoryId]) {
+        state.subcategoryExtras[categoryId] = {};
+    }
+    return state.subcategories[categoryId];
+}
+
+function getSubcategories(categoryId, { fallback = [] } = {}) {
+    if (!categoryId) return fallback;
+    const collection = state.subcategories[categoryId];
+    return Array.isArray(collection) && collection.length ? collection : fallback;
+}
+
+function getSubcategoryById(categoryId, subcategoryId) {
+    if (!categoryId || !subcategoryId) return null;
+    const collection = getSubcategories(categoryId);
+    return collection.find(entry => entry.id === subcategoryId) || null;
+}
+
+function upsertSubcategory(categoryId, subcategory = {}) {
+    if (!categoryId || !subcategory?.id) return;
+    const collection = ensureCategorySubcategories(categoryId);
+    const index = collection.findIndex(entry => entry.id === subcategory.id);
+    if (index === -1) {
+        collection.push(subcategory);
+    } else {
+        collection[index] = { ...collection[index], ...subcategory };
+    }
+}
+
+function removeSubcategory(categoryId, subcategoryId) {
+    if (!categoryId || !subcategoryId) return;
+    const collection = ensureCategorySubcategories(categoryId);
+    const index = collection.findIndex(entry => entry.id === subcategoryId);
+    if (index !== -1) {
+        collection.splice(index, 1);
+    }
+    if (state.subcategoryExtras[categoryId]) {
+        delete state.subcategoryExtras[categoryId][subcategoryId];
+    }
+}
+
+function upsertSubcategoryExtras(categoryId, subcategoryId, extras = {}) {
+    if (!categoryId || !subcategoryId) return;
+    if (!state.subcategoryExtras[categoryId]) {
+        state.subcategoryExtras[categoryId] = {};
+    }
+    const current = state.subcategoryExtras[categoryId][subcategoryId] || { image: '', description: '' };
+    state.subcategoryExtras[categoryId][subcategoryId] = {
+        image: extras.image ?? current.image ?? '',
+        description: extras.description ?? current.description ?? ''
+    };
+}
+
+function getSubcategoryExtras(categoryId, subcategoryId) {
+    return state.subcategoryExtras[categoryId]?.[subcategoryId] || { image: '', description: '' };
+}
+
+function setSubcategoryLoading(categoryId, value) {
+    if (!categoryId) return;
+    state.subcategoriesLoading[categoryId] = Boolean(value);
+}
+
+function setSubcategoryError(categoryId, message = null) {
+    if (!categoryId) return;
+    if (message) {
+        state.subcategoriesError[categoryId] = message;
+    } else {
+        delete state.subcategoriesError[categoryId];
+    }
+}
+
+function getSubcategoryError(categoryId) {
+    return state.subcategoriesError[categoryId] || null;
+}
+
+// ===== Category and Product Form Functions =====
+function hydrateProductCategoryOptions() {
+    const select = document.getElementById('productCategory');
+    if (!select) return;
+
+    // حفظ القيمة المحددة حالياً
+    const currentValue = select.value;
+
+    // مسح الخيارات الحالية
+    select.innerHTML = '';
+
+    // إضافة الخيار الافتراضي
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'اختر الفئة الرئيسية';
+    select.appendChild(defaultOption);
+
+    // إضافة الفئات المتاحة
+    state.categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        select.appendChild(option);
+    });
+
+    // استعادة القيمة المحددة إذا كانت لا تزال صالحة
+    if (currentValue && state.categories.some(c => c.id === currentValue)) {
+        select.value = currentValue;
+        // تحديث قائمة الفئات الفرعية عند استعادة القيمة
+        populateSubcategoryOptions(currentValue);
+    } else if (state.categories.length > 0) {
+        // تحديد أول فئة كإفتراضية إذا لم تكن هناك قيمة حالية
+        select.value = state.categories[0].id;
+        populateSubcategoryOptions(state.categories[0].id);
+    }
+}
+
+// ===== API Functions =====
+
+// Brands
+async function fetchBrands(options = {}) {
+    const forceReload = options.force === true;
+
+    if (brandsFetchPromise) {
+        if (!forceReload) {
+            return brandsFetchPromise;
+        }
+
+        try {
+            await brandsFetchPromise;
+        } catch (err) {
+            console.warn('⚠️ Previous brands fetch failed, retrying with force reload.', err);
+        }
+    }
+
+    state.brandsLoading = true;
+    state.brandsError = null;
+
+    const request = (async () => {
+        try {
+            const response = await authorizedFetch(BRAND_API, {
                 headers: {
-                    Accept: 'application/json'
+                    'Content-Type': 'application/json'
                 }
-            };
-
-            if (imageFile instanceof File) {
-                const formData = new FormData();
-                Object.entries(normalizedData).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
-                        formData.append(key, value);
-                    }
-                });
-                formData.append('image', imageFile);
-                requestOptions.body = formData;
-            } else {
-                requestOptions.headers['Content-Type'] = 'application/json';
-                requestOptions.body = JSON.stringify(normalizedData);
-            }
-
-            const response = handleUnauthorized(await authorizedFetch(`${BRAND_API}/${encodeURIComponent(brandId)}`, requestOptions));
-
-            const contentType = response.headers.get('content-type') || '';
-            const hasJsonBody = contentType.includes('application/json');
-            const responseBody = hasJsonBody ? await response.json().catch(() => ({})) : {};
+            });
 
             if (!response.ok) {
-                const message = responseBody?.message || `HTTP ${response.status}`;
-                throw new Error(message);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const updatedBrand = responseBody?.data || responseBody || null;
-            console.log('✅ Brand updated:', updatedBrand);
+            const data = await response.json();
 
-            if (Array.isArray(state.brands) && updatedBrand) {
-                const targetId = String(brandId);
-                state.brands = state.brands.map(brand => {
-                    const currentId = String(brand._id || brand.id || '');
-                    if (currentId !== targetId) return brand;
-                    return { ...brand, ...updatedBrand };
-                });
-                renderBrands();
+
+            const candidates = [
+                data,
+                data?.data,
+                data?.data?.documents,
+                data?.data?.rows,
+                data?.data?.items,
+                data?.documents,
+                data?.brands,
+                Array.isArray(data?.data) ? data.data : null
+            ].filter(Array.isArray);
+
+            if (candidates.length > 0) {
+                state.brands = candidates[0];
+            } else {
+                console.warn('⚠️ Unexpected brands response format:', data);
+                state.brands = [];
             }
 
-            return updatedBrand;
+
+            return state.brands;
+        } catch (error) {
+            state.brandsError = error;
+            console.error('❌ Failed to fetch brands:', error);
+            throw error;
+        } finally {
+            state.brandsLoading = false;
+            brandsFetchPromise = null;
+        }
+    })();
+
+    brandsFetchPromise = request;
+    return request;
+}
+
+async function createBrand(brandData, imageFile = null) {
+    try {
+        const formData = new FormData();
+        formData.append('name', brandData.name);
+        formData.append('description', brandData.description);
+
+        if (imageFile) {
+            formData.append('image', imageFile);
         }
 
-        async function deleteBrand(brandId) {
-            try {
-                const response = await authorizedFetch(`${BRAND_API}/${brandId}`, {
-                    method: 'DELETE'
-                });
+        const response = await authorizedFetch(BRAND_API, {
+            method: 'POST',
+            body: formData
+        });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('✅ Brand deleted:', data);
-                return data;
-            } catch (error) {
-                console.error(`❌ Failed to delete brand ${brandId}:`, error);
-                throw error;
-            }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
-        async function fetchBanners(options = {}) {
-            const forceReload = options.force === true;
+        const data = await response.json();
 
-            if (bannersFetchPromise) {
-                if (!forceReload) {
-                    return bannersFetchPromise;
-                }
+        return data;
+    } catch (error) {
+        console.error('❌ Failed to create brand:', error);
+        throw error;
+    }
+}
 
-                try {
-                    await bannersFetchPromise;
-                } catch (err) {
-                    console.warn('⚠️ Previous banners fetch failed, retrying with force reload.', err);
-                }
+async function updateBrand(brandId, brandData = {}, imageFile = null) {
+
+
+    if (!brandId) {
+        throw new Error('معرّف العلامة التجارية غير صالح');
+    }
+
+    if (!brandData?.name) {
+        throw new Error('يجب إدخال اسم العلامة التجارية');
+    }
+
+    const normalizedData = {
+        name: brandData.name?.trim(),
+        description: brandData.description?.trim() ?? ''
+    };
+
+    const requestOptions = {
+        method: 'PATCH',
+        headers: {
+            Accept: 'application/json'
+        }
+    };
+
+    if (imageFile instanceof File) {
+        const formData = new FormData();
+        Object.entries(normalizedData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        });
+        formData.append('image', imageFile);
+        requestOptions.body = formData;
+    } else {
+        requestOptions.headers['Content-Type'] = 'application/json';
+        requestOptions.body = JSON.stringify(normalizedData);
+    }
+
+    const response = handleUnauthorized(await authorizedFetch(`${BRAND_API}/${encodeURIComponent(brandId)}`, requestOptions));
+
+    const contentType = response.headers.get('content-type') || '';
+    const hasJsonBody = contentType.includes('application/json');
+    const responseBody = hasJsonBody ? await response.json().catch(() => ({})) : {};
+
+    if (!response.ok) {
+        const message = responseBody?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+    }
+
+    const updatedBrand = responseBody?.data || responseBody || null;
+
+    if (Array.isArray(state.brands) && updatedBrand) {
+        const targetId = String(brandId);
+        state.brands = state.brands.map(brand => {
+            const currentId = String(brand._id || brand.id || '');
+            if (currentId !== targetId) return brand;
+            return { ...brand, ...updatedBrand };
+        });
+        renderBrands();
+    }
+
+    return updatedBrand;
+}
+
+async function deleteBrand(brandId) {
+    try {
+        const response = await authorizedFetch(`${BRAND_API}/${brandId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return data;
+    } catch (error) {
+        console.error(`❌ Failed to delete brand ${brandId}:`, error);
+        throw error;
+    }
+}
+
+async function fetchBanners(options = {}) {
+    const forceReload = options.force === true;
+
+    if (bannersFetchPromise) {
+        if (!forceReload) {
+            return bannersFetchPromise;
+        }
+
+        try {
+            await bannersFetchPromise;
+        } catch (err) {
+            console.warn('⚠️ Previous banners fetch failed, retrying with force reload.', err);
+        }
+    }
+
+    state.bannersLoading = true;
+    state.bannersError = null;
+    renderBanners();
+
+    const request = (async () => {
+        try {
+            const response = handleUnauthorized(await authorizedFetch(BANNER_API));
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
 
-            state.bannersLoading = true;
+            const data = await response.json().catch(() => ({}));
+            const candidates = [
+                data?.data?.banners,
+                data?.data?.documents,
+                data?.data,
+                data?.banners,
+                data?.documents,
+                Array.isArray(data) ? data : null
+            ].filter(Array.isArray);
+
+            const banners = (candidates[0] || []).map((banner, index) => normalizeBanner(banner, index)).filter(Boolean);
+            state.banners = banners;
             state.bannersError = null;
+
+            return banners;
+        } catch (error) {
+            console.error('❌ Failed to fetch banners:', error);
+            state.bannersError = error?.message || 'تعذر تحميل البانرات. يرجى المحاولة مرة أخرى.';
+            state.banners = [];
+            throw error;
+        } finally {
+            state.bannersLoading = false;
+            bannersFetchPromise = null;
             renderBanners();
+        }
+    })();
 
-            const request = (async () => {
-                try {
-                    const response = handleUnauthorized(await authorizedFetch(BANNER_API));
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
+    bannersFetchPromise = request;
+    return request;
+}
 
-                    const data = await response.json().catch(() => ({}));
-                    const candidates = [
-                        data?.data?.banners,
-                        data?.data?.documents,
-                        data?.data,
-                        data?.banners,
-                        data?.documents,
-                        Array.isArray(data) ? data : null
-                    ].filter(Array.isArray);
-
-                    const banners = (candidates[0] || []).map((banner, index) => normalizeBanner(banner, index)).filter(Boolean);
-                    state.banners = banners;
-                    state.bannersError = null;
-                    console.log('✅ Banners fetched:', banners.length);
-                    return banners;
-                } catch (error) {
-                    console.error('❌ Failed to fetch banners:', error);
-                    state.bannersError = error?.message || 'تعذر تحميل البانرات. يرجى المحاولة مرة أخرى.';
-                    state.banners = [];
-                    throw error;
-                } finally {
-                    state.bannersLoading = false;
-                    bannersFetchPromise = null;
-                    renderBanners();
-                }
-            })();
-
-            bannersFetchPromise = request;
-            return request;
+async function createBanner(bannerData = {}, imageFile = null) {
+    try {
+        const formData = new FormData();
+        formData.append('title', bannerData.title);
+        formData.append('description', bannerData.description);
+        if (imageFile instanceof File) {
+            formData.append('image', imageFile);
         }
 
-        async function createBanner(bannerData = {}, imageFile = null) {
-            try {
-                const formData = new FormData();
-                formData.append('title', bannerData.title);
-                formData.append('description', bannerData.description);
-                if (imageFile instanceof File) {
-                    formData.append('image', imageFile);
-                }
+        const response = await authorizedFetch(BANNER_API, {
+            method: 'POST',
+            body: formData
+        });
 
-                const response = await authorizedFetch(BANNER_API, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(data?.message || `HTTP ${response.status}`);
-                }
-
-                console.log('✅ Banner created:', data);
-                return data?.data || data;
-            } catch (error) {
-                console.error('❌ Failed to create banner:', error);
-                throw error;
-            }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.message || `HTTP ${response.status}`);
         }
 
-        async function updateBanner(bannerId, bannerData = {}, imageFile = null) {
-            if (!bannerId) {
-                throw new Error('معرّف البانر غير صالح');
-            }
 
-            try {
-                const formData = new FormData();
-                if (bannerData.title !== undefined) formData.append('title', bannerData.title);
-                if (bannerData.description !== undefined) formData.append('description', bannerData.description);
-                if (imageFile instanceof File) {
-                    formData.append('image', imageFile);
-                }
+        return data?.data || data;
+    } catch (error) {
+        console.error('❌ Failed to create banner:', error);
+        throw error;
+    }
+}
 
-                const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
-                    method: 'PATCH',
-                    body: formData
-                });
+async function updateBanner(bannerId, bannerData = {}, imageFile = null) {
+    if (!bannerId) {
+        throw new Error('معرّف البانر غير صالح');
+    }
 
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(data?.message || `HTTP ${response.status}`);
-                }
-
-                console.log('✅ Banner updated:', data);
-                return data?.data || data;
-            } catch (error) {
-                console.error(`❌ Failed to update banner ${bannerId}:`, error);
-                throw error;
-            }
+    try {
+        const formData = new FormData();
+        if (bannerData.title !== undefined) formData.append('title', bannerData.title);
+        if (bannerData.description !== undefined) formData.append('description', bannerData.description);
+        if (imageFile instanceof File) {
+            formData.append('image', imageFile);
         }
 
-        async function deleteBanner(bannerId) {
-            if (!bannerId) {
-                throw new Error('معرّف البانر غير صالح');
-            }
+        const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+            method: 'PATCH',
+            body: formData
+        });
 
-            try {
-                const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
-                    method: 'DELETE'
-                });
-
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(data?.message || `HTTP ${response.status}`);
-                }
-
-                console.log('✅ Banner deleted:', data);
-                return data?.data || data;
-            } catch (error) {
-                console.error(`❌ Failed to delete banner ${bannerId}:`, error);
-                throw error;
-            }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.message || `HTTP ${response.status}`);
         }
 
-        function normalizeShippingZone(rawZone = {}, index = 0) {
-            if (!rawZone || typeof rawZone !== 'object') return null;
 
-            const id = rawZone._id
-                || rawZone.id
-                || rawZone.zoneId
-                || rawZone.key
-                || `zone-${Date.now()}-${index}`;
+        return data?.data || data;
+    } catch (error) {
+        console.error(`❌ Failed to update banner ${bannerId}:`, error);
+        throw error;
+    }
+}
 
-            const zoneName = rawZone.zoneName
-                || rawZone.nameAr
-                || rawZone.name
-                || rawZone.nameEn
-                || rawZone.title
-                || 'منطقة غير معروفة';
+async function deleteBanner(bannerId) {
+    if (!bannerId) {
+        throw new Error('معرّف البانر غير صالح');
+    }
 
-            const rate = Number(rawZone.shippingRate ?? rawZone.rate ?? rawZone.price ?? rawZone.cost ?? 0) || 0;
-            const installationAvailable = Boolean(
-                rawZone.isInstallationAvailable ?? rawZone.installationAvailable ?? rawZone.hasInstallation
+    try {
+        const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.message || `HTTP ${response.status}`);
+        }
+
+
+        return data?.data || data;
+    } catch (error) {
+        console.error(`❌ Failed to delete banner ${bannerId}:`, error);
+        throw error;
+    }
+}
+
+function normalizeShippingZone(rawZone = {}, index = 0) {
+    if (!rawZone || typeof rawZone !== 'object') return null;
+
+    const id = rawZone._id
+        || rawZone.id
+        || rawZone.zoneId
+        || rawZone.key
+        || `zone-${Date.now()}-${index}`;
+
+    const zoneName = rawZone.zoneName
+        || rawZone.nameAr
+        || rawZone.name
+        || rawZone.nameEn
+        || rawZone.title
+        || 'منطقة غير معروفة';
+
+    const rate = Number(rawZone.shippingRate ?? rawZone.rate ?? rawZone.price ?? rawZone.cost ?? 0) || 0;
+    const installationAvailable = Boolean(
+        rawZone.isInstallationAvailable ?? rawZone.installationAvailable ?? rawZone.hasInstallation
+    );
+
+    return {
+        id,
+        zoneName,
+        shippingRate: rate,
+        installationAvailable,
+        raw: rawZone
+    };
+}
+
+async function fetchShippingZones(options = {}) {
+    const { force = false } = options || {};
+
+    if (shippingZonesFetchPromise) {
+        if (!force) {
+            return shippingZonesFetchPromise;
+        }
+
+        try {
+            await shippingZonesFetchPromise;
+        } catch (error) {
+            console.warn('⚠️ Previous shipping zones fetch failed, retrying...', error);
+        }
+    }
+
+    state.shippingZonesLoading = true;
+    state.shippingZonesError = null;
+    renderShippingSettings();
+
+    const request = (async () => {
+        try {
+            const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT));
+            if (!response?.ok) {
+                throw new Error(`HTTP ${response?.status}`);
+            }
+
+            const payload = await response.json().catch(() => ({}));
+            const zonesArray = [
+                payload?.data?.zones,
+                payload?.data?.shippingZones,
+                payload?.data,
+                payload?.zones,
+                payload?.shippingZones,
+                Array.isArray(payload) ? payload : null
+            ].find(Array.isArray) || [];
+
+            const normalized = zonesArray
+                .map((zone, index) => normalizeShippingZone(zone, index))
+                .filter(Boolean);
+
+            state.shippingZones = normalized;
+            state.shippingZonesError = null;
+
+            const hasSelected = normalized.some(zone => String(zone.id) === String(state.selectedShippingZoneId));
+            if (!hasSelected) {
+                state.selectedShippingZoneId = normalized[0]?.id || '';
+            }
+
+
+            return normalized;
+        } catch (error) {
+            console.error('❌ Failed to fetch shipping zones:', error);
+            state.shippingZones = [];
+            state.shippingZonesError = error?.message || 'تعذر تحميل مناطق الشحن';
+            throw error;
+        } finally {
+            state.shippingZonesLoading = false;
+            shippingZonesFetchPromise = null;
+            renderShippingSettings();
+        }
+    })();
+
+    shippingZonesFetchPromise = request;
+    return request;
+}
+
+async function updateShippingZoneRate(zoneId, shippingRate, isInstallationAvailable) {
+    if (!zoneId) {
+        throw new Error('لم يتم تحديد منطقة الشحن');
+    }
+
+    const numericRate = Number(shippingRate);
+    if (!Number.isFinite(numericRate) || numericRate < 0) {
+        throw new Error('يرجى إدخال قيمة صالحة لتكلفة الشحن');
+    }
+
+    const payload = { shippingRate: numericRate };
+    if (typeof isInstallationAvailable === 'boolean') {
+        payload.isInstallationAvailable = isInstallationAvailable;
+        payload.installationAvailable = isInstallationAvailable;
+    }
+
+    showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }));
+
+        const responseBody = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(responseBody?.message || `HTTP ${response.status}`);
+        }
+
+        showToast('success', 'تحديث تكلفة الشحن', 'تم حفظ تكلفة الشحن بنجاح');
+        await fetchShippingZones({ force: true });
+        return responseBody?.data || responseBody;
+    } catch (error) {
+        console.error(`❌ Failed to update shipping zone ${zoneId}:`, error);
+        showToast('error', 'تحديث تكلفة الشحن', error?.message || 'حدث خطأ أثناء تحديث تكلفة الشحن');
+        throw error;
+    }
+}
+
+async function createShippingZone(nameAr, nameEn, shippingRate) {
+    const arabicName = typeof nameAr === 'string' ? nameAr.trim() : '';
+    const englishName = typeof nameEn === 'string' ? nameEn.trim() : '';
+
+    if (!arabicName) {
+        throw new Error('يرجى إدخال اسم المنطقة بالعربية');
+    }
+
+    if (!englishName) {
+        throw new Error('يرجى إدخال اسم المنطقة بالإنجليزية');
+    }
+
+    const numericRate = Number(shippingRate);
+    if (!Number.isFinite(numericRate) || numericRate < 0) {
+        throw new Error('يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+    }
+
+    showToast('info', 'إضافة منطقة الشحن', 'جاري إنشاء منطقة الشحن الجديدة...');
+
+    try {
+        const requestPayload = {
+            nameAr: arabicName,
+            nameEn: englishName,
+            shippingRate: numericRate,
+        };
+
+        const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestPayload)
+        }));
+
+        const responseJson = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(responseJson?.message || `HTTP ${response.status}`);
+        }
+
+        const createdZone = responseJson?.data?.shippingZone
+            || responseJson?.data?.zone
+            || responseJson?.data
+            || responseJson;
+        const createdId = createdZone?._id || createdZone?.id || createdZone?.zoneId || null;
+
+        if (createdId) {
+            state.selectedShippingZoneId = createdId;
+        }
+
+        showToast('success', 'إضافة منطقة الشحن', 'تم إنشاء منطقة الشحن بنجاح');
+        await fetchShippingZones({ force: true });
+        return responseJson?.data || responseJson;
+    } catch (error) {
+        console.error('❌ Failed to create shipping zone:', error);
+        showToast('error', 'إضافة منطقة الشحن', error?.message || 'حدث خطأ أثناء إنشاء منطقة الشحن');
+        throw error;
+    }
+}
+
+async function deleteShippingZone(zoneId) {
+    if (!zoneId) {
+        throw new Error('لم يتم اختيار منطقة الشحن');
+    }
+
+    showToast('info', 'حذف منطقة الشحن', 'جاري حذف منطقة الشحن المحددة...');
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
+            method: 'DELETE'
+        }));
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.message || `HTTP ${response.status}`);
+        }
+
+        showToast('success', 'حذف منطقة الشحن', 'تم حذف منطقة الشحن بنجاح');
+        if (String(state.selectedShippingZoneId) === String(zoneId)) {
+            state.selectedShippingZoneId = '';
+        }
+        await fetchShippingZones({ force: true });
+        return payload?.data || payload;
+    } catch (error) {
+        console.error(`❌ Failed to delete shipping zone ${zoneId}:`, error);
+        showToast('error', 'حذف منطقة الشحن', error?.message || 'حدث خطأ أثناء حذف منطقة الشحن');
+        throw error;
+    }
+}
+
+function getShippingZoneById(zoneId) {
+    if (!zoneId) return null;
+    return state.shippingZones.find(zone => String(zone.id) === String(zoneId)) || null;
+}
+
+function hydrateSettingsForms() {
+    fetchShippingZones().catch(error => {
+        console.error('❌ Failed to hydrate shipping settings:', error);
+    });
+}
+
+async function handleShippingSettingsSubmit(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    if (!form || form.dataset.entity !== 'shipping-settings') {
+        return;
+    }
+
+    const select = form.querySelector('#shippingZoneSelect');
+    const rateInput = form.querySelector('#shippingZoneRate');
+    const submitButton = form.querySelector('#shippingSettingsSubmit');
+    const installationCheckbox = form.querySelector('#shippingZoneInstallation');
+
+    const zoneId = select?.value;
+    const rateValue = rateInput?.value;
+    const installationValue = installationCheckbox?.checked ?? null;
+
+    if (!zoneId) {
+        showToast('error', 'إعدادات الشحن', 'يرجى اختيار المنطقة أولاً');
+        return;
+    }
+
+    const numericRate = Number(rateValue);
+    if (!Number.isFinite(numericRate) || numericRate < 0) {
+        showToast('error', 'إعدادات الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+        rateInput?.focus();
+        return;
+    }
+
+    const originalState = submitButton ? { disabled: submitButton.disabled, label: submitButton.innerHTML } : null;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    }
+
+    try {
+        await updateShippingZoneRate(zoneId, numericRate, installationValue);
+    } catch (error) {
+    } finally {
+        if (submitButton && originalState) {
+            submitButton.disabled = originalState.disabled;
+            submitButton.innerHTML = originalState.label;
+        }
+    }
+}
+
+async function fetchCategories() {
+    state.categoriesLoading = true;
+    state.categoriesError = null;
+    renderCategories();
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT));
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+
+        const documents = Array.isArray(payload?.data?.documents)
+            ? payload.data.documents
+            : Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload)
+                    ? payload
+                    : [];
+
+
+        const previousExtras = { ...state.categoryExtras };
+        const normalized = documents
+            .map((doc, index) => normalizeCategory(doc, index))
+            .filter(Boolean)
+            .map(category => {
+                const extras = previousExtras[category.id];
+                const image = category.image || extras?.image || '';
+                const description = category.description || extras?.description || '';
+                return {
+                    ...category,
+                    image,
+                    description
+                };
+            });
+
+
+        state.categories = normalized;
+        syncCategoriesCache(normalized);
+        syncCategoryExtras(normalized);
+        hydrateProductCategoryOptions();
+        hydrateSubcategoryCategoryOptions();
+        if (!state.filters.subcategoryCategory && normalized.length) {
+            state.filters.subcategoryCategory = normalized[0].id;
+            hydrateSubcategoryCategoryOptions();
+        }
+
+        if (normalized.length) {
+            const selectedCategoryId = state.filters.subcategoryCategory || normalized[0].id;
+            const preloadPromises = normalized.map(category =>
+                fetchSubcategories(category.id, {
+                    force: true,
+                    skipRender: category.id !== selectedCategoryId
+                })
             );
 
-            return {
-                id,
-                zoneName,
-                shippingRate: rate,
-                installationAvailable,
-                raw: rawZone
-            };
+            await Promise.allSettled(preloadPromises);
+            renderSubcategories(selectedCategoryId);
+        } else {
+            renderSubcategories();
+        }
+    } catch (error) {
+        state.categoriesError = 'تعذر تحميل الفئات. يرجى المحاولة مرة أخرى.';
+    } finally {
+        state.categoriesLoading = false;
+        renderCategories();
+        hydrateFilters(); // تحديث فلتر الفئات في قسم المنتجات
+    }
+}
+
+async function fetchProducts() {
+    state.productsLoading = true;
+    state.productsError = null;
+    renderProducts();
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(PRODUCT_ENDPOINT));
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
 
-        async function fetchShippingZones(options = {}) {
-            const { force = false } = options || {};
+        const payload = await response.json();
 
-            if (shippingZonesFetchPromise) {
-                if (!force) {
-                    return shippingZonesFetchPromise;
-                }
+        const documents = Array.isArray(payload?.data?.products)
+            ? payload.data.products
+            : Array.isArray(payload?.data?.documents)
+                ? payload.data.documents
+                : Array.isArray(payload?.data)
+                    ? payload.data
+                    : Array.isArray(payload)
+                        ? payload
+                        : [];
 
-                try {
-                    await shippingZonesFetchPromise;
-                } catch (error) {
-                    console.warn('⚠️ Previous shipping zones fetch failed, retrying...', error);
-                }
-            }
-
-            state.shippingZonesLoading = true;
-            state.shippingZonesError = null;
-            renderShippingSettings();
-
-            const request = (async () => {
-                try {
-                    const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT));
-                    if (!response?.ok) {
-                        throw new Error(`HTTP ${response?.status}`);
-                    }
-
-                    const payload = await response.json().catch(() => ({}));
-                    const zonesArray = [
-                        payload?.data?.zones,
-                        payload?.data?.shippingZones,
-                        payload?.data,
-                        payload?.zones,
-                        payload?.shippingZones,
-                        Array.isArray(payload) ? payload : null
-                    ].find(Array.isArray) || [];
-
-                    const normalized = zonesArray
-                        .map((zone, index) => normalizeShippingZone(zone, index))
-                        .filter(Boolean);
-
-                    state.shippingZones = normalized;
-                    state.shippingZonesError = null;
-
-                    const hasSelected = normalized.some(zone => String(zone.id) === String(state.selectedShippingZoneId));
-                    if (!hasSelected) {
-                        state.selectedShippingZoneId = normalized[0]?.id || '';
-                    }
-
-                    console.log('✅ Shipping zones fetched:', normalized.length);
-                    return normalized;
-                } catch (error) {
-                    console.error('❌ Failed to fetch shipping zones:', error);
-                    state.shippingZones = [];
-                    state.shippingZonesError = error?.message || 'تعذر تحميل مناطق الشحن';
-                    throw error;
-                } finally {
-                    state.shippingZonesLoading = false;
-                    shippingZonesFetchPromise = null;
-                    renderShippingSettings();
-                }
-            })();
-
-            shippingZonesFetchPromise = request;
-            return request;
-        }
-
-        async function updateShippingZoneRate(zoneId, shippingRate, isInstallationAvailable) {
-            if (!zoneId) {
-                throw new Error('لم يتم تحديد منطقة الشحن');
-            }
-
-            const numericRate = Number(shippingRate);
-            if (!Number.isFinite(numericRate) || numericRate < 0) {
-                throw new Error('يرجى إدخال قيمة صالحة لتكلفة الشحن');
-            }
-
-            const payload = { shippingRate: numericRate };
-            if (typeof isInstallationAvailable === 'boolean') {
-                payload.isInstallationAvailable = isInstallationAvailable;
-                payload.installationAvailable = isInstallationAvailable;
-            }
-
-            showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
-
-            try {
-                const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }));
-
-                const responseBody = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(responseBody?.message || `HTTP ${response.status}`);
-                }
-
-                showToast('success', 'تحديث تكلفة الشحن', 'تم حفظ تكلفة الشحن بنجاح');
-                await fetchShippingZones({ force: true });
-                return responseBody?.data || responseBody;
-            } catch (error) {
-                console.error(`❌ Failed to update shipping zone ${zoneId}:`, error);
-                showToast('error', 'تحديث تكلفة الشحن', error?.message || 'حدث خطأ أثناء تحديث تكلفة الشحن');
-                throw error;
-            }
-        }
-
-        async function createShippingZone(nameAr, nameEn, shippingRate) {
-            const arabicName = typeof nameAr === 'string' ? nameAr.trim() : '';
-            const englishName = typeof nameEn === 'string' ? nameEn.trim() : '';
-
-            if (!arabicName) {
-                throw new Error('يرجى إدخال اسم المنطقة بالعربية');
-            }
-
-            if (!englishName) {
-                throw new Error('يرجى إدخال اسم المنطقة بالإنجليزية');
-            }
-
-            const numericRate = Number(shippingRate);
-            if (!Number.isFinite(numericRate) || numericRate < 0) {
-                throw new Error('يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
-            }
-
-            showToast('info', 'إضافة منطقة الشحن', 'جاري إنشاء منطقة الشحن الجديدة...');
-
-            try {
-                const requestPayload = {
-                    nameAr: arabicName,
-                    nameEn: englishName,
-                    shippingRate: numericRate,
+        const previousExtras = { ...state.productExtras };
+        const normalized = documents
+            .map((product, index) => normalizeProduct(product, index))
+            .filter(Boolean)
+            .map(product => {
+                const extras = previousExtras[product.id];
+                return {
+                    ...product,
+                    image: extras?.image || product.image,
+                    description: extras?.description || product.description
                 };
+            });
 
-                const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestPayload)
-                }));
 
-                const responseJson = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(responseJson?.message || `HTTP ${response.status}`);
-                }
+        state.products = normalized;
+        syncProductExtras(normalized);
+    } catch (error) {
+        state.productsError = error.message || 'تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.';
+        state.products = [];
+    } finally {
+        state.productsLoading = false;
+        hydrateFilters();
+        renderProducts();
+        renderTopProducts();
 
-                const createdZone = responseJson?.data?.shippingZone
-                    || responseJson?.data?.zone
-                    || responseJson?.data
-                    || responseJson;
-                const createdId = createdZone?._id || createdZone?.id || createdZone?.zoneId || null;
-
-                if (createdId) {
-                    state.selectedShippingZoneId = createdId;
-                }
-
-                showToast('success', 'إضافة منطقة الشحن', 'تم إنشاء منطقة الشحن بنجاح');
-                await fetchShippingZones({ force: true });
-                return responseJson?.data || responseJson;
-            } catch (error) {
-                console.error('❌ Failed to create shipping zone:', error);
-                showToast('error', 'إضافة منطقة الشحن', error?.message || 'حدث خطأ أثناء إنشاء منطقة الشحن');
-                throw error;
-            }
+        // تحديث إحصائيات نظرة عامة إذا كانت محملة
+        if (state.currentSection === 'overview') {
+            updateOverviewStats();
         }
+    }
+}
 
-        async function deleteShippingZone(zoneId) {
-            if (!zoneId) {
-                throw new Error('لم يتم اختيار منطقة الشحن');
-            }
+function mergeProductWithExtras(product) {
+    if (!product) return product;
+    const extras = state.productExtras[product.id];
+    if (!extras) return product;
+    return {
+        ...product,
+        image: extras.image || product.image,
+        description: extras.description || product.description,
+        specs: extras.specs || product.specs,
+        images: Array.isArray(extras.images) && extras.images.length
+            ? extras.images
+            : product.images,
+        brandName: extras.brandName || product.brandName || product.brand
+    };
+}
 
-            showToast('info', 'حذف منطقة الشحن', 'جاري حذف منطقة الشحن المحددة...');
+function buildProductPayload(form) {
+    const formData = new FormData(form);
 
-            try {
-                const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
-                    method: 'DELETE'
-                }));
+    const name = getFormValue(formData, 'name', '').trim();
+    const title = getFormValue(formData, 'title', '').trim() || name;
+    const description = getFormValue(formData, 'description', '').trim();
+    const priceValue = getFormValue(formData, 'price', '0');
+    const priceAfterDiscountValue = getFormValue(formData, 'priceAfterDiscount', '').trim();
+    const installationPriceValue = getFormValue(formData, 'installationPrice', '').trim();
+    const quantityValue = getFormValue(formData, 'quantity', '0');
+    const sku = getFormValue(formData, 'sku', '').trim();
+    const category = getFormValue(formData, 'category', '').trim();
+    const subCategory = getFormValue(formData, 'subCategory', '').trim();
+    const brand = getFormValue(formData, 'brand', '').trim();
+    const specs = getFormValue(formData, 'specs', '').trim();
+    const status = getFormValue(formData, 'status', '').trim();
 
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(payload?.message || `HTTP ${response.status}`);
-                }
+    const price = parseFloat(priceValue);
+    if (Number.isNaN(price) || price < 0) {
+        throw new Error('يجب إدخال سعر صحيح');
+    }
 
-                showToast('success', 'حذف منطقة الشحن', 'تم حذف منطقة الشحن بنجاح');
-                if (String(state.selectedShippingZoneId) === String(zoneId)) {
-                    state.selectedShippingZoneId = '';
-                }
-                await fetchShippingZones({ force: true });
-                return payload?.data || payload;
-            } catch (error) {
-                console.error(`❌ Failed to delete shipping zone ${zoneId}:`, error);
-                showToast('error', 'حذف منطقة الشحن', error?.message || 'حدث خطأ أثناء حذف منطقة الشحن');
-                throw error;
-            }
+    let installationPrice = null;
+    if (installationPriceValue) {
+        const parsedInstallationPrice = parseFloat(installationPriceValue);
+        if (Number.isNaN(parsedInstallationPrice) || parsedInstallationPrice < 0) {
+            throw new Error('يجب إدخال سعر تركيب صحيح (0 أو أكبر)');
         }
+        installationPrice = parsedInstallationPrice;
+    }
 
-        function getShippingZoneById(zoneId) {
-            if (!zoneId) return null;
-            return state.shippingZones.find(zone => String(zone.id) === String(zoneId)) || null;
+    let priceAfterDiscount = null;
+    if (priceAfterDiscountValue) {
+        const parsedDiscountPrice = parseFloat(priceAfterDiscountValue);
+        if (Number.isNaN(parsedDiscountPrice) || parsedDiscountPrice < 0) {
+            throw new Error('يجب إدخال سعر بعد الخصم صحيح (0 أو أكبر)');
         }
+        priceAfterDiscount = parsedDiscountPrice;
+    }
 
-        function hydrateSettingsForms() {
-            fetchShippingZones().catch(error => {
-                console.error('❌ Failed to hydrate shipping settings:', error);
+    const quantity = parseInt(quantityValue, 10);
+    if (Number.isNaN(quantity) || quantity < 0) {
+        throw new Error('يجب إدخال كمية صحيحة');
+    }
+
+    if (!brand) {
+        throw new Error('يجب اختيار علامة تجارية');
+    }
+
+    const payload = {
+        name,
+        title,
+        description,
+        quantity: String(quantity),
+        price: String(price),
+        category,
+        subCategory,
+        brand,
+        specs,
+    };
+
+    if (installationPrice !== null) {
+        payload.installationPrice = String(installationPrice);
+    }
+
+    if (priceAfterDiscount !== null) {
+        payload.priceAfterDiscount = String(priceAfterDiscount);
+    }
+
+    if (sku) {
+        payload.sku = sku;
+    }
+    if (status) {
+        payload.status = status;
+    }
+
+    return payload;
+}
+
+function buildProductRequestOptions(payload = {}, imageFiles = []) {
+    const dataPayload = { ...payload };
+    const formData = new FormData();
+
+    Object.entries(dataPayload).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        if (Array.isArray(value)) {
+            value.forEach(item => {
+                if (item !== undefined && item !== null) {
+                    formData.append(`${key}[]`, item);
+                }
+            });
+        } else {
+            formData.append(key, value);
+        }
+    });
+
+    imageFiles.forEach(file => {
+        if (file instanceof File) {
+            formData.append('images', file);
+        }
+    });
+
+    for (let [key, value] of formData.entries()) {
+    }
+
+    return { body: formData, headers: null };
+}
+
+async function createProduct(payload, imageFiles = []) {
+
+    try {
+        const formData = new FormData();
+
+        Object.entries(payload || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                formData.append(key, value);
+            }
+        });
+
+        if (imageFiles && imageFiles.length > 0) {
+            imageFiles.forEach((file, index) => {
+                formData.append('images', file);
             });
         }
 
-        async function handleShippingSettingsSubmit(event) {
-            event.preventDefault();
+        const response = await authorizedFetch(PRODUCT_ENDPOINT, {
+            method: 'POST',
+            body: formData
+        });
 
-            const form = event.target;
-            if (!form || form.dataset.entity !== 'shipping-settings') {
-                return;
-            }
+        const data = await response.json();
 
-            const select = form.querySelector('#shippingZoneSelect');
-            const rateInput = form.querySelector('#shippingZoneRate');
-            const submitButton = form.querySelector('#shippingSettingsSubmit');
-            const installationCheckbox = form.querySelector('#shippingZoneInstallation');
-
-            const zoneId = select?.value;
-            const rateValue = rateInput?.value;
-            const installationValue = installationCheckbox?.checked ?? null;
-
-            if (!zoneId) {
-                showToast('error', 'إعدادات الشحن', 'يرجى اختيار المنطقة أولاً');
-                return;
-            }
-
-            const numericRate = Number(rateValue);
-            if (!Number.isFinite(numericRate) || numericRate < 0) {
-                showToast('error', 'إعدادات الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
-                rateInput?.focus();
-                return;
-            }
-
-            const originalState = submitButton ? { disabled: submitButton.disabled, label: submitButton.innerHTML } : null;
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
-            }
-
-            try {
-                await updateShippingZoneRate(zoneId, numericRate, installationValue);
-            } catch (error) {
-            } finally {
-                if (submitButton && originalState) {
-                    submitButton.disabled = originalState.disabled;
-                    submitButton.innerHTML = originalState.label;
-                }
-            }
+        if (!response.ok) {
+            const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
+            throw new Error(errorMessage);
         }
 
-        async function fetchCategories() {
-            state.categoriesLoading = true;
-            state.categoriesError = null;
-            renderCategories();
+        return data;
+    } catch (error) {
+        throw error;
+    }
+}
 
-            try {
-                const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT));
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+// دالة تحديث المنتج
+async function updateProduct(productId, payload, imageFiles = []) {
 
-                const payload = await response.json();
+    if (!productId) {
+        throw new Error('معرف المنتج غير صالح');
+    }
 
-                const documents = Array.isArray(payload?.data?.documents)
-                    ? payload.data.documents
-                    : Array.isArray(payload?.data)
-                        ? payload.data
-                        : Array.isArray(payload)
-                            ? payload
-                            : [];
+    try {
+        const formData = new FormData();
 
-
-                const previousExtras = { ...state.categoryExtras };
-                const normalized = documents
-                    .map((doc, index) => normalizeCategory(doc, index))
-                    .filter(Boolean)
-                    .map(category => {
-                        const extras = previousExtras[category.id];
-                        const image = category.image || extras?.image || '';
-                        const description = category.description || extras?.description || '';
-                        return {
-                            ...category,
-                            image,
-                            description
-                        };
-                    });
-
-
-                state.categories = normalized;
-                syncCategoriesCache(normalized);
-                syncCategoryExtras(normalized);
-                hydrateProductCategoryOptions();
-                hydrateSubcategoryCategoryOptions();
-                if (!state.filters.subcategoryCategory && normalized.length) {
-                    state.filters.subcategoryCategory = normalized[0].id;
-                    hydrateSubcategoryCategoryOptions();
-                }
-
-                if (normalized.length) {
-                    const selectedCategoryId = state.filters.subcategoryCategory || normalized[0].id;
-                    const preloadPromises = normalized.map(category =>
-                        fetchSubcategories(category.id, {
-                            force: true,
-                            skipRender: category.id !== selectedCategoryId
-                        })
-                    );
-
-                    await Promise.allSettled(preloadPromises);
-                    renderSubcategories(selectedCategoryId);
-                } else {
-                    renderSubcategories();
-                }
-            } catch (error) {
-                state.categoriesError = 'تعذر تحميل الفئات. يرجى المحاولة مرة أخرى.';
-            } finally {
-                state.categoriesLoading = false;
-                renderCategories();
-                hydrateFilters(); // تحديث فلتر الفئات في قسم المنتجات
+        Object.entries(payload || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                formData.append(key, value);
             }
-        }
+        });
 
-        async function fetchProducts() {
-            state.productsLoading = true;
-            state.productsError = null;
-            renderProducts();
-
-            try {
-                const response = handleUnauthorized(await authorizedFetch(PRODUCT_ENDPOINT));
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const payload = await response.json();
-
-                const documents = Array.isArray(payload?.data?.products)
-                    ? payload.data.products
-                    : Array.isArray(payload?.data?.documents)
-                        ? payload.data.documents
-                        : Array.isArray(payload?.data)
-                            ? payload.data
-                            : Array.isArray(payload)
-                                ? payload
-                                : [];
-
-                const previousExtras = { ...state.productExtras };
-                const normalized = documents
-                    .map((product, index) => normalizeProduct(product, index))
-                    .filter(Boolean)
-                    .map(product => {
-                        const extras = previousExtras[product.id];
-                        return {
-                            ...product,
-                            image: extras?.image || product.image,
-                            description: extras?.description || product.description
-                        };
-                    });
-
-
-                state.products = normalized;
-                syncProductExtras(normalized);
-            } catch (error) {
-                state.productsError = error.message || 'تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.';
-                state.products = [];
-            } finally {
-                state.productsLoading = false;
-                hydrateFilters();
-                renderProducts();
-                renderTopProducts();
-                
-                // تحديث إحصائيات نظرة عامة إذا كانت محملة
-                if (state.currentSection === 'overview') {
-                    updateOverviewStats();
-                }
-            }
-        }
-
-        function mergeProductWithExtras(product) {
-            if (!product) return product;
-            const extras = state.productExtras[product.id];
-            if (!extras) return product;
-            return {
-                ...product,
-                image: extras.image || product.image,
-                description: extras.description || product.description,
-                specs: extras.specs || product.specs,
-                images: Array.isArray(extras.images) && extras.images.length
-                    ? extras.images
-                    : product.images,
-                brandName: extras.brandName || product.brandName || product.brand
-            };
-        }
-
-        function buildProductPayload(form) {
-            const formData = new FormData(form);
-
-            const name = getFormValue(formData, 'name', '').trim();
-            const title = getFormValue(formData, 'title', '').trim() || name;
-            const description = getFormValue(formData, 'description', '').trim();
-            const priceValue = getFormValue(formData, 'price', '0');
-            const priceAfterDiscountValue = getFormValue(formData, 'priceAfterDiscount', '').trim();
-            const installationPriceValue = getFormValue(formData, 'installationPrice', '').trim();
-            const quantityValue = getFormValue(formData, 'quantity', '0');
-            const sku = getFormValue(formData, 'sku', '').trim();
-            const category = getFormValue(formData, 'category', '').trim();
-            const subCategory = getFormValue(formData, 'subCategory', '').trim();
-            const brand = getFormValue(formData, 'brand', '').trim();
-            const specs = getFormValue(formData, 'specs', '').trim();
-            const status = getFormValue(formData, 'status', '').trim();
-
-            const price = parseFloat(priceValue);
-            if (Number.isNaN(price) || price < 0) {
-                throw new Error('يجب إدخال سعر صحيح');
-            }
-
-            let installationPrice = null;
-            if (installationPriceValue) {
-                const parsedInstallationPrice = parseFloat(installationPriceValue);
-                if (Number.isNaN(parsedInstallationPrice) || parsedInstallationPrice < 0) {
-                    throw new Error('يجب إدخال سعر تركيب صحيح (0 أو أكبر)');
-                }
-                installationPrice = parsedInstallationPrice;
-            }
-
-            let priceAfterDiscount = null;
-            if (priceAfterDiscountValue) {
-                const parsedDiscountPrice = parseFloat(priceAfterDiscountValue);
-                if (Number.isNaN(parsedDiscountPrice) || parsedDiscountPrice < 0) {
-                    throw new Error('يجب إدخال سعر بعد الخصم صحيح (0 أو أكبر)');
-                }
-                priceAfterDiscount = parsedDiscountPrice;
-            }
-
-            const quantity = parseInt(quantityValue, 10);
-            if (Number.isNaN(quantity) || quantity < 0) {
-                throw new Error('يجب إدخال كمية صحيحة');
-            }
-
-            if (!brand) {
-                throw new Error('يجب اختيار علامة تجارية');
-            }
-
-            const payload = {
-                name,
-                title,
-                description,
-                quantity: String(quantity),
-                price: String(price),
-                category,
-                subCategory,
-                brand,
-                specs,
-            };
-
-            if (installationPrice !== null) {
-                payload.installationPrice = String(installationPrice);
-            }
-
-            if (priceAfterDiscount !== null) {
-                payload.priceAfterDiscount = String(priceAfterDiscount);
-            }
-
-            if (sku) {
-                payload.sku = sku;
-            }
-            if (status) {
-                payload.status = status;
-            }
-
-            return payload;
-        }
-
-        function buildProductRequestOptions(payload = {}, imageFiles = []) {
-            const dataPayload = { ...payload };
-            const formData = new FormData();
-
-            Object.entries(dataPayload).forEach(([key, value]) => {
-                if (value === undefined || value === null || value === '') return;
-                if (Array.isArray(value)) {
-                    value.forEach(item => {
-                        if (item !== undefined && item !== null) {
-                            formData.append(`${key}[]`, item);
-                        }
-                    });
-                } else {
-                    formData.append(key, value);
-                }
-            });
-
-            imageFiles.forEach(file => {
+        if (imageFiles && imageFiles.length > 0) {
+            imageFiles.forEach((file, index) => {
                 if (file instanceof File) {
                     formData.append('images', file);
+
                 }
             });
-
-            for (let [key, value] of formData.entries()) {
-            }
-
-            return { body: formData, headers: null };
         }
 
-        async function createProduct(payload, imageFiles = []) {
+        const response = await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
+            method: 'PATCH',
+            body: formData
+        });
 
-            try {
-                const formData = new FormData();
+        const data = await response.json();
 
-                Object.entries(payload || {}).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        formData.append(key, value);
-                    }
-                });
-
-                if (imageFiles && imageFiles.length > 0) {
-                    imageFiles.forEach((file, index) => {
-                        formData.append('images', file);
-                    });
-                }
-
-                const response = await authorizedFetch(PRODUCT_ENDPOINT, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
-                    throw new Error(errorMessage);
-                }
-
-                return data;
-            } catch (error) {
-                throw error;
-            }
+        if (!response.ok) {
+            const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
+            throw new Error(errorMessage);
         }
 
-        // دالة تحديث المنتج
-        async function updateProduct(productId, payload, imageFiles = []) {
 
-            if (!productId) {
-                throw new Error('معرف المنتج غير صالح');
-            }
+        const updatedProduct = data.data || data;
 
-            try {
-                const formData = new FormData();
-
-                Object.entries(payload || {}).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        formData.append(key, value);
-                    }
-                });
-
-                if (imageFiles && imageFiles.length > 0) {
-                    imageFiles.forEach((file, index) => {
-                        if (file instanceof File) {
-                            formData.append('images', file);
-                         
-                        }
-                    });
-                }
-
-                const response = await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
-                    method: 'PATCH',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
-                    throw new Error(errorMessage);
-                }
-
-
-                const updatedProduct = data.data || data;
-
-                if (updatedProduct) {
-                    upsertProductExtras(productId, {
-                        image: updatedProduct.images?.[0] || updatedProduct.image || '',
-                        description: updatedProduct.description || ''
-                    });
-                }
-
-                return updatedProduct;
-            } catch (error) {
-                showToast('error', 'تحديث المنتج', error.message || 'حدث خطأ غير متوقع');
-                throw error;
-            }
+        if (updatedProduct) {
+            upsertProductExtras(productId, {
+                image: updatedProduct.images?.[0] || updatedProduct.image || '',
+                description: updatedProduct.description || ''
+            });
         }
 
-        /**
-         * عرض تفاصيل المنتج في نافذة منبثقة
-         */
-        function viewProductDetails(productId) {
-            const product = state.products?.find(p => (p._id || p.id) === productId);
+        return updatedProduct;
+    } catch (error) {
+        showToast('error', 'تحديث المنتج', error.message || 'حدث خطأ غير متوقع');
+        throw error;
+    }
+}
 
-            if (!product) {
-                showToast('error', 'خطأ', 'لم يتم العثور على المنتج');
-                return;
-            }
+/**
+ * عرض تفاصيل المنتج في نافذة منبثقة
+ */
+function viewProductDetails(productId) {
+    const product = state.products?.find(p => (p._id || p.id) === productId);
 
-            const modal = document.createElement('div');
-            modal.className = 'product-details-modal';
-            modal.style.opacity = '0';
+    if (!product) {
+        showToast('error', 'خطأ', 'لم يتم العثور على المنتج');
+        return;
+    }
 
-            const categoryName = product.categoryName || getCategoryLabel(product.categorySlug) || product.category?.name || '-';
-            const subcategoryName = product.subcategoryName || product.subcategory?.name || '-';
-            const brandName = product.brandName || product.brand?.name || '-';
+    const modal = document.createElement('div');
+    modal.className = 'product-details-modal';
+    modal.style.opacity = '0';
 
-            const hasStock = product.stock !== undefined && product.stock !== null && product.stock !== '';
-            const stockNumber = Number(product.stock);
-            const stockIsFinite = Number.isFinite(stockNumber);
-            const stockValue = stockIsFinite ? stockNumber : product.stock;
-            const stockClass = stockIsFinite ? (stockNumber > 0 ? 'positive' : 'negative') : '';
+    const categoryName = product.categoryName || getCategoryLabel(product.categorySlug) || product.category?.name || '-';
+    const subcategoryName = product.subcategoryName || product.subcategory?.name || '-';
+    const brandName = product.brandName || product.brand?.name || '-';
 
-            const stockMarkup = hasStock
-                ? `
+    const hasStock = product.stock !== undefined && product.stock !== null && product.stock !== '';
+    const stockNumber = Number(product.stock);
+    const stockIsFinite = Number.isFinite(stockNumber);
+    const stockValue = stockIsFinite ? stockNumber : product.stock;
+    const stockClass = stockIsFinite ? (stockNumber > 0 ? 'positive' : 'negative') : '';
+
+    const stockMarkup = hasStock
+        ? `
                     <div class="product-details-card">
                         <span class="product-details-label">المخزون</span>
                         <span class="product-details-value ${stockClass}">${stockValue}</span>
                     </div>
                 `
-                : '';
+        : '';
 
-            const installationMarkup = Number.isFinite(product.installationPrice)
-                ? `
+    const installationMarkup = Number.isFinite(product.installationPrice)
+        ? `
                     <div class="product-details-card">
                         <span class="product-details-label">سعر التركيب</span>
                         <span class="product-details-value price">${formatCurrency(product.installationPrice)}</span>
                     </div>
                 `
-                : '';
+        : '';
 
-            const skuMarkup = product.sku
-                ? `
+    const skuMarkup = product.sku
+        ? `
                     <div class="product-details-card">
                         <span class="product-details-label">رمز المنتج (SKU)</span>
                         <span class="product-details-value">${product.sku}</span>
                     </div>
                 `
-                : '';
+        : '';
 
-            const hasDiscountPrice = Number.isFinite(product.priceAfterDiscount);
-            const priceCardMarkup = hasDiscountPrice
-                ? `
+    const hasDiscountPrice = Number.isFinite(product.priceAfterDiscount);
+    const priceCardMarkup = hasDiscountPrice
+        ? `
                     <div class="product-details-card">
                         <span class="product-details-label">السعر بعد الخصم</span>
                         <span class="product-details-value price">${formatCurrency(product.priceAfterDiscount)}</span>
@@ -3940,15 +3939,15 @@
                         </small>
                     </div>
                 `
-                : `
+        : `
                     <div class="product-details-card">
                         <span class="product-details-label">السعر</span>
                         <span class="product-details-value price">${formatCurrency(product.price)}</span>
                     </div>
                 `;
 
-            const subcategoryMarkup = subcategoryName !== '-'
-                ? `
+    const subcategoryMarkup = subcategoryName !== '-'
+        ? `
                     <div class="product-details-card product-details-meta-card">
                         <i class="fas fa-tags"></i>
                         <div>
@@ -3957,10 +3956,10 @@
                         </div>
                     </div>
                 `
-                : '';
+        : '';
 
-            const brandMarkup = brandName !== '-'
-                ? `
+    const brandMarkup = brandName !== '-'
+        ? `
                     <div class="product-details-card product-details-meta-card">
                         <i class="fas fa-certificate"></i>
                         <div>
@@ -3969,9 +3968,9 @@
                         </div>
                     </div>
                 `
-                : '';
+        : '';
 
-            modal.innerHTML = `
+    modal.innerHTML = `
                 <div class="product-details-dialog">
                     <div class="product-details-header">
                         <h2>تفاصيل المنتج</h2>
@@ -4008,1523 +4007,1520 @@
                 </div>
             `;
 
-            document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-            setTimeout(() => {
-                modal.style.opacity = '1';
-            }, 10);
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
 
-            const closeBtn = modal.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => {
-                modal.style.opacity = '0';
-                setTimeout(() => modal.remove(), 300);
-            });
+    const closeBtn = modal.querySelector('.close-btn');
+    closeBtn.addEventListener('click', () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    });
 
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.opacity = '0';
-                    setTimeout(() => modal.remove(), 300);
-                }
-            });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.opacity = '0';
+            setTimeout(() => modal.remove(), 300);
+        }
+    });
+}
+
+async function deleteProduct(productId, { productName } = {}) {
+
+    if (!productId) return;
+
+    const confirmationMessage = productName
+        ? `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`
+        : 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.';
+
+    if (!confirm(confirmationMessage)) {
+        return;
+    }
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
+            method: 'DELETE'
+        }));
+
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        async function deleteProduct(productId, { productName } = {}) {
+        await fetchProducts();
+        showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
+    } catch (error) {
+        showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
+    }
+}
 
-            if (!productId) return;
+async function createCategory(payload, extras = {}, imageFile = null) {
 
-            const confirmationMessage = productName
-                ? `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`
-                : 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.';
-
-            if (!confirm(confirmationMessage)) {
-                return;
-            }
-
-            try {
-                const response = handleUnauthorized(await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
-                    method: 'DELETE'
-                }));
+    try {
+        const { body, headers } = buildCategoryRequestOptions(payload, {
+            description: extras.description
+        }, imageFile);
 
 
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
+        const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT, {
+            method: 'POST',
+            headers: headers || undefined,
+            body
+        }));
 
-                await fetchProducts();
-                showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
-            } catch (error) {
-                showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
-            }
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        async function createCategory(payload, extras = {}, imageFile = null) {
-            
-            try {
-                const { body, headers } = buildCategoryRequestOptions(payload, {
-                    description: extras.description
-                }, imageFile);
+        const responseData = await response.json();
 
+        const newCategoryId = responseData?.data?._id || responseData?._id;
 
-                const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT, {
-                    method: 'POST',
-                    headers: headers || undefined,
-                    body
-                }));
+        await fetchCategories();
 
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                const responseData = await response.json();
-
-                const newCategoryId = responseData?.data?._id || responseData?._id;
-                
-                await fetchCategories();
-
-                if (newCategoryId) {
-                    const mergedExtras = {
-                        image: extras.image || '',
-                        description: extras.description || ''
-                    };
-                    upsertCategoryExtras(newCategoryId, mergedExtras);
-                }
-
-                renderCategories();
-                showToast('success', 'إضافة الفئة', 'تمت إضافة الفئة بنجاح');
-                closeModal('categoryModal');
-            } catch (error) {
-                showToast('error', 'إضافة الفئة', error.message || 'حدث خطأ غير متوقع');
-            }
-        }
-
-        async function updateCategory(categoryId, payload, extras = {}, imageFile = null) {
-            
-            if (!categoryId) return;
-            
-            try {
-                const cleanPayload = {};
-                Object.keys(payload || {}).forEach(key => {
-                    const value = payload[key];
-                    if (value !== undefined && value !== null && value !== '') {
-                        cleanPayload[key] = value;
-                    }
-                });
-
-                if (!imageFile) {
-                    const existingImage = cleanPayload.image
-                        ?? extras.image
-                        ?? state.categoryExtras[categoryId]?.image
-                        ?? state.categories.find(category => category.id === categoryId)?.image
-                        ?? '';
-
-                    if (existingImage) {
-                        cleanPayload.image = existingImage;
-                    } else {
-                        delete cleanPayload.image;
-                    }
-                }
-
-
-                const { body, headers } = buildCategoryRequestOptions(cleanPayload, {
-                    description: extras.description
-                }, imageFile);
-
-
-                const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
-                    method: 'PATCH',
-                    headers: headers || undefined,
-                    body
-                }));
-
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                const responseData = await response.json();
-
-                const document = responseData?.data?.category
-                    ?? responseData?.data
-                    ?? responseData;
-
-                if (document && typeof document === 'object') {
-                    const normalized = normalizeCategory(document, 0);
-                    if (normalized) {
-                        const merged = {
-                            ...normalized,
-                            ...cleanPayload,
-                            description: extras.description ?? cleanPayload.description ?? normalized.description ?? '',
-                            image: extras.image || cleanPayload.image || normalized.image || ''
-                        };
-
-
-                        const categoryIndex = state.categories.findIndex(category => category.id === categoryId);
-                        if (categoryIndex !== -1) {
-                            state.categories[categoryIndex] = merged;
-                        } else {
-                            state.categories.push(merged);
-                        }
-                    }
-                }
-
-                await fetchCategories();
-                
-                const updatedCategory = state.categories.find(category => category.id === categoryId);
-                const mergedExtras = {
-                    image: updatedCategory?.image || extras.image || '',
-                    description: extras.description || updatedCategory?.description || ''
-                };
-                upsertCategoryExtras(categoryId, mergedExtras);
-                
-                renderCategories();
-                showToast('success', 'تحديث الفئة', 'تم تحديث الفئة بنجاح');
-                closeModal('categoryModal');
-            } catch (error) {
-                showToast('error', 'تحديث الفئة', error.message || 'حدث خطأ غير متوقع');
-            }
-        }
-
-        async function deleteCategory(categoryId) {
-
-            if (!categoryId) return;
-
-            try {
-                const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
-                    method: 'DELETE'
-                }));
-
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-
-                await fetchCategories();
-                showToast('success', 'حذف الفئة', 'تم حذف الفئة بنجاح');
-            } catch (error) {
-                showToast('error', 'حذف الفئة', error.message || 'حدث خطأ غير متوقع');
-            }
-        }
-
-        function buildSubcategoryRequestOptions(payload = {}, imageFile = null) {
-            const dataPayload = { ...payload };
-
-            if (dataPayload.categoryId && !dataPayload.category) {
-                dataPayload.category = dataPayload.categoryId;
-            }
-
-            if (imageFile instanceof File) {
-                delete dataPayload.image;
-                const formData = new FormData();
-                Object.entries(dataPayload).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        formData.append(key, value);
-                    }
-                });
-                formData.append('image', imageFile);
-
-                for (let [key, value] of formData.entries()) {
-                }
-
-                return { body: formData, headers: null };
-            }
-
-            return {
-                body: JSON.stringify(dataPayload),
-                headers: { 'Content-Type': 'application/json' }
+        if (newCategoryId) {
+            const mergedExtras = {
+                image: extras.image || '',
+                description: extras.description || ''
             };
+            upsertCategoryExtras(newCategoryId, mergedExtras);
         }
 
-        function buildSubcategoryFormData(formData, formElement = null) {
-            if (!(formData instanceof FormData)) {
-                return {
-                    categoryId: '',
-                    originalCategoryId: '',
-                    subcategoryId: '',
-                    payload: {},
-                    imageFile: null
-                };
+        renderCategories();
+        showToast('success', 'إضافة الفئة', 'تمت إضافة الفئة بنجاح');
+        closeModal('categoryModal');
+    } catch (error) {
+        showToast('error', 'إضافة الفئة', error.message || 'حدث خطأ غير متوقع');
+    }
+}
+
+async function updateCategory(categoryId, payload, extras = {}, imageFile = null) {
+
+    if (!categoryId) return;
+
+    try {
+        const cleanPayload = {};
+        Object.keys(payload || {}).forEach(key => {
+            const value = payload[key];
+            if (value !== undefined && value !== null && value !== '') {
+                cleanPayload[key] = value;
             }
+        });
 
-            const form = formElement || document.getElementById('subcategoryForm');
-            const categoryId = getFormValue(formData, 'categoryId');
-            const originalCategoryId = getFormValue(formData, 'originalCategoryId');
-            const subcategoryId = getFormValue(formData, 'id');
-            const name = getFormValue(formData, 'name');
-            const slug = getFormValue(formData, 'slug') || slugify(name);
-            const descriptionField = form?.querySelector('[name="description"]');
-            const maxLength = getDescriptionMaxLength(descriptionField);
-            const description = truncateText(getFormValue(formData, 'description'), maxLength);
-            if (descriptionField && descriptionField.value !== description) {
-                descriptionField.value = description;
-                updateDescriptionCounter(descriptionField);
-            }
-            const status = getFormValue(formData, 'status', 'active');
+        if (!imageFile) {
+            const existingImage = cleanPayload.image
+                ?? extras.image
+                ?? state.categoryExtras[categoryId]?.image
+                ?? state.categories.find(category => category.id === categoryId)?.image
+                ?? '';
 
-            const payload = {
-                name,
-                slug,
-                description,
-                status
-            };
-
-            Object.keys(payload).forEach(key => {
-                if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
-                    delete payload[key];
-                }
-            });
-
-            const imageFile = formData.get('image');
-
-            return {
-                categoryId,
-                originalCategoryId,
-                subcategoryId,
-                payload,
-                imageFile: imageFile instanceof File && imageFile.name ? imageFile : null
-            };
-        }
-
-        async function fetchSubcategories(categoryId, options = {}) {
-            const { force = false, skipRender = false } = options || {};
-
-            if (!categoryId || categoryId === 'all') {
-                return [];
-            }
-
-            if (!force && state.subcategoriesLoading[categoryId]) {
-                return getSubcategories(categoryId);
-            }
-
-            setSubcategoryLoading(categoryId, true);
-            setSubcategoryError(categoryId, null);
-
-            try {
-                const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId)));
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        state.subcategories[categoryId] = [];
-                        setSubcategoryError(categoryId, null);
-                        return [];
-                    }
-
-                    const errorBody = await response.json().catch(() => ({}));
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                const payload = await response.json();
-
-                const documents = Array.isArray(payload?.data?.documents)
-                    ? payload.data.documents
-                    : Array.isArray(payload?.data?.subcategories)
-                        ? payload.data.subcategories
-                        : Array.isArray(payload?.data)
-                            ? payload.data
-                            : Array.isArray(payload)
-                                ? payload
-                                : [];
-
-                const normalized = documents
-                    .map((doc, index) => normalizeSubcategory(doc, index, categoryId))
-                    .filter(Boolean)
-                    .map(subcategory => {
-                        const extras = getSubcategoryExtras(categoryId, subcategory.id);
-                        return {
-                            ...subcategory,
-                            image: subcategory.image || extras.image,
-                            description: subcategory.description || extras.description
-                        };
-                    });
-
-                state.subcategories[categoryId] = normalized;
-                return normalized;
-            } catch (error) {
-                console.error('❌ Failed to fetch subcategories:', error);
-                const message = error?.message || 'تعذر تحميل الفئات الفرعية. يرجى المحاولة مرة أخرى.';
-                setSubcategoryError(categoryId, message);
-                return [];
-            } finally {
-                setSubcategoryLoading(categoryId, false);
-                if (!skipRender) {
-                    renderSubcategories();
-                }
+            if (existingImage) {
+                cleanPayload.image = existingImage;
+            } else {
+                delete cleanPayload.image;
             }
         }
 
-        async function createSubcategory(categoryId, payload = {}, imageFile = null) {
-            if (!categoryId) {
-                throw new Error('رقم الفئة الرئيسية مفقود.');
-            }
+
+        const { body, headers } = buildCategoryRequestOptions(cleanPayload, {
+            description: extras.description
+        }, imageFile);
 
 
-            try {
-                const { body, headers } = buildSubcategoryRequestOptions(payload, imageFile);
-
-                const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId), {
-                    method: 'POST',
-                    headers: headers || undefined,
-                    body
-                }));
+        const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
+            method: 'PATCH',
+            headers: headers || undefined,
+            body
+        }));
 
 
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Create subcategory error:', errorBody);
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                const responseData = await response.json();
-
-                const document = responseData?.data?.subcategory
-                    ?? responseData?.data
-                    ?? responseData;
-
-                const normalized = normalizeSubcategory(document, 0, categoryId);
-                if (normalized) {
-                    const merged = {
-                        ...normalized,
-                        image: normalized.image || payload.image || '',
-                        description: normalized.description || payload.description || ''
-                    };
-                    upsertSubcategory(categoryId, merged);
-                    upsertSubcategoryExtras(categoryId, merged.id, {
-                        image: merged.image,
-                        description: merged.description
-                    });
-                }
-
-                await fetchSubcategories(categoryId, { force: true });
-                showToast('success', 'إضافة الفئة الفرعية', 'تمت إضافة الفئة الفرعية بنجاح');
-                return normalized;
-            } catch (error) {
-                console.error('❌ Failed to create subcategory:', error);
-                showToast('error', 'إضافة الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
-                throw error;
-            }
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        async function updateSubcategory(categoryId, subcategoryId, payload = {}, imageFile = null, options = {}) {
-            if (!categoryId || !subcategoryId) {
-                throw new Error('بيانات الفئة الفرعية غير مكتملة.');
-            }
+        const responseData = await response.json();
 
-            const previousCategoryId = options.previousCategoryId;
-            const targetCategoryId = options.targetCategoryId || payload.categoryId || categoryId;
+        const document = responseData?.data?.category
+            ?? responseData?.data
+            ?? responseData;
 
-
-            try {
-                const cleanPayload = {};
-                Object.keys(payload || {}).forEach(key => {
-                    const value = payload[key];
-                    if (value !== undefined && value !== null && value !== '') {
-                        cleanPayload[key] = value;
-                    }
-                });
-
-                if (!imageFile && 'image' in cleanPayload) {
-                    delete cleanPayload.image;
-                }
-
-
-                const { body, headers } = buildSubcategoryRequestOptions(cleanPayload, imageFile);
-
-                const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
-                    method: 'PATCH',
-                    headers: headers || undefined,
-                    body
-                }));
-
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Update subcategory error:', errorBody);
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                const responseData = await response.json();
-
-                const document = responseData?.data?.subcategory
-                    ?? responseData?.data
-                    ?? responseData;
-
-                const normalizedCategoryId = document?.categoryId || targetCategoryId;
-
-                const normalized = normalizeSubcategory(document, 0, normalizedCategoryId) || {
-                    id: subcategoryId,
-                    ...cleanPayload,
-                    categoryId: normalizedCategoryId
-                };
-
+        if (document && typeof document === 'object') {
+            const normalized = normalizeCategory(document, 0);
+            if (normalized) {
                 const merged = {
                     ...normalized,
                     ...cleanPayload,
-                    categoryId: targetCategoryId,
-                    description: cleanPayload.description ?? normalized.description ?? '',
-                    image: normalized.image || cleanPayload.image || payload?.image || '',
-                    status: cleanPayload.status ?? normalized.status
+                    description: extras.description ?? cleanPayload.description ?? normalized.description ?? '',
+                    image: extras.image || cleanPayload.image || normalized.image || ''
                 };
 
 
-                upsertSubcategory(targetCategoryId, merged);
-                upsertSubcategoryExtras(targetCategoryId, merged.id, {
-                    image: merged.image,
-                    description: merged.description
-                });
-
-                if (previousCategoryId && previousCategoryId !== targetCategoryId) {
-                    removeSubcategory(previousCategoryId, subcategoryId);
-                    await fetchSubcategories(previousCategoryId, { force: true, skipRender: true });
+                const categoryIndex = state.categories.findIndex(category => category.id === categoryId);
+                if (categoryIndex !== -1) {
+                    state.categories[categoryIndex] = merged;
+                } else {
+                    state.categories.push(merged);
                 }
-
-                await fetchSubcategories(targetCategoryId, { force: true });
-                showToast('success', 'تحديث الفئة الفرعية', 'تم تحديث الفئة الفرعية بنجاح');
-                return merged;
-            } catch (error) {
-                console.error('❌ Failed to update subcategory:', error);
-                showToast('error', 'تحديث الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
-                throw error;
             }
         }
 
-        async function deleteSubcategory(categoryId, subcategoryId) {
-            if (!categoryId || !subcategoryId) {
-                throw new Error('بيانات الفئة الفرعية غير مكتملة.');
-            }
+        await fetchCategories();
+
+        const updatedCategory = state.categories.find(category => category.id === categoryId);
+        const mergedExtras = {
+            image: updatedCategory?.image || extras.image || '',
+            description: extras.description || updatedCategory?.description || ''
+        };
+        upsertCategoryExtras(categoryId, mergedExtras);
+
+        renderCategories();
+        showToast('success', 'تحديث الفئة', 'تم تحديث الفئة بنجاح');
+        closeModal('categoryModal');
+    } catch (error) {
+        showToast('error', 'تحديث الفئة', error.message || 'حدث خطأ غير متوقع');
+    }
+}
+
+async function deleteCategory(categoryId) {
+
+    if (!categoryId) return;
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
+            method: 'DELETE'
+        }));
 
 
-            try {
-                const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
-                    method: 'DELETE'
-                }));
-
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => ({}));
-                    console.error('❌ Delete subcategory error:', errorBody);
-                    const message = errorBody?.message || `HTTP ${response.status}`;
-                    throw new Error(message);
-                }
-
-                removeSubcategory(categoryId, subcategoryId);
-                renderSubcategories();
-                showToast('success', 'حذف الفئة الفرعية', 'تم حذف الفئة الفرعية بنجاح');
-                return true;
-            } catch (error) {
-                console.error('❌ Failed to delete subcategory:', error);
-                showToast('error', 'حذف الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
-                throw error;
-            }
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        function buildCategoryRequestOptions(payload, meta = {}, file = null, options = {}) {
-            const dataPayload = { ...payload };
 
-            if (meta.description) {
-                dataPayload.description = meta.description;
+        await fetchCategories();
+        showToast('success', 'حذف الفئة', 'تم حذف الفئة بنجاح');
+    } catch (error) {
+        showToast('error', 'حذف الفئة', error.message || 'حدث خطأ غير متوقع');
+    }
+}
+
+function buildSubcategoryRequestOptions(payload = {}, imageFile = null) {
+    const dataPayload = { ...payload };
+
+    if (dataPayload.categoryId && !dataPayload.category) {
+        dataPayload.category = dataPayload.categoryId;
+    }
+
+    if (imageFile instanceof File) {
+        delete dataPayload.image;
+        const formData = new FormData();
+        Object.entries(dataPayload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                formData.append(key, value);
+            }
+        });
+        formData.append('image', imageFile);
+
+        for (let [key, value] of formData.entries()) {
+        }
+
+        return { body: formData, headers: null };
+    }
+
+    return {
+        body: JSON.stringify(dataPayload),
+        headers: { 'Content-Type': 'application/json' }
+    };
+}
+
+function buildSubcategoryFormData(formData, formElement = null) {
+    if (!(formData instanceof FormData)) {
+        return {
+            categoryId: '',
+            originalCategoryId: '',
+            subcategoryId: '',
+            payload: {},
+            imageFile: null
+        };
+    }
+
+    const form = formElement || document.getElementById('subcategoryForm');
+    const categoryId = getFormValue(formData, 'categoryId');
+    const originalCategoryId = getFormValue(formData, 'originalCategoryId');
+    const subcategoryId = getFormValue(formData, 'id');
+    const name = getFormValue(formData, 'name');
+    const slug = getFormValue(formData, 'slug') || slugify(name);
+    const descriptionField = form?.querySelector('[name="description"]');
+    const maxLength = getDescriptionMaxLength(descriptionField);
+    const description = truncateText(getFormValue(formData, 'description'), maxLength);
+    if (descriptionField && descriptionField.value !== description) {
+        descriptionField.value = description;
+        updateDescriptionCounter(descriptionField);
+    }
+    const status = getFormValue(formData, 'status', 'active');
+
+    const payload = {
+        name,
+        slug,
+        description,
+        status
+    };
+
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+            delete payload[key];
+        }
+    });
+
+    const imageFile = formData.get('image');
+
+    return {
+        categoryId,
+        originalCategoryId,
+        subcategoryId,
+        payload,
+        imageFile: imageFile instanceof File && imageFile.name ? imageFile : null
+    };
+}
+
+async function fetchSubcategories(categoryId, options = {}) {
+    const { force = false, skipRender = false } = options || {};
+
+    if (!categoryId || categoryId === 'all') {
+        return [];
+    }
+
+    if (!force && state.subcategoriesLoading[categoryId]) {
+        return getSubcategories(categoryId);
+    }
+
+    setSubcategoryLoading(categoryId, true);
+    setSubcategoryError(categoryId, null);
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId)));
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                state.subcategories[categoryId] = [];
+                setSubcategoryError(categoryId, null);
+                return [];
             }
 
-            const forceFormData = options.forceFormData === true;
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
 
-            if (file instanceof File || forceFormData) {
-                const formData = new FormData();
+        const payload = await response.json();
 
-                // لا نرسل قيمة الصورة كسلسلة إذا لم يكن هناك ملف حقيقي
-                if (file instanceof File) {
-                    delete dataPayload.image;
-                }
+        const documents = Array.isArray(payload?.data?.documents)
+            ? payload.data.documents
+            : Array.isArray(payload?.data?.subcategories)
+                ? payload.data.subcategories
+                : Array.isArray(payload?.data)
+                    ? payload.data
+                    : Array.isArray(payload)
+                        ? payload
+                        : [];
 
-                Object.entries(dataPayload).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && value !== '') {
-                        formData.append(key, value);
-                    }
-                });
+        const normalized = documents
+            .map((doc, index) => normalizeSubcategory(doc, index, categoryId))
+            .filter(Boolean)
+            .map(subcategory => {
+                const extras = getSubcategoryExtras(categoryId, subcategory.id);
+                return {
+                    ...subcategory,
+                    image: subcategory.image || extras.image,
+                    description: subcategory.description || extras.description
+                };
+            });
 
-                if (file instanceof File) {
-                    formData.append('image', file);
-                }
+        state.subcategories[categoryId] = normalized;
+        return normalized;
+    } catch (error) {
+        console.error('❌ Failed to fetch subcategories:', error);
+        const message = error?.message || 'تعذر تحميل الفئات الفرعية. يرجى المحاولة مرة أخرى.';
+        setSubcategoryError(categoryId, message);
+        return [];
+    } finally {
+        setSubcategoryLoading(categoryId, false);
+        if (!skipRender) {
+            renderSubcategories();
+        }
+    }
+}
 
-                for (let [key, value] of formData.entries()) {
-                }
+async function createSubcategory(categoryId, payload = {}, imageFile = null) {
+    if (!categoryId) {
+        throw new Error('رقم الفئة الرئيسية مفقود.');
+    }
 
-                return { body: formData, headers: null };
-            }
+
+    try {
+        const { body, headers } = buildSubcategoryRequestOptions(payload, imageFile);
+
+        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId), {
+            method: 'POST',
+            headers: headers || undefined,
+            body
+        }));
 
 
-            return {
-                body: JSON.stringify(dataPayload),
-                headers: { 'Content-Type': 'application/json' }
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            console.error('❌ Create subcategory error:', errorBody);
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
+
+        const responseData = await response.json();
+
+        const document = responseData?.data?.subcategory
+            ?? responseData?.data
+            ?? responseData;
+
+        const normalized = normalizeSubcategory(document, 0, categoryId);
+        if (normalized) {
+            const merged = {
+                ...normalized,
+                image: normalized.image || payload.image || '',
+                description: normalized.description || payload.description || ''
             };
-        }
-
-        // ===== Image Handling =====
-        function readFileAsDataUrl(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف'));
-                reader.readAsDataURL(file);
+            upsertSubcategory(categoryId, merged);
+            upsertSubcategoryExtras(categoryId, merged.id, {
+                image: merged.image,
+                description: merged.description
             });
         }
 
-        function updateCategoryImagePreview(image) {
-            const preview = document.getElementById('categoryImagePreview');
-            if (!preview) return;
+        await fetchSubcategories(categoryId, { force: true });
+        showToast('success', 'إضافة الفئة الفرعية', 'تمت إضافة الفئة الفرعية بنجاح');
+        return normalized;
+    } catch (error) {
+        console.error('❌ Failed to create subcategory:', error);
+        showToast('error', 'إضافة الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        throw error;
+    }
+}
 
-            if (image) {
-                preview.innerHTML = `<img src="${image}" alt="صورة الفئة">`;
-                preview.classList.add('has-image');
-            } else {
-                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                preview.classList.remove('has-image');
+async function updateSubcategory(categoryId, subcategoryId, payload = {}, imageFile = null, options = {}) {
+    if (!categoryId || !subcategoryId) {
+        throw new Error('بيانات الفئة الفرعية غير مكتملة.');
+    }
+
+    const previousCategoryId = options.previousCategoryId;
+    const targetCategoryId = options.targetCategoryId || payload.categoryId || categoryId;
+
+
+    try {
+        const cleanPayload = {};
+        Object.keys(payload || {}).forEach(key => {
+            const value = payload[key];
+            if (value !== undefined && value !== null && value !== '') {
+                cleanPayload[key] = value;
             }
+        });
+
+        if (!imageFile && 'image' in cleanPayload) {
+            delete cleanPayload.image;
         }
 
-        function updateSubcategoryImagePreview(image) {
-            const preview = document.getElementById('subcategoryImagePreview');
-            if (!preview) return;
 
-            if (image) {
-                preview.innerHTML = `<img src="${image}" alt="صورة الفئة الفرعية">`;
-                preview.classList.add('has-image');
-            } else {
-                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                preview.classList.remove('has-image');
-            }
+        const { body, headers } = buildSubcategoryRequestOptions(cleanPayload, imageFile);
+
+        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
+            method: 'PATCH',
+            headers: headers || undefined,
+            body
+        }));
+
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            console.error('❌ Update subcategory error:', errorBody);
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        function updateBrandImagePreview(image) {
-            const preview = document.getElementById('brandImagePreview');
-            if (!preview) return;
+        const responseData = await response.json();
 
-            if (!image) {
-                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                return;
-            }
+        const document = responseData?.data?.subcategory
+            ?? responseData?.data
+            ?? responseData;
 
-            preview.innerHTML = `<img src="${image}" alt="Brand Preview">`;
+        const normalizedCategoryId = document?.categoryId || targetCategoryId;
+
+        const normalized = normalizeSubcategory(document, 0, normalizedCategoryId) || {
+            id: subcategoryId,
+            ...cleanPayload,
+            categoryId: normalizedCategoryId
+        };
+
+        const merged = {
+            ...normalized,
+            ...cleanPayload,
+            categoryId: targetCategoryId,
+            description: cleanPayload.description ?? normalized.description ?? '',
+            image: normalized.image || cleanPayload.image || payload?.image || '',
+            status: cleanPayload.status ?? normalized.status
+        };
+
+
+        upsertSubcategory(targetCategoryId, merged);
+        upsertSubcategoryExtras(targetCategoryId, merged.id, {
+            image: merged.image,
+            description: merged.description
+        });
+
+        if (previousCategoryId && previousCategoryId !== targetCategoryId) {
+            removeSubcategory(previousCategoryId, subcategoryId);
+            await fetchSubcategories(previousCategoryId, { force: true, skipRender: true });
         }
 
-        function updateProductImagePreview(image) {
-            const preview = document.getElementById('productImagePreview');
-            if (!preview) return;
+        await fetchSubcategories(targetCategoryId, { force: true });
+        showToast('success', 'تحديث الفئة الفرعية', 'تم تحديث الفئة الفرعية بنجاح');
+        return merged;
+    } catch (error) {
+        console.error('❌ Failed to update subcategory:', error);
+        showToast('error', 'تحديث الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        throw error;
+    }
+}
 
-            if (image) {
-                preview.innerHTML = `<img src="${image}" alt="صورة المنتج">`;
-                preview.classList.add('has-image');
-            } else {
-                preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                preview.classList.remove('has-image');
-            }
+async function deleteSubcategory(categoryId, subcategoryId) {
+    if (!categoryId || !subcategoryId) {
+        throw new Error('بيانات الفئة الفرعية غير مكتملة.');
+    }
+
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
+            method: 'DELETE'
+        }));
+
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            console.error('❌ Delete subcategory error:', errorBody);
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        async function handleCategoryImageChange(event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+        removeSubcategory(categoryId, subcategoryId);
+        renderSubcategories();
+        showToast('success', 'حذف الفئة الفرعية', 'تم حذف الفئة الفرعية بنجاح');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to delete subcategory:', error);
+        showToast('error', 'حذف الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        throw error;
+    }
+}
 
-            const file = input.files?.[0];
-            if (!file) {
-                input.dataset.previewImage = '';
-                updateCategoryImagePreview(input.dataset.originalImage || '');
-                return;
-            }
+function buildCategoryRequestOptions(payload, meta = {}, file = null, options = {}) {
+    const dataPayload = { ...payload };
 
+    if (meta.description) {
+        dataPayload.description = meta.description;
+    }
 
-            try {
-                const dataUrl = await readFileAsDataUrl(file);
-                input.dataset.previewImage = dataUrl;
-                updateCategoryImagePreview(dataUrl);
-            } catch (error) {
-                console.error('❌ Failed to preview category image:', error);
-                showToast('error', 'صورة الفئة', 'تعذر معاينة ملف الصورة المحدد');
-            }
+    const forceFormData = options.forceFormData === true;
+
+    if (file instanceof File || forceFormData) {
+        const formData = new FormData();
+
+        // لا نرسل قيمة الصورة كسلسلة إذا لم يكن هناك ملف حقيقي
+        if (file instanceof File) {
+            delete dataPayload.image;
         }
 
-        async function handleSubcategoryImageChange(event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
-
-            const file = input.files?.[0];
-            if (!file) {
-                input.dataset.previewImage = '';
-                updateSubcategoryImagePreview(input.dataset.originalImage || '');
-                return;
+        Object.entries(dataPayload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                formData.append(key, value);
             }
+        });
 
-
-            try {
-                const dataUrl = await readFileAsDataUrl(file);
-                input.dataset.previewImage = dataUrl;
-                updateSubcategoryImagePreview(dataUrl);
-            } catch (error) {
-                console.error('❌ Failed to preview subcategory image:', error);
-                showToast('error', 'صورة الفئة الفرعية', 'تعذر معاينة ملف الصورة المحدد');
-            }
+        if (file instanceof File) {
+            formData.append('image', file);
         }
 
-        async function handleBrandImageChange(event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
-
-            const file = input.files?.[0];
-            if (!file) {
-                updateBrandImagePreview('');
-                return;
-            }
-
-
-            try {
-                const dataUrl = await readFileAsDataUrl(file);
-                updateBrandImagePreview(dataUrl);
-            } catch (error) {
-                console.error('❌ Failed to preview brand image:', error);
-                showToast('error', 'صورة العلامة التجارية', 'تعذر معاينة ملف الصورة المحدد');
-            }
+        for (let [key, value] of formData.entries()) {
         }
 
-        async function handleProductImageChange(event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
-
-            const file = input.files?.[0] || null;
-
-            if (!file) {
-                input.dataset.previewImage = '';
-                updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
-                return;
-            }
+        return { body: formData, headers: null };
+    }
 
 
-            try {
-                const dataUrl = await readFileAsDataUrl(file);
-                input.dataset.previewImage = dataUrl;
-                updateProductImagePreview(dataUrl);
-            } catch (error) {
-                console.error('❌ Failed to preview product image:', error);
-                showToast('error', 'صورة المنتج', 'تعذر معاينة ملف الصورة المحدد');
-                input.value = '';
-                updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
-            }
+    return {
+        body: JSON.stringify(dataPayload),
+        headers: { 'Content-Type': 'application/json' }
+    };
+}
+
+// ===== Image Handling =====
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function updateCategoryImagePreview(image) {
+    const preview = document.getElementById('categoryImagePreview');
+    if (!preview) return;
+
+    if (image) {
+        preview.innerHTML = `<img src="${image}" alt="صورة الفئة">`;
+        preview.classList.add('has-image');
+    } else {
+        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove('has-image');
+    }
+}
+
+function updateSubcategoryImagePreview(image) {
+    const preview = document.getElementById('subcategoryImagePreview');
+    if (!preview) return;
+
+    if (image) {
+        preview.innerHTML = `<img src="${image}" alt="صورة الفئة الفرعية">`;
+        preview.classList.add('has-image');
+    } else {
+        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove('has-image');
+    }
+}
+
+function updateBrandImagePreview(image) {
+    const preview = document.getElementById('brandImagePreview');
+    if (!preview) return;
+
+    if (!image) {
+        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        return;
+    }
+
+    preview.innerHTML = `<img src="${image}" alt="Brand Preview">`;
+}
+
+function updateProductImagePreview(image) {
+    const preview = document.getElementById('productImagePreview');
+    if (!preview) return;
+
+    if (image) {
+        preview.innerHTML = `<img src="${image}" alt="صورة المنتج">`;
+        preview.classList.add('has-image');
+    } else {
+        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove('has-image');
+    }
+}
+
+async function handleCategoryImageChange(event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+    const file = input.files?.[0];
+    if (!file) {
+        input.dataset.previewImage = '';
+        updateCategoryImagePreview(input.dataset.originalImage || '');
+        return;
+    }
+
+
+    try {
+        const dataUrl = await readFileAsDataUrl(file);
+        input.dataset.previewImage = dataUrl;
+        updateCategoryImagePreview(dataUrl);
+    } catch (error) {
+        console.error('❌ Failed to preview category image:', error);
+        showToast('error', 'صورة الفئة', 'تعذر معاينة ملف الصورة المحدد');
+    }
+}
+
+async function handleSubcategoryImageChange(event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+    const file = input.files?.[0];
+    if (!file) {
+        input.dataset.previewImage = '';
+        updateSubcategoryImagePreview(input.dataset.originalImage || '');
+        return;
+    }
+
+
+    try {
+        const dataUrl = await readFileAsDataUrl(file);
+        input.dataset.previewImage = dataUrl;
+        updateSubcategoryImagePreview(dataUrl);
+    } catch (error) {
+        console.error('❌ Failed to preview subcategory image:', error);
+        showToast('error', 'صورة الفئة الفرعية', 'تعذر معاينة ملف الصورة المحدد');
+    }
+}
+
+async function handleBrandImageChange(event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+    const file = input.files?.[0];
+    if (!file) {
+        updateBrandImagePreview('');
+        return;
+    }
+
+
+    try {
+        const dataUrl = await readFileAsDataUrl(file);
+        updateBrandImagePreview(dataUrl);
+    } catch (error) {
+        console.error('❌ Failed to preview brand image:', error);
+        showToast('error', 'صورة العلامة التجارية', 'تعذر معاينة ملف الصورة المحدد');
+    }
+}
+
+async function handleProductImageChange(event) {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+    const file = input.files?.[0] || null;
+
+    if (!file) {
+        input.dataset.previewImage = '';
+        updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
+        return;
+    }
+
+
+    try {
+        const dataUrl = await readFileAsDataUrl(file);
+        input.dataset.previewImage = dataUrl;
+        updateProductImagePreview(dataUrl);
+    } catch (error) {
+        console.error('❌ Failed to preview product image:', error);
+        showToast('error', 'صورة المنتج', 'تعذر معاينة ملف الصورة المحدد');
+        input.value = '';
+        updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
+    }
+}
+
+// ===== Form Handlers =====
+async function handleCategoryFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form || form.dataset.entity !== 'category') return;
+
+
+    const formData = new FormData(form);
+    const mode = form.dataset.mode || 'create';
+    const id = formData.get('id');
+
+    const name = getFormValue(formData, 'name');
+    const slug = getFormValue(formData, 'slug') || slugify(name);
+    const description = getFormValue(formData, 'description');
+    const imageInput = form.querySelector('#categoryImage');
+    const imageFile = imageInput?.files?.[0];
+
+
+
+    const existingCategory = id ? getCategoryById(id) : null;
+    const existingExtras = existingCategory ? state.categoryExtras[existingCategory.id] : null;
+    const existingImage = existingExtras?.image || existingCategory?.image || '';
+
+    const originalValues = (() => {
+        try {
+            return JSON.parse(form.dataset.originalCategory || '{}');
+        } catch (error) {
+            console.warn('⚠️ Failed to parse original category dataset', error);
+            return {};
         }
+    })();
 
-        // ===== Form Handlers =====
-        async function handleCategoryFormSubmit(event) {
-            event.preventDefault();
-            const form = event.target;
-            if (!form || form.dataset.entity !== 'category') return;
+    let image = imageInput?.dataset.previewImage || existingImage;
 
-
-            const formData = new FormData(form);
-            const mode = form.dataset.mode || 'create';
-            const id = formData.get('id');
-
-            const name = getFormValue(formData, 'name');
-            const slug = getFormValue(formData, 'slug') || slugify(name);
-            const description = getFormValue(formData, 'description');
-            const imageInput = form.querySelector('#categoryImage');
-            const imageFile = imageInput?.files?.[0];
-
-            console.log('📋 Form data:', { mode, id, name, slug, hasFile: !!imageFile });
-
-            const existingCategory = id ? getCategoryById(id) : null;
-            const existingExtras = existingCategory ? state.categoryExtras[existingCategory.id] : null;
-            const existingImage = existingExtras?.image || existingCategory?.image || '';
-
-            const originalValues = (() => {
-                try {
-                    return JSON.parse(form.dataset.originalCategory || '{}');
-                } catch (error) {
-                    console.warn('⚠️ Failed to parse original category dataset', error);
-                    return {};
-                }
-            })();
-
-            let image = imageInput?.dataset.previewImage || existingImage;
-
-            if (imageFile) {
-                try {
-                    image = await readFileAsDataUrl(imageFile);
-                    if (imageInput) {
-                        imageInput.dataset.previewImage = image;
-                    }
-                    console.log('✅ Image converted to base64');
-                } catch (error) {
-                    console.error('❌ Failed to read category image:', error);
-                    showToast('error', 'صورة الفئة', 'تعذر قراءة ملف الصورة المحدد');
-                    return;
-                }
-            }
-
-            if (!name) {
-                showToast('error', 'حفظ الفئة', 'يرجى إدخال اسم الفئة');
-                return;
-            }
-
-            if (!image && mode === 'create') {
-                showToast('error', 'حفظ الفئة', 'يرجى اختيار صورة للفئة');
-                return;
-            }
-
-            const normalizedDescription = description || '';
-            const payload = {};
-            const extras = {};
-
-            if (mode === 'edit' && id) {
-                const originalName = originalValues.name ?? '';
-                const originalSlug = originalValues.slug ?? '';
-                const originalDescription = originalValues.description ?? '';
-
-                if (name !== originalName) {
-                    payload.name = name;
-                }
-
-                if (slug && slug !== originalSlug) {
-                    payload.slug = slug;
-                }
-
-                if (normalizedDescription !== originalDescription) {
-                    extras.description = normalizedDescription;
-                }
-
-                if (imageFile) {
-                    extras.image = image || '';
-                }
-
-                const hasPayloadChanges = Object.keys(payload).length > 0;
-                const hasExtrasChanges = Object.keys(extras).length > 0;
-
-                if (!hasPayloadChanges && !hasExtrasChanges) {
-                    showToast('info', 'حفظ الفئة', 'لم يتم تعديل أي بيانات لحفظها.');
-                    return;
-                }
-
-                let effectiveImageFile = imageFile || null;
-                await updateCategory(id, payload, extras, imageFile);
-            } else {
-                payload.name = name;
-                payload.slug = slug;
-                if (image) {
-                    payload.image = image;
-                }
-
-                extras.image = image || '';
-                extras.description = normalizedDescription;
-
-                await createCategory(payload, extras, imageFile);
-            }
-        }
-
-        async function handleBrandFormSubmit(event) {
-            event.preventDefault();
-            const form = event.target;
-            if (!form || form.dataset.entity !== 'brand') return;
-
-            console.log('📝 Submitting brand form...');
-
-            const formData = new FormData(form);
-            const mode = form.dataset.mode || 'create';
-            const id = formData.get('id');
-            const name = getFormValue(formData, 'name');
-            const description = getFormValue(formData, 'description');
-            const imageInput = form.querySelector('#brandImage');
-            const imageFile = imageInput?.files?.[0];
-
-            if (!name) {
-                showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال اسم العلامة التجارية');
-                return;
-            }
-
-            if (!description) {
-                showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال وصف العلامة التجارية');
-                return;
-            }
-
-            if (!imageFile && mode === 'create') {
-                showToast('error', 'حفظ العلامة التجارية', 'يرجى اختيار صورة للعلامة التجارية');
-                return;
-            }
-
-            try {
-                if (mode === 'edit' && id) {
-                    await updateBrand(id, { name, description }, imageFile);
-                    showToast('success', 'تحديث العلامة التجارية', 'تم تحديث العلامة التجارية بنجاح');
-                } else {
-                    await createBrand({ name, description }, imageFile);
-                    showToast('success', 'إضافة العلامة التجارية', 'تمت إضافة العلامة التجارية بنجاح');
-                }
-                
-                closeModal('brandModal');
-                form.reset();
-                await fetchBrands();
-                renderBrands();
-            } catch (error) {
-                console.error('❌ Brand form error:', error);
-                showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حفظ العلامة التجارية');
-            }
-        }
-
-        function prepareBrandCreateForm() {
-            const form = document.getElementById('brandForm');
-            if (!form) return;
-
-            form.dataset.mode = 'create';
-            setFieldValue(form, 'id', '');
-            setFieldValue(form, 'name', '');
-            setFieldValue(form, 'description', '');
-
-            const imageInput = form.querySelector('#brandImage');
+    if (imageFile) {
+        try {
+            image = await readFileAsDataUrl(imageFile);
             if (imageInput) {
-                imageInput.required = true;
-                imageInput.value = '';
-                delete imageInput.dataset.originalImage;
+                imageInput.dataset.previewImage = image;
             }
 
-            const imagePreview = document.getElementById('brandImagePreview');
-            if (imagePreview) {
-                imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-            }
+        } catch (error) {
+            console.error('❌ Failed to read category image:', error);
+            showToast('error', 'صورة الفئة', 'تعذر قراءة ملف الصورة المحدد');
+            return;
+        }
+    }
+
+    if (!name) {
+        showToast('error', 'حفظ الفئة', 'يرجى إدخال اسم الفئة');
+        return;
+    }
+
+    if (!image && mode === 'create') {
+        showToast('error', 'حفظ الفئة', 'يرجى اختيار صورة للفئة');
+        return;
+    }
+
+    const normalizedDescription = description || '';
+    const payload = {};
+    const extras = {};
+
+    if (mode === 'edit' && id) {
+        const originalName = originalValues.name ?? '';
+        const originalSlug = originalValues.slug ?? '';
+        const originalDescription = originalValues.description ?? '';
+
+        if (name !== originalName) {
+            payload.name = name;
         }
 
-        function handleEditBrand(brandId) {
-            const brand = state.brands.find(b => (b._id === brandId || b.id === brandId));
-            if (!brand) {
-                showToast('error', 'تعديل العلامة التجارية', 'لم يتم العثور على العلامة التجارية');
-                return;
-            }
+        if (slug && slug !== originalSlug) {
+            payload.slug = slug;
+        }
 
-            openModal('brandModal', 'edit');
+        if (normalizedDescription !== originalDescription) {
+            extras.description = normalizedDescription;
+        }
 
-            const form = document.getElementById('brandForm');
-            if (!form) return;
+        if (imageFile) {
+            extras.image = image || '';
+        }
 
-            form.dataset.mode = 'edit';
-            setFieldValue(form, 'id', brand._id || brand.id || '');
-            setFieldValue(form, 'name', brand.name || '');
-            setFieldValue(form, 'description', truncateText(brand.description || '', getDescriptionMaxLength(form.querySelector('[name="description"]'))));
-            const brandDescriptionField = form.querySelector('[name="description"]');
-            if (brandDescriptionField) {
-                updateDescriptionCounter(brandDescriptionField);
-            }
+        const hasPayloadChanges = Object.keys(payload).length > 0;
+        const hasExtrasChanges = Object.keys(extras).length > 0;
 
-            const imageInput = form.querySelector('#brandImage');
+        if (!hasPayloadChanges && !hasExtrasChanges) {
+            showToast('info', 'حفظ الفئة', 'لم يتم تعديل أي بيانات لحفظها.');
+            return;
+        }
+
+        let effectiveImageFile = imageFile || null;
+        await updateCategory(id, payload, extras, imageFile);
+    } else {
+        payload.name = name;
+        payload.slug = slug;
+        if (image) {
+            payload.image = image;
+        }
+
+        extras.image = image || '';
+        extras.description = normalizedDescription;
+
+        await createCategory(payload, extras, imageFile);
+    }
+}
+
+async function handleBrandFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form || form.dataset.entity !== 'brand') return;
+
+
+
+    const formData = new FormData(form);
+    const mode = form.dataset.mode || 'create';
+    const id = formData.get('id');
+    const name = getFormValue(formData, 'name');
+    const description = getFormValue(formData, 'description');
+    const imageInput = form.querySelector('#brandImage');
+    const imageFile = imageInput?.files?.[0];
+
+    if (!name) {
+        showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال اسم العلامة التجارية');
+        return;
+    }
+
+    if (!description) {
+        showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال وصف العلامة التجارية');
+        return;
+    }
+
+    if (!imageFile && mode === 'create') {
+        showToast('error', 'حفظ العلامة التجارية', 'يرجى اختيار صورة للعلامة التجارية');
+        return;
+    }
+
+    try {
+        if (mode === 'edit' && id) {
+            await updateBrand(id, { name, description }, imageFile);
+            showToast('success', 'تحديث العلامة التجارية', 'تم تحديث العلامة التجارية بنجاح');
+        } else {
+            await createBrand({ name, description }, imageFile);
+            showToast('success', 'إضافة العلامة التجارية', 'تمت إضافة العلامة التجارية بنجاح');
+        }
+
+        closeModal('brandModal');
+        form.reset();
+        await fetchBrands();
+        renderBrands();
+    } catch (error) {
+        console.error('❌ Brand form error:', error);
+        showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حفظ العلامة التجارية');
+    }
+}
+
+function prepareBrandCreateForm() {
+    const form = document.getElementById('brandForm');
+    if (!form) return;
+
+    form.dataset.mode = 'create';
+    setFieldValue(form, 'id', '');
+    setFieldValue(form, 'name', '');
+    setFieldValue(form, 'description', '');
+
+    const imageInput = form.querySelector('#brandImage');
+    if (imageInput) {
+        imageInput.required = true;
+        imageInput.value = '';
+        delete imageInput.dataset.originalImage;
+    }
+
+    const imagePreview = document.getElementById('brandImagePreview');
+    if (imagePreview) {
+        imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+    }
+}
+
+function handleEditBrand(brandId) {
+    const brand = state.brands.find(b => (b._id === brandId || b.id === brandId));
+    if (!brand) {
+        showToast('error', 'تعديل العلامة التجارية', 'لم يتم العثور على العلامة التجارية');
+        return;
+    }
+
+    openModal('brandModal', 'edit');
+
+    const form = document.getElementById('brandForm');
+    if (!form) return;
+
+    form.dataset.mode = 'edit';
+    setFieldValue(form, 'id', brand._id || brand.id || '');
+    setFieldValue(form, 'name', brand.name || '');
+    setFieldValue(form, 'description', truncateText(brand.description || '', getDescriptionMaxLength(form.querySelector('[name="description"]'))));
+    const brandDescriptionField = form.querySelector('[name="description"]');
+    if (brandDescriptionField) {
+        updateDescriptionCounter(brandDescriptionField);
+    }
+
+    const imageInput = form.querySelector('#brandImage');
+    if (imageInput) {
+        imageInput.required = false;
+        imageInput.value = '';
+        const currentImage = brand.image?.secure_url || brand.image?.url || brand.image || '';
+        imageInput.dataset.originalImage = currentImage;
+    }
+
+    const imagePreview = document.getElementById('brandImagePreview');
+    if (imagePreview) {
+        const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || '';
+        if (imageUrl) {
+            imagePreview.innerHTML = `<img src="${imageUrl}" alt="${escapeHtml(brand.name || 'علامة تجارية')}">`;
+        } else {
+            imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        }
+    }
+}
+
+async function handleDeleteBrand(brandId) {
+    if (!confirm('هل أنت متأكد من حذف هذه العلامة التجارية؟')) return;
+
+    try {
+        await deleteBrand(brandId);
+        showToast('success', 'حذف العلامة التجارية', 'تم حذف العلامة التجارية بنجاح');
+        await fetchBrands();
+        renderBrands();
+    } catch (error) {
+        console.error('❌ Delete brand error:', error);
+        showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حذف العلامة التجارية');
+    }
+}
+
+async function handleSubcategoryFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form || form.dataset.entity !== 'subcategory') return;
+
+
+
+    const formData = new FormData(form);
+    const mode = form.dataset.mode || 'create';
+    const {
+        categoryId,
+        originalCategoryId,
+        subcategoryId,
+        payload,
+        imageFile
+    } = buildSubcategoryFormData(formData, form);
+
+    if (!payload.name) {
+        showToast('error', 'حفظ الفئة الفرعية', 'يرجى إدخال اسم الفئة الفرعية');
+        return;
+    }
+
+    if (!categoryId) {
+        showToast('error', 'حفظ الفئة الفرعية', 'يرجى اختيار الفئة الرئيسية');
+        return;
+    }
+
+    const statusField = form.elements['status'];
+    if (statusField && statusField.value) {
+        payload.status = statusField.value;
+    }
+
+    const imageInput = form.querySelector('#subcategoryImage');
+    let previewImage = imageInput?.dataset.previewImage || imageInput?.dataset.originalImage || '';
+
+    if (imageFile && !previewImage) {
+        try {
+            previewImage = await readFileAsDataUrl(imageFile);
             if (imageInput) {
-                imageInput.required = false;
-                imageInput.value = '';
-                const currentImage = brand.image?.secure_url || brand.image?.url || brand.image || '';
-                imageInput.dataset.originalImage = currentImage;
+                imageInput.dataset.previewImage = previewImage;
             }
-
-            const imagePreview = document.getElementById('brandImagePreview');
-            if (imagePreview) {
-                const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || '';
-                if (imageUrl) {
-                    imagePreview.innerHTML = `<img src="${imageUrl}" alt="${escapeHtml(brand.name || 'علامة تجارية')}">`;
-                } else {
-                    imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-                }
-            }
+        } catch (error) {
+            console.error('❌ Failed to read subcategory image:', error);
+            showToast('error', 'صورة الفئة الفرعية', 'تعذر قراءة ملف الصورة المحدد');
+            return;
         }
+    }
 
-        async function handleDeleteBrand(brandId) {
-            if (!confirm('هل أنت متأكد من حذف هذه العلامة التجارية؟')) return;
-
-            try {
-                await deleteBrand(brandId);
-                showToast('success', 'حذف العلامة التجارية', 'تم حذف العلامة التجارية بنجاح');
-                await fetchBrands();
-                renderBrands();
-            } catch (error) {
-                console.error('❌ Delete brand error:', error);
-                showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حذف العلامة التجارية');
-            }
-        }
-
-        async function handleSubcategoryFormSubmit(event) {
-            event.preventDefault();
-            const form = event.target;
-            if (!form || form.dataset.entity !== 'subcategory') return;
-
-            console.log('📝 Submitting subcategory form...');
-
-            const formData = new FormData(form);
-            const mode = form.dataset.mode || 'create';
-            const {
-                categoryId,
-                originalCategoryId,
-                subcategoryId,
-                payload,
-                imageFile
-            } = buildSubcategoryFormData(formData, form);
-
-            if (!payload.name) {
-                showToast('error', 'حفظ الفئة الفرعية', 'يرجى إدخال اسم الفئة الفرعية');
-                return;
-            }
-
-            if (!categoryId) {
-                showToast('error', 'حفظ الفئة الفرعية', 'يرجى اختيار الفئة الرئيسية');
-                return;
-            }
-
-            const statusField = form.elements['status'];
-            if (statusField && statusField.value) {
-                payload.status = statusField.value;
-            }
-
-            const imageInput = form.querySelector('#subcategoryImage');
-            let previewImage = imageInput?.dataset.previewImage || imageInput?.dataset.originalImage || '';
-
-            if (imageFile && !previewImage) {
-                try {
-                    previewImage = await readFileAsDataUrl(imageFile);
-                    if (imageInput) {
-                        imageInput.dataset.previewImage = previewImage;
-                    }
-                } catch (error) {
-                    console.error('❌ Failed to read subcategory image:', error);
-                    showToast('error', 'صورة الفئة الفرعية', 'تعذر قراءة ملف الصورة المحدد');
-                    return;
-                }
-            }
-
-            const originalSnapshot = (() => {
-                if (!form.dataset.originalSubcategory) return null;
-                try {
-                    return JSON.parse(form.dataset.originalSubcategory) || null;
-                } catch (error) {
-                    console.warn('⚠️ Failed to parse original subcategory snapshot', error);
-                    return null;
-                }
-            })();
-
-            try {
-                if (mode === 'edit' && subcategoryId) {
-                    const normalizeValue = (value) => {
-                        if (value === null || value === undefined) return '';
-                        if (typeof value === 'string') return value.trim();
-                        return String(value).trim();
-                    };
-
-                    const diffPayload = {};
-
-                    if (originalSnapshot) {
-                        Object.entries(payload).forEach(([key, value]) => {
-                            const newValueNormalized = normalizeValue(value);
-                            const oldValueNormalized = Object.prototype.hasOwnProperty.call(originalSnapshot, key)
-                                ? normalizeValue(originalSnapshot[key])
-                                : null;
-
-                            if (oldValueNormalized === null) {
-                                if (value !== undefined && value !== null && newValueNormalized !== '') {
-                                    diffPayload[key] = value;
-                                }
-                            } else if (newValueNormalized !== oldValueNormalized) {
-                                diffPayload[key] = value;
-                            }
-                        });
-                    } else {
-                        Object.assign(diffPayload, payload);
-                    }
-
-                    const categoryChanged = Boolean(originalCategoryId && originalCategoryId !== categoryId);
-                    if (categoryChanged) {
-                        diffPayload.categoryId = categoryId;
-                    }
-
-                    const endpointCategoryId = categoryChanged && originalCategoryId
-                        ? originalCategoryId
-                        : categoryId;
-
-                    const hasPayloadChanges = Object.keys(diffPayload).length > 0;
-                    const hasImageChange = !!imageFile;
-
-                    if (!hasPayloadChanges && !hasImageChange) {
-                        showToast('info', 'تحديث الفئة الفرعية', 'لم يتم تعديل أي بيانات لحفظها.');
-                        return;
-                    }
-
-                    await updateSubcategory(
-                        endpointCategoryId,
-                        subcategoryId,
-                        diffPayload,
-                        imageFile,
-                        {
-                            previousCategoryId: categoryChanged ? originalCategoryId : null,
-                            targetCategoryId: categoryId
-                        }
-                    );
-                } else {
-                    await createSubcategory(categoryId, payload, imageFile);
-                }
-
-                state.filters.subcategoryCategory = categoryId;
-                hydrateSubcategoryCategoryOptions();
-                renderSubcategories(categoryId);
-
-                form.reset();
-                if (imageInput) {
-                    imageInput.dataset.previewImage = '';
-                    imageInput.dataset.originalImage = '';
-                }
-                updateSubcategoryImagePreview('');
-                closeModal('subcategoryModal');
-            } catch (error) {
-                console.error('❌ Failed to submit subcategory form:', error);
-            }
-        }
-
-        // ===== Modal Population =====
-        async function populateProductModal(productId = null) {
-            const modal = document.getElementById('addProductModal');
-            const form = modal?.querySelector('form');
-            const title = modal?.querySelector('[data-modal-title]') || modal?.querySelector('.modal-title');
-            
-            console.log(' populateProductModal called with productId:', productId);
-            console.log(' Current state.categories:', state.categories);
-            console.log(' Current state.subcategories:', state.subcategories);
-            console.log(' Current state.brands:', state.brands);
-            
-            if (!modal || !form) {
-                console.error('❌ Missing required elements:', { modal, form, title });
-                return;
-            }
-
-            // إعادة تعيين النموذج
-            form.reset();
-            
-            // تحميل العلامات التجارية
-            try {
-                await hydrateBrandOptions();
-            } catch (error) {
-                console.error('❌ Failed to load brands:', error);
-            }
-            
-            // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
-            const categorySelect = form.querySelector('#productCategory');
-            if (categorySelect) {
-                // إزالة أي مستمعات سابقة لتجنب التكرار
-                const newCategorySelect = categorySelect.cloneNode(true);
-                categorySelect.parentNode.replaceChild(newCategorySelect, categorySelect);
-                
-                newCategorySelect.addEventListener('change', (e) => {
-                    const categoryId = e.target.value;
-                    console.log('🔄 Category changed to:', categoryId);
-                    populateSubcategoryOptions(categoryId);
-                    
-                    // تفعيل/تعطيل حقل الفئة الفرعية بناءً على وجود فئة محددة
-                    const subcategorySelect = form.querySelector('#productSubcategory');
-                    if (subcategorySelect) {
-                        subcategorySelect.disabled = !categoryId;
-                        if (!categoryId) {
-                            subcategorySelect.innerHTML = '<option value="">اختر الفئة الفرعية</option>';
-                        }
-                    }
-                });
-            }
-            
-            form.dataset.mode = productId ? 'edit' : 'create';
-
-            if (productId) {
-                // وضع التعديل: تعبئة البيانات الحالية للمنتج
-                const product = state.products.find(p => p.id === productId);
-                if (!product) {
-                    console.error('المنتج غير موجود:', productId);
-                    return;
-                }
-
-                // تعبئة حقول النموذج
-                title.textContent = 'تعديل المنتج';
-                form.dataset.entityId = product.id;
-                setFieldValue(form, 'id', product.id);
-
-                // تعبئة الحقول الأساسية
-                setFieldValue(form, 'name', product.name);
-                const descriptionField = form.querySelector('[name="description"]');
-                setFieldValue(form, 'description', truncateText(product.description, getDescriptionMaxLength(descriptionField)));
-                if (descriptionField) {
-                    updateDescriptionCounter(descriptionField);
-                }
-                setFieldValue(form, 'price', product.price);
-                setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
-                setFieldValue(form, 'priceAfterDiscount', product.raw?.priceAfterDiscount ?? '');
-                setFieldValue(form, 'quantity', product.stock);
-                setFieldValue(form, 'sku', product.sku || '');
-                setFieldValue(form, 'status', product.status || 'draft');
-                
-                // تعبئة الفئة الرئيسية والفرعية
-                if (product.categoryId) {
-                    setFieldValue(form, 'category', product.categoryId);
-                    // تحديث قائمة الفئات الفرعية
-                    populateSubcategoryOptions(product.categoryId);
-                    
-                    // تأخير تعيين الفئة الفرعية لضمان تحميل القائمة
-                    setTimeout(() => {
-                        if (product.subCategoryId) {
-                            setFieldValue(form, 'subCategory', product.subCategoryId);
-                        }
-                    }, 100);
-                }
-                
-                // تعبئة العلامة التجارية
-                if (product.brandId) {
-                    setFieldValue(form, 'brand', product.brandId);
-                } else if (product.brandName) {
-                    // إذا كانت هناك علامة تجارية نصية وليست معرف، نضيفها كخيار جديد
-                    const brandSelect = form.querySelector('#productBrand');
-                    if (brandSelect) {
-                        const option = document.createElement('option');
-                        option.value = product.brandName;
-                        option.textContent = product.brandName;
-                        brandSelect.appendChild(option);
-                        brandSelect.value = product.brandName;
-                    }
-                }
-                
-                // تحديث معاينة الصورة إذا وجدت
-                const productImageSource = product.images?.[0] || '';
-                updateProductImagePreview(productImageSource);
-                form.dataset.productImageOriginal = productImageSource;
-            } else {
-                // وضع الإضافة: إعداد النموذج فارغاً
-                title.textContent = 'إضافة منتج جديد';
-                delete form.dataset.entityId;
-                setFieldValue(form, 'id', '');
-                form.dataset.productImageOriginal = '';
-                updateProductImagePreview('');
-                
-                // تعطيل حقل الفئة الفرعية حتى يتم اختيار فئة رئيسية
-                const subcategorySelect = document.getElementById('productSubcategory');
-                if (subcategorySelect) {
-                    subcategorySelect.disabled = true;
-                }
-            }
-        }
-
-        function populateCategoryModal(categoryId) {
-            const form = document.getElementById('categoryForm');
-            if (!form) return;
-
-            const category = categoryId ? getCategoryById(categoryId) : null;
-            const extras = category ? state.categoryExtras[category.id] : null;
-
-            console.log('📝 Populating category form:', { category, extras });
-
-            form.dataset.mode = category ? 'edit' : 'create';
-            setFieldValue(form, 'id', category?.id || '');
-            setFieldValue(form, 'name', category?.name || '');
-            setFieldValue(form, 'slug', category?.slug || '');
-            const targetImage = extras?.image ?? category?.image ?? '';
-            const imageInput = form.querySelector('#categoryImage');
-            if (imageInput) {
-                imageInput.value = '';
-                imageInput.dataset.originalImage = targetImage;
-                imageInput.dataset.previewImage = '';
-                imageInput.required = !targetImage;
-            }
-            updateCategoryImagePreview(targetImage);
-            const resolvedDescription = extras?.description || category?.description || '';
-            const descriptionField = form.querySelector('[name="description"]');
-            setFieldValue(form, 'description', truncateText(resolvedDescription, getDescriptionMaxLength(descriptionField)));
-            if (descriptionField) {
-                updateDescriptionCounter(descriptionField);
-            }
-
-            const originalSnapshot = {
-                name: category?.name || '',
-                slug: category?.slug || '',
-                description: resolvedDescription,
-                image: targetImage
-            };
-            form.dataset.originalCategory = JSON.stringify(originalSnapshot);
-
-            form.querySelector('[type="submit"]').textContent = category ? 'حفظ التعديلات' : 'حفظ الفئة';
-        }
-
-        // ===== Utility Functions =====
-        function isValidObjectId(id) {
-            // Check if the ID is a valid MongoDB ObjectId (24 hex characters)
-            return /^[0-9a-fA-F]{24}$/.test(id);
-        }
-
-        function formatCurrency(value) {
-            const num = Number(value) || 0;
-            return `${num.toLocaleString('ar-EG')} ريال`;
-        }
-
-        function formatNumber(value) {
-            if (value === null || value === undefined) return '0';
-            const number = Number(value);
-            return Number.isNaN(number) ? String(value) : number.toLocaleString('ar-EG');
-        }
-
-        function formatPercent(value) {
-            return `${value.toFixed(1)}%`;
-        }
-
-        function formatDate(value, options = {}) {
-            const date = parseDateValue(value);
-            if (!date) return '-';
-
-            const formatOptions = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                ...options
-            };
-
-            return date.toLocaleDateString('ar-EG', formatOptions);
-        }
-
-        function formatRelativeTime(value) {
-            const date = parseDateValue(value);
-            if (!date) return '-';
-
-            const now = new Date();
-            const diffMs = date.getTime() - now.getTime();
-            const absDiffMs = Math.abs(diffMs);
-
-            const units = [
-                { unit: 'year', ms: 1000 * 60 * 60 * 24 * 365 },
-                { unit: 'month', ms: 1000 * 60 * 60 * 24 * 30 },
-                { unit: 'week', ms: 1000 * 60 * 60 * 24 * 7 },
-                { unit: 'day', ms: 1000 * 60 * 60 * 24 },
-                { unit: 'hour', ms: 1000 * 60 * 60 },
-                { unit: 'minute', ms: 1000 * 60 },
-                { unit: 'second', ms: 1000 }
-            ];
-
-            for (const { unit, ms } of units) {
-                if (absDiffMs >= ms || unit === 'second') {
-                    const value = Math.round(diffMs / ms);
-                    if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
-                        const formatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' });
-                        return formatter.format(value, unit);
-                    }
-
-                    const absValue = Math.abs(value);
-                    const suffix = value < 0 ? 'منذ' : 'بعد';
-                    const labels = {
-                        second: 'ثانية',
-                        minute: 'دقيقة',
-                        hour: 'ساعة',
-                        day: 'يوم',
-                        week: 'أسبوع',
-                        month: 'شهر',
-                        year: 'سنة'
-                    };
-                    return `${suffix} ${absValue} ${labels[unit] || ''}`.trim();
-                }
-            }
-
-            return '-';
-        }
-
-        function parseDateValue(value) {
-            if (!value) return null;
-
-            if (value instanceof Date) {
-                return isNaN(value.getTime()) ? null : value;
-            }
-
-            if (typeof value === 'number') {
-                const date = new Date(value);
-                return isNaN(date.getTime()) ? null : date;
-            }
-
-            if (typeof value === 'string') {
-                const trimmed = value.trim();
-                if (!trimmed) return null;
-
-                // جرّب إنشاء التاريخ مباشرة، ثم جرّب استبدال الفراغ بـ "T" للأنماط الشائعة
-                let date = new Date(trimmed);
-                if (!isNaN(date.getTime())) {
-                    return date;
-                }
-
-                date = new Date(trimmed.replace(' ', 'T'));
-                return isNaN(date.getTime()) ? null : date;
-            }
-
+    const originalSnapshot = (() => {
+        if (!form.dataset.originalSubcategory) return null;
+        try {
+            return JSON.parse(form.dataset.originalSubcategory) || null;
+        } catch (error) {
+            console.warn('⚠️ Failed to parse original subcategory snapshot', error);
             return null;
         }
+    })();
 
-        function formatDateInputValue(date) {
-            if (!(date instanceof Date) || isNaN(date.getTime())) {
-                return '';
+    try {
+        if (mode === 'edit' && subcategoryId) {
+            const normalizeValue = (value) => {
+                if (value === null || value === undefined) return '';
+                if (typeof value === 'string') return value.trim();
+                return String(value).trim();
+            };
+
+            const diffPayload = {};
+
+            if (originalSnapshot) {
+                Object.entries(payload).forEach(([key, value]) => {
+                    const newValueNormalized = normalizeValue(value);
+                    const oldValueNormalized = Object.prototype.hasOwnProperty.call(originalSnapshot, key)
+                        ? normalizeValue(originalSnapshot[key])
+                        : null;
+
+                    if (oldValueNormalized === null) {
+                        if (value !== undefined && value !== null && newValueNormalized !== '') {
+                            diffPayload[key] = value;
+                        }
+                    } else if (newValueNormalized !== oldValueNormalized) {
+                        diffPayload[key] = value;
+                    }
+                });
+            } else {
+                Object.assign(diffPayload, payload);
             }
 
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
+            const categoryChanged = Boolean(originalCategoryId && originalCategoryId !== categoryId);
+            if (categoryChanged) {
+                diffPayload.categoryId = categoryId;
+            }
 
-            return `${year}-${month}-${day}`;
-        }
+            const endpointCategoryId = categoryChanged && originalCategoryId
+                ? originalCategoryId
+                : categoryId;
 
-        function isSameDay(dateA, dateB) {
-            if (!dateA || !dateB) return false;
-            return (
-                dateA.getFullYear() === dateB.getFullYear() &&
-                dateA.getMonth() === dateB.getMonth() &&
-                dateA.getDate() === dateB.getDate()
+            const hasPayloadChanges = Object.keys(diffPayload).length > 0;
+            const hasImageChange = !!imageFile;
+
+            if (!hasPayloadChanges && !hasImageChange) {
+                showToast('info', 'تحديث الفئة الفرعية', 'لم يتم تعديل أي بيانات لحفظها.');
+                return;
+            }
+
+            await updateSubcategory(
+                endpointCategoryId,
+                subcategoryId,
+                diffPayload,
+                imageFile,
+                {
+                    previousCategoryId: categoryChanged ? originalCategoryId : null,
+                    targetCategoryId: categoryId
+                }
             );
+        } else {
+            await createSubcategory(categoryId, payload, imageFile);
         }
 
-        function isSameMonth(dateA, dateB) {
-            if (!dateA || !dateB) return false;
-            return (
-                dateA.getFullYear() === dateB.getFullYear() &&
-                dateA.getMonth() === dateB.getMonth()
-            );
+        state.filters.subcategoryCategory = categoryId;
+        hydrateSubcategoryCategoryOptions();
+        renderSubcategories(categoryId);
+
+        form.reset();
+        if (imageInput) {
+            imageInput.dataset.previewImage = '';
+            imageInput.dataset.originalImage = '';
         }
+        updateSubcategoryImagePreview('');
+        closeModal('subcategoryModal');
+    } catch (error) {
+        console.error('❌ Failed to submit subcategory form:', error);
+    }
+}
 
-        function getOrderDate(order = {}) {
-            if (!order) return null;
+// ===== Modal Population =====
+async function populateProductModal(productId = null) {
+    const modal = document.getElementById('addProductModal');
+    const form = modal?.querySelector('form');
+    const title = modal?.querySelector('[data-modal-title]') || modal?.querySelector('.modal-title');
 
-            const raw = order.raw || {};
-            const dateValue =
-                raw.createdAt ||
-                raw.created_at ||
-                raw.createdDate ||
-                raw.date ||
-                raw.orderDate ||
-                order.createdAt ||
-                order.created_at ||
-                order.date;
 
-            return parseDateValue(dateValue);
-        }
 
-        function getCustomerCreatedDate(customer = {}) {
-            if (!customer) return null;
+    if (!modal || !form) {
+        console.error('❌ Missing required elements:', { modal, form, title });
+        return;
+    }
 
-            const dateValue =
-                customer.createdAt ||
-                customer.created_at ||
-                customer.createdOn ||
-                customer.created_on ||
-                customer.created ||
-                customer.registrationDate ||
-                customer.registeredAt ||
-                customer.registered_at ||
-                customer.joinedAt ||
-                customer.joined_at;
+    // إعادة تعيين النموذج
+    form.reset();
 
-            return parseDateValue(dateValue);
-        }
+    // تحميل العلامات التجارية
+    try {
+        await hydrateBrandOptions();
+    } catch (error) {
+        console.error('❌ Failed to load brands:', error);
+    }
 
-        function formatChange(value) {
-            return `${value > 0 ? '+' : ''}${(value * 100).toFixed(1)}%`;
-        }
+    // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
+    const categorySelect = form.querySelector('#productCategory');
+    if (categorySelect) {
+        // إزالة أي مستمعات سابقة لتجنب التكرار
+        const newCategorySelect = categorySelect.cloneNode(true);
+        categorySelect.parentNode.replaceChild(newCategorySelect, categorySelect);
 
-        function isValidObjectId(value) {
-            return typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value.trim());
-        }
+        newCategorySelect.addEventListener('change', (e) => {
+            const categoryId = e.target.value;
 
-        function normalizeFilterValue(value) {
-            if (value === undefined || value === null) return '';
-            return String(value).trim().toLowerCase();
-        }
+            populateSubcategoryOptions(categoryId);
 
-        function setFieldValue(form, name, value) {
-            if (!form) return;
-            const field = form.elements[name];
-            if (!field) return;
-            field.value = value ?? '';
-        }
-
-        function getFormValue(formData, name, fallback = '') {
-            if (!formData) return fallback;
-            const value = formData.get(name);
-            return value !== null ? value.trim() : fallback;
-        }
-
-        function truncateText(value = '', maxLength = DESCRIPTION_MAX_LENGTH) {
-            const text = typeof value === 'string' ? value : String(value ?? '');
-            if (!Number.isFinite(maxLength) || maxLength <= 0) {
-                return text;
+            // تفعيل/تعطيل حقل الفئة الفرعية بناءً على وجود فئة محددة
+            const subcategorySelect = form.querySelector('#productSubcategory');
+            if (subcategorySelect) {
+                subcategorySelect.disabled = !categoryId;
+                if (!categoryId) {
+                    subcategorySelect.innerHTML = '<option value="">اختر الفئة الفرعية</option>';
+                }
             }
-            return text.length > maxLength ? text.slice(0, maxLength) : text;
+        });
+    }
+
+    form.dataset.mode = productId ? 'edit' : 'create';
+
+    if (productId) {
+        // وضع التعديل: تعبئة البيانات الحالية للمنتج
+        const product = state.products.find(p => p.id === productId);
+        if (!product) {
+            console.error('المنتج غير موجود:', productId);
+            return;
         }
 
-        function getDescriptionMaxLength(field) {
-            if (!field || typeof field.getAttribute !== 'function') return DESCRIPTION_MAX_LENGTH;
-            const attr = Number(field.getAttribute('maxlength'));
-            return Number.isFinite(attr) && attr > 0 ? attr : DESCRIPTION_MAX_LENGTH;
+        // تعبئة حقول النموذج
+        title.textContent = 'تعديل المنتج';
+        form.dataset.entityId = product.id;
+        setFieldValue(form, 'id', product.id);
+
+        // تعبئة الحقول الأساسية
+        setFieldValue(form, 'name', product.name);
+        const descriptionField = form.querySelector('[name="description"]');
+        setFieldValue(form, 'description', truncateText(product.description, getDescriptionMaxLength(descriptionField)));
+        if (descriptionField) {
+            updateDescriptionCounter(descriptionField);
+        }
+        setFieldValue(form, 'price', product.price);
+        setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
+        setFieldValue(form, 'priceAfterDiscount', product.raw?.priceAfterDiscount ?? '');
+        setFieldValue(form, 'quantity', product.stock);
+        setFieldValue(form, 'sku', product.sku || '');
+        setFieldValue(form, 'status', product.status || 'draft');
+
+        // تعبئة الفئة الرئيسية والفرعية
+        if (product.categoryId) {
+            setFieldValue(form, 'category', product.categoryId);
+            // تحديث قائمة الفئات الفرعية
+            populateSubcategoryOptions(product.categoryId);
+
+            // تأخير تعيين الفئة الفرعية لضمان تحميل القائمة
+            setTimeout(() => {
+                if (product.subCategoryId) {
+                    setFieldValue(form, 'subCategory', product.subCategoryId);
+                }
+            }, 100);
         }
 
-        function updateDescriptionCounter(field) {
-            if (!field) return;
-            const maxLength = getDescriptionMaxLength(field);
-            const currentValue = field.value || '';
-            if (currentValue.length > maxLength) {
-                field.value = currentValue.slice(0, maxLength);
+        // تعبئة العلامة التجارية
+        if (product.brandId) {
+            setFieldValue(form, 'brand', product.brandId);
+        } else if (product.brandName) {
+            // إذا كانت هناك علامة تجارية نصية وليست معرف، نضيفها كخيار جديد
+            const brandSelect = form.querySelector('#productBrand');
+            if (brandSelect) {
+                const option = document.createElement('option');
+                option.value = product.brandName;
+                option.textContent = product.brandName;
+                brandSelect.appendChild(option);
+                brandSelect.value = product.brandName;
+            }
+        }
+
+        // تحديث معاينة الصورة إذا وجدت
+        const productImageSource = product.images?.[0] || '';
+        updateProductImagePreview(productImageSource);
+        form.dataset.productImageOriginal = productImageSource;
+    } else {
+        // وضع الإضافة: إعداد النموذج فارغاً
+        title.textContent = 'إضافة منتج جديد';
+        delete form.dataset.entityId;
+        setFieldValue(form, 'id', '');
+        form.dataset.productImageOriginal = '';
+        updateProductImagePreview('');
+
+        // تعطيل حقل الفئة الفرعية حتى يتم اختيار فئة رئيسية
+        const subcategorySelect = document.getElementById('productSubcategory');
+        if (subcategorySelect) {
+            subcategorySelect.disabled = true;
+        }
+    }
+}
+
+function populateCategoryModal(categoryId) {
+    const form = document.getElementById('categoryForm');
+    if (!form) return;
+
+    const category = categoryId ? getCategoryById(categoryId) : null;
+    const extras = category ? state.categoryExtras[category.id] : null;
+
+
+
+    form.dataset.mode = category ? 'edit' : 'create';
+    setFieldValue(form, 'id', category?.id || '');
+    setFieldValue(form, 'name', category?.name || '');
+    setFieldValue(form, 'slug', category?.slug || '');
+    const targetImage = extras?.image ?? category?.image ?? '';
+    const imageInput = form.querySelector('#categoryImage');
+    if (imageInput) {
+        imageInput.value = '';
+        imageInput.dataset.originalImage = targetImage;
+        imageInput.dataset.previewImage = '';
+        imageInput.required = !targetImage;
+    }
+    updateCategoryImagePreview(targetImage);
+    const resolvedDescription = extras?.description || category?.description || '';
+    const descriptionField = form.querySelector('[name="description"]');
+    setFieldValue(form, 'description', truncateText(resolvedDescription, getDescriptionMaxLength(descriptionField)));
+    if (descriptionField) {
+        updateDescriptionCounter(descriptionField);
+    }
+
+    const originalSnapshot = {
+        name: category?.name || '',
+        slug: category?.slug || '',
+        description: resolvedDescription,
+        image: targetImage
+    };
+    form.dataset.originalCategory = JSON.stringify(originalSnapshot);
+
+    form.querySelector('[type="submit"]').textContent = category ? 'حفظ التعديلات' : 'حفظ الفئة';
+}
+
+// ===== Utility Functions =====
+function isValidObjectId(id) {
+    // Check if the ID is a valid MongoDB ObjectId (24 hex characters)
+    return /^[0-9a-fA-F]{24}$/.test(id);
+}
+
+function formatCurrency(value) {
+    const num = Number(value) || 0;
+    return `${num.toLocaleString('ar-EG')} ريال`;
+}
+
+function formatNumber(value) {
+    if (value === null || value === undefined) return '0';
+    const number = Number(value);
+    return Number.isNaN(number) ? String(value) : number.toLocaleString('ar-EG');
+}
+
+function formatPercent(value) {
+    return `${value.toFixed(1)}%`;
+}
+
+function formatDate(value, options = {}) {
+    const date = parseDateValue(value);
+    if (!date) return '-';
+
+    const formatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        ...options
+    };
+
+    return date.toLocaleDateString('ar-EG', formatOptions);
+}
+
+function formatRelativeTime(value) {
+    const date = parseDateValue(value);
+    if (!date) return '-';
+
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const absDiffMs = Math.abs(diffMs);
+
+    const units = [
+        { unit: 'year', ms: 1000 * 60 * 60 * 24 * 365 },
+        { unit: 'month', ms: 1000 * 60 * 60 * 24 * 30 },
+        { unit: 'week', ms: 1000 * 60 * 60 * 24 * 7 },
+        { unit: 'day', ms: 1000 * 60 * 60 * 24 },
+        { unit: 'hour', ms: 1000 * 60 * 60 },
+        { unit: 'minute', ms: 1000 * 60 },
+        { unit: 'second', ms: 1000 }
+    ];
+
+    for (const { unit, ms } of units) {
+        if (absDiffMs >= ms || unit === 'second') {
+            const value = Math.round(diffMs / ms);
+            if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
+                const formatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' });
+                return formatter.format(value, unit);
             }
 
-            const counterId = field.dataset.counter;
-            const counterElement = counterId ? document.getElementById(counterId) : null;
-            if (counterElement) {
-                counterElement.textContent = `${field.value.length} / ${maxLength}`;
-            }
+            const absValue = Math.abs(value);
+            const suffix = value < 0 ? 'منذ' : 'بعد';
+            const labels = {
+                second: 'ثانية',
+                minute: 'دقيقة',
+                hour: 'ساعة',
+                day: 'يوم',
+                week: 'أسبوع',
+                month: 'شهر',
+                year: 'سنة'
+            };
+            return `${suffix} ${absValue} ${labels[unit] || ''}`.trim();
+        }
+    }
+
+    return '-';
+}
+
+function parseDateValue(value) {
+    if (!value) return null;
+
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value === 'number') {
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? null : date;
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+
+        // جرّب إنشاء التاريخ مباشرة، ثم جرّب استبدال الفراغ بـ "T" للأنماط الشائعة
+        let date = new Date(trimmed);
+        if (!isNaN(date.getTime())) {
+            return date;
         }
 
-        function refreshDescriptionCounters(container = document) {
-            if (!container || typeof container.querySelectorAll !== 'function') return;
-            container.querySelectorAll('.js-description-input').forEach(field => updateDescriptionCounter(field));
-        }
+        date = new Date(trimmed.replace(' ', 'T'));
+        return isNaN(date.getTime()) ? null : date;
+    }
 
-        function initDescriptionInputs(root = document) {
-            if (!root || typeof root.querySelectorAll !== 'function') return;
-            root.querySelectorAll('.js-description-input').forEach(field => {
-                if (field.dataset.descriptionWatcherAttached === 'true') return;
-                field.dataset.descriptionWatcherAttached = 'true';
-                field.addEventListener('input', () => updateDescriptionCounter(field));
-                field.addEventListener('blur', () => updateDescriptionCounter(field));
-                updateDescriptionCounter(field);
-            });
-        }
+    return null;
+}
 
-        function getNumericValue(formData, name, fallback = 0) {
-            const value = formData.get(name);
-            if (value === null || value === '') return fallback;
-            const number = Number(value);
-            return Number.isNaN(number) ? fallback : number;
-        }
+function formatDateInputValue(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return '';
+    }
 
-        function getStatusLabel(status) {
-            const normalized = normalizeStatusKey(status);
-            const entry = normalized ? STATUS_META[normalized] : null;
-            return entry?.label || status || normalized || '-';
-        }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
 
-        function getStatusBadge(status) {
-            const normalized = normalizeStatusKey(status) || 'new';
-            const entry = STATUS_META[normalized] || { label: normalized, class: 'status-default' };
-            return `<span class="status-badge ${entry.class}">${entry.label}</span>`;
-        }
+    return `${year}-${month}-${day}`;
+}
 
-        function renderOrderStatusControls(order = {}) {
-            const statusKey = normalizeStatusKey(order.status) || 'new';
-            const orderIdRaw = order?.id ?? '';
-            const orderIdLiteral = JSON.stringify(orderIdRaw ?? '');
-            const hasValidId = !(orderIdRaw === undefined || orderIdRaw === null || String(orderIdRaw).trim() === '');
+function isSameDay(dateA, dateB) {
+    if (!dateA || !dateB) return false;
+    return (
+        dateA.getFullYear() === dateB.getFullYear() &&
+        dateA.getMonth() === dateB.getMonth() &&
+        dateA.getDate() === dateB.getDate()
+    );
+}
 
-            const optionsMarkup = getOrderStatusOptions()
-                .map(option => `<option value="${option.value}"${option.value === statusKey ? ' selected' : ''}>${option.label}</option>`)
-                .join('');
+function isSameMonth(dateA, dateB) {
+    if (!dateA || !dateB) return false;
+    return (
+        dateA.getFullYear() === dateB.getFullYear() &&
+        dateA.getMonth() === dateB.getMonth()
+    );
+}
 
-            return `
+function getOrderDate(order = {}) {
+    if (!order) return null;
+
+    const raw = order.raw || {};
+    const dateValue =
+        raw.createdAt ||
+        raw.created_at ||
+        raw.createdDate ||
+        raw.date ||
+        raw.orderDate ||
+        order.createdAt ||
+        order.created_at ||
+        order.date;
+
+    return parseDateValue(dateValue);
+}
+
+function getCustomerCreatedDate(customer = {}) {
+    if (!customer) return null;
+
+    const dateValue =
+        customer.createdAt ||
+        customer.created_at ||
+        customer.createdOn ||
+        customer.created_on ||
+        customer.created ||
+        customer.registrationDate ||
+        customer.registeredAt ||
+        customer.registered_at ||
+        customer.joinedAt ||
+        customer.joined_at;
+
+    return parseDateValue(dateValue);
+}
+
+function formatChange(value) {
+    return `${value > 0 ? '+' : ''}${(value * 100).toFixed(1)}%`;
+}
+
+function isValidObjectId(value) {
+    return typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value.trim());
+}
+
+function normalizeFilterValue(value) {
+    if (value === undefined || value === null) return '';
+    return String(value).trim().toLowerCase();
+}
+
+function setFieldValue(form, name, value) {
+    if (!form) return;
+    const field = form.elements[name];
+    if (!field) return;
+    field.value = value ?? '';
+}
+
+function getFormValue(formData, name, fallback = '') {
+    if (!formData) return fallback;
+    const value = formData.get(name);
+    return value !== null ? value.trim() : fallback;
+}
+
+function truncateText(value = '', maxLength = DESCRIPTION_MAX_LENGTH) {
+    const text = typeof value === 'string' ? value : String(value ?? '');
+    if (!Number.isFinite(maxLength) || maxLength <= 0) {
+        return text;
+    }
+    return text.length > maxLength ? text.slice(0, maxLength) : text;
+}
+
+function getDescriptionMaxLength(field) {
+    if (!field || typeof field.getAttribute !== 'function') return DESCRIPTION_MAX_LENGTH;
+    const attr = Number(field.getAttribute('maxlength'));
+    return Number.isFinite(attr) && attr > 0 ? attr : DESCRIPTION_MAX_LENGTH;
+}
+
+function updateDescriptionCounter(field) {
+    if (!field) return;
+    const maxLength = getDescriptionMaxLength(field);
+    const currentValue = field.value || '';
+    if (currentValue.length > maxLength) {
+        field.value = currentValue.slice(0, maxLength);
+    }
+
+    const counterId = field.dataset.counter;
+    const counterElement = counterId ? document.getElementById(counterId) : null;
+    if (counterElement) {
+        counterElement.textContent = `${field.value.length} / ${maxLength}`;
+    }
+}
+
+function refreshDescriptionCounters(container = document) {
+    if (!container || typeof container.querySelectorAll !== 'function') return;
+    container.querySelectorAll('.js-description-input').forEach(field => updateDescriptionCounter(field));
+}
+
+function initDescriptionInputs(root = document) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    root.querySelectorAll('.js-description-input').forEach(field => {
+        if (field.dataset.descriptionWatcherAttached === 'true') return;
+        field.dataset.descriptionWatcherAttached = 'true';
+        field.addEventListener('input', () => updateDescriptionCounter(field));
+        field.addEventListener('blur', () => updateDescriptionCounter(field));
+        updateDescriptionCounter(field);
+    });
+}
+
+function getNumericValue(formData, name, fallback = 0) {
+    const value = formData.get(name);
+    if (value === null || value === '') return fallback;
+    const number = Number(value);
+    return Number.isNaN(number) ? fallback : number;
+}
+
+function getStatusLabel(status) {
+    const normalized = normalizeStatusKey(status);
+    const entry = normalized ? STATUS_META[normalized] : null;
+    return entry?.label || status || normalized || '-';
+}
+
+function getStatusBadge(status) {
+    const normalized = normalizeStatusKey(status) || 'new';
+    const entry = STATUS_META[normalized] || { label: normalized, class: 'status-default' };
+    return `<span class="status-badge ${entry.class}">${entry.label}</span>`;
+}
+
+function renderOrderStatusControls(order = {}) {
+    const statusKey = normalizeStatusKey(order.status) || 'new';
+    const orderIdRaw = order?.id ?? '';
+    const orderIdLiteral = JSON.stringify(orderIdRaw ?? '');
+    const hasValidId = !(orderIdRaw === undefined || orderIdRaw === null || String(orderIdRaw).trim() === '');
+
+    const optionsMarkup = getOrderStatusOptions()
+        .map(option => `<option value="${option.value}"${option.value === statusKey ? ' selected' : ''}>${option.label}</option>`)
+        .join('');
+
+    return `
                 <div class="order-status-control">
                     ${getStatusBadge(statusKey)}
                     <select class="order-status-select"${hasValidId ? '' : ' disabled'} data-order-id=${orderIdLiteral} onchange="changeOrderStatus(${orderIdLiteral}, this.value, this)">
@@ -5532,328 +5528,328 @@
                     </select>
                 </div>
             `;
-        }
+}
 
-        function getRoleBadge(role) {
-            const map = {
-                admin: { label: 'مدير', class: 'role-admin' },
-                editor: { label: 'محرر', class: 'role-editor' },
-                support: { label: 'دعم', class: 'role-support' },
-                viewer: { label: 'مشاهد', class: 'role-viewer' }
-            };
-            const entry = map[role] || { label: role, class: 'role-default' };
-            return `<span class="role-badge ${entry.class}">${entry.label}</span>`;
-        }
+function getRoleBadge(role) {
+    const map = {
+        admin: { label: 'مدير', class: 'role-admin' },
+        editor: { label: 'محرر', class: 'role-editor' },
+        support: { label: 'دعم', class: 'role-support' },
+        viewer: { label: 'مشاهد', class: 'role-viewer' }
+    };
+    const entry = map[role] || { label: role, class: 'role-default' };
+    return `<span class="role-badge ${entry.class}">${entry.label}</span>`;
+}
 
-        function getCategoryLabel(slug) {
-            const category = state.categories.find(cat => cat.slug === slug);
-            if (category) {
-                return category.name;
+function getCategoryLabel(slug) {
+    const category = state.categories.find(cat => cat.slug === slug);
+    if (category) {
+        return category.name;
+    }
+    return slug;
+}
+
+function getCustomerSegmentLabel(segment) {
+    const map = {
+        vip: 'عميل مميز',
+        loyal: 'عميل وفي',
+        new: 'عميل جديد',
+        churn: 'مهدد بالمغادرة'
+    };
+    return map[segment] || segment || '-';
+}
+
+function getPaymentLabel(method) {
+    const map = {
+        cash: 'الدفع عند الاستلام',
+        card: 'بطاقة ائتمان',
+        installment: 'التقسيط',
+        bank: 'تحويل بنكي'
+    };
+    return map[method] || method || '-';
+}
+
+function getProductById(productId) {
+    if (!productId) return null;
+    return getProductsSource().find(product => String(product.id) === String(productId)) || null;
+}
+
+function getOrderById(orderId) {
+    const normalizedId = normalizeOrderId(orderId);
+    if (!normalizedId) return null;
+
+    const orderFromState = getOrdersSource().find(order => normalizeOrderId(order.id) === normalizedId);
+    if (orderFromState) {
+        return orderFromState;
+    }
+
+    if (typeof mockData !== 'undefined' && Array.isArray(mockData.orders)) {
+        return mockData.orders.find(order => normalizeOrderId(order.id) === normalizedId) || null;
+    }
+
+    return null;
+}
+
+function getOrderDetails(orderId) {
+    const normalizedId = normalizeOrderId(orderId);
+    if (!normalizedId) return null;
+
+    const order = getOrderById(normalizedId);
+
+    if (order) {
+        const itemsSource = (() => {
+            if (Array.isArray(order.itemsDetails) && order.itemsDetails.length) {
+                return order.itemsDetails;
             }
-            return slug;
-        }
-
-        function getCustomerSegmentLabel(segment) {
-            const map = {
-                vip: 'عميل مميز',
-                loyal: 'عميل وفي',
-                new: 'عميل جديد',
-                churn: 'مهدد بالمغادرة'
-            };
-            return map[segment] || segment || '-';
-        }
-
-        function getPaymentLabel(method) {
-            const map = {
-                cash: 'الدفع عند الاستلام',
-                card: 'بطاقة ائتمان',
-                installment: 'التقسيط',
-                bank: 'تحويل بنكي'
-            };
-            return map[method] || method || '-';
-        }
-
-        function getProductById(productId) {
-            if (!productId) return null;
-            return getProductsSource().find(product => String(product.id) === String(productId)) || null;
-        }
-
-        function getOrderById(orderId) {
-            const normalizedId = normalizeOrderId(orderId);
-            if (!normalizedId) return null;
-
-            const orderFromState = getOrdersSource().find(order => normalizeOrderId(order.id) === normalizedId);
-            if (orderFromState) {
-                return orderFromState;
+            if (Array.isArray(order.raw?.cartItems) && order.raw.cartItems.length) {
+                return order.raw.cartItems;
             }
-
-            if (typeof mockData !== 'undefined' && Array.isArray(mockData.orders)) {
-                return mockData.orders.find(order => normalizeOrderId(order.id) === normalizedId) || null;
+            if (Array.isArray(order.raw?.items) && order.raw.items.length) {
+                return order.raw.items;
             }
+            return [];
+        })();
 
-            return null;
-        }
-
-        function getOrderDetails(orderId) {
-            const normalizedId = normalizeOrderId(orderId);
-            if (!normalizedId) return null;
-
-            const order = getOrderById(normalizedId);
-
-            if (order) {
-                const itemsSource = (() => {
-                    if (Array.isArray(order.itemsDetails) && order.itemsDetails.length) {
-                        return order.itemsDetails;
-                    }
-                    if (Array.isArray(order.raw?.cartItems) && order.raw.cartItems.length) {
-                        return order.raw.cartItems;
-                    }
-                    if (Array.isArray(order.raw?.items) && order.raw.items.length) {
-                        return order.raw.items;
-                    }
-                    return [];
-                })();
-
-                const items = itemsSource.length
-                    ? itemsSource.map(item => {
-                        const quantity = Number(item.quantity ?? item.qty ?? item.count ?? 1) || 1;
-                        const price = Number(item.price ?? item.unitPrice ?? item.salePrice ?? 0) || 0;
-                        return {
-                            name: item.name || item.product?.name || item.productId?.name || 'منتج',
-                            quantity,
-                            price
-                        };
-                    })
-                    : [{
-                        name: order.raw?.cartItems?.[0]?.productId?.name || order.raw?.items?.[0]?.name || 'منتج',
-                        quantity: Number(order.items) || 1,
-                        price: Number(order.total) || 0
-                    }];
-
-                const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const shippingInfo = order.shipping || normalizeOrderShipping(order.raw?.shippingAddress || order.raw?.shipping || null, order.raw);
-                const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? shippingInfo?.shippingRate ?? 0) || 0;
-                const installationCost = Number(
-                    order.raw?.totalInstallationPrice
-                    ?? order.raw?.installationCost
-                    ?? order.raw?.installation_price
-                    ?? order.raw?.installationFee
-                    ?? order.installationCost
-                    ?? order.totalInstallationPrice
-                    ?? 0
-                ) || 0;
-                const discountValue = Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
-                const totalValue = Number(order.total);
-                const resolvedTotal = Number.isFinite(totalValue)
-                    ? totalValue
-                    : (subtotal + shippingCost + installationCost - discountValue);
-
+        const items = itemsSource.length
+            ? itemsSource.map(item => {
+                const quantity = Number(item.quantity ?? item.qty ?? item.count ?? 1) || 1;
+                const price = Number(item.price ?? item.unitPrice ?? item.salePrice ?? 0) || 0;
                 return {
-                    customer: {
-                        name: order.customer || order.user?.name || '-',
-                        email: order.customerEmail || order.user?.email || '-',
-                        phone: order.customerPhone || order.user?.phone || '-'
-                    },
-                    shipping: shippingInfo,
-                    paymentMethod: order.payment,
-                    date: order.date,
-                    items,
-                    summary: {
-                        subtotal,
-                        shipping: shippingCost,
-                        installation: installationCost,
-                        discount: discountValue,
-                        total: resolvedTotal
-                    },
-                    status: order.status,
-                    notes: order.raw?.notes || ''
+                    name: item.name || item.product?.name || item.productId?.name || 'منتج',
+                    quantity,
+                    price
                 };
-            }
+            })
+            : [{
+                name: order.raw?.cartItems?.[0]?.productId?.name || order.raw?.items?.[0]?.name || 'منتج',
+                quantity: Number(order.items) || 1,
+                price: Number(order.total) || 0
+            }];
 
-            if (typeof mockData !== 'undefined') {
-                const mockDetails = mockData.orderDetails?.[normalizedId];
-                if (mockDetails) {
-                    return mockDetails;
-                }
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const shippingInfo = order.shipping || normalizeOrderShipping(order.raw?.shippingAddress || order.raw?.shipping || null, order.raw);
+        const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? shippingInfo?.shippingRate ?? 0) || 0;
+        const installationCost = Number(
+            order.raw?.totalInstallationPrice
+            ?? order.raw?.installationCost
+            ?? order.raw?.installation_price
+            ?? order.raw?.installationFee
+            ?? order.installationCost
+            ?? order.totalInstallationPrice
+            ?? 0
+        ) || 0;
+        const discountValue = Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
+        const totalValue = Number(order.total);
+        const resolvedTotal = Number.isFinite(totalValue)
+            ? totalValue
+            : (subtotal + shippingCost + installationCost - discountValue);
 
-                const mockOrder = Array.isArray(mockData.orders)
-                    ? mockData.orders.find(entry => normalizeOrderId(entry.id) === normalizedId)
-                    : null;
+        return {
+            customer: {
+                name: order.customer || order.user?.name || '-',
+                email: order.customerEmail || order.user?.email || '-',
+                phone: order.customerPhone || order.user?.phone || '-'
+            },
+            shipping: shippingInfo,
+            paymentMethod: order.payment,
+            date: order.date,
+            items,
+            summary: {
+                subtotal,
+                shipping: shippingCost,
+                installation: installationCost,
+                discount: discountValue,
+                total: resolvedTotal
+            },
+            status: order.status,
+            notes: order.raw?.notes || ''
+        };
+    }
 
-                if (mockOrder) {
-                    const quantity = mockOrder.items && mockOrder.items > 0 ? mockOrder.items : 1;
-                    const unitPrice = quantity > 0 ? mockOrder.total / quantity : mockOrder.total;
-                    const installationCost = Number(mockOrder.totalInstallationPrice ?? mockOrder.installationCost ?? mockOrder.installation ?? 0) || 0;
-                    const shippingCost = Number(mockOrder.shippingCost ?? mockOrder.shipping ?? 0) || 0;
-                    const discountValue = Number(mockOrder.discount ?? 0) || 0;
-                    return {
-                        customer: { name: mockOrder.customer, email: '-', phone: '-' },
-                        shipping: { line: '-', city: '-', country: '-' },
-                        paymentMethod: mockOrder.payment,
-                        date: mockOrder.date,
-                        items: [{ name: 'تفاصيل المنتجات غير متاحة', quantity, price: unitPrice }],
-                        summary: {
-                            subtotal: unitPrice * quantity,
-                            shipping: shippingCost,
-                            installation: installationCost,
-                            discount: discountValue,
-                            total: mockOrder.total ?? ((unitPrice * quantity) + shippingCost + installationCost - discountValue)
-                        },
-                        status: mockOrder.status,
-                        notes: ''
-                    };
-                }
-            }
-
-            return null;
+    if (typeof mockData !== 'undefined') {
+        const mockDetails = mockData.orderDetails?.[normalizedId];
+        if (mockDetails) {
+            return mockDetails;
         }
 
-        function getCustomerById(customerId) {
-            if (!customerId) return null;
+        const mockOrder = Array.isArray(mockData.orders)
+            ? mockData.orders.find(entry => normalizeOrderId(entry.id) === normalizedId)
+            : null;
 
-            const normalizedId = String(customerId);
-            const customerFromState = (state.customers || []).find(customer => {
-                const id = customer._id ?? customer.id;
-                return id && String(id) === normalizedId;
-            });
-
-            if (customerFromState) {
-                return customerFromState;
-            }
-
-            return mockData.customers.find(customer => String(customer.id) === normalizedId) || null;
-        }
-
-        function getPaymentMethodById(paymentId) {
-            return mockData.payments.find(method => method.id === paymentId) || null;
-        }
-
-        async function fetchPaymentSettingsStatus() {
-            try {
-                const response = await authorizedFetch(PAYMENT_SETTINGS_ENDPOINT);
-                if (!response?.ok) {
-                    throw new Error(`HTTP ${response?.status}`);
-                }
-
-                const payload = await response.json().catch(() => null);
-                const data = payload?.data || payload;
-
-                if (!data || typeof data !== 'object') {
-                    throw new Error('استجابة غير متوقعة من خادم طرق الدفع');
-                }
-
-                Object.entries(data).forEach(([field, value]) => {
-                    const paymentId = PAYMENT_ID_BY_STATUS_FIELD[field];
-                    if (!paymentId) return;
-
-                    const card = document.querySelector(`.payment-method-card[data-payment-id="${paymentId}"]`);
-                    const toggle = card?.querySelector('.toggle-switch input');
-                    if (toggle) {
-                        setPaymentToggleState(toggle, Boolean(value));
-                    }
-                });
-
-                return data;
-            } catch (error) {
-                console.error('❌ فشل جلب حالة إعدادات الدفع:', error);
-                showToast('error', 'إعدادات الدفع', error?.message || 'تعذر جلب حالة طرق الدفع.');
-                throw error;
-            }
-        }
-
-        async function renderPaymentMethods() {
-            await fetchPaymentSettingsStatus();
-            const methods = mockData.payments;
-            methods.forEach(updatePaymentMethodCard);
-
-            document.querySelectorAll('.payment-method-card .toggle-switch input').forEach(input => {
-                const card = input.closest('.payment-method-card');
-                const stored = card?.dataset.enabled;
-                if (stored == null) {
-                    setPaymentToggleState(input, true);
-                }
-            });
-        }
-
-        async function togglePaymentMethod(paymentKey, enabled) {
-            const endpoint = PAYMENT_TOGGLE_ENDPOINTS[paymentKey];
-            if (!endpoint) {
-                throw new Error(`نقطة نهاية غير معروفة للطريقة: ${paymentKey}`);
-            }
-
-            const response = await authorizedFetch(endpoint, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
+        if (mockOrder) {
+            const quantity = mockOrder.items && mockOrder.items > 0 ? mockOrder.items : 1;
+            const unitPrice = quantity > 0 ? mockOrder.total / quantity : mockOrder.total;
+            const installationCost = Number(mockOrder.totalInstallationPrice ?? mockOrder.installationCost ?? mockOrder.installation ?? 0) || 0;
+            const shippingCost = Number(mockOrder.shippingCost ?? mockOrder.shipping ?? 0) || 0;
+            const discountValue = Number(mockOrder.discount ?? 0) || 0;
+            return {
+                customer: { name: mockOrder.customer, email: '-', phone: '-' },
+                shipping: { line: '-', city: '-', country: '-' },
+                paymentMethod: mockOrder.payment,
+                date: mockOrder.date,
+                items: [{ name: 'تفاصيل المنتجات غير متاحة', quantity, price: unitPrice }],
+                summary: {
+                    subtotal: unitPrice * quantity,
+                    shipping: shippingCost,
+                    installation: installationCost,
+                    discount: discountValue,
+                    total: mockOrder.total ?? ((unitPrice * quantity) + shippingCost + installationCost - discountValue)
                 },
-                body: JSON.stringify({ enabled })
-            });
+                status: mockOrder.status,
+                notes: ''
+            };
+        }
+    }
 
-            const handled = handleUnauthorized(response);
-            if (handled !== response) {
-                throw new Error('انتهت الجلسة. يرجى إعادة تسجيل الدخول.');
-            }
+    return null;
+}
 
-            const contentType = response.headers.get('content-type') || '';
-            const body = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
+function getCustomerById(customerId) {
+    if (!customerId) return null;
 
-            if (!response.ok) {
-                const message = body?.message || `HTTP ${response.status}`;
-                throw new Error(message);
-            }
+    const normalizedId = String(customerId);
+    const customerFromState = (state.customers || []).find(customer => {
+        const id = customer._id ?? customer.id;
+        return id && String(id) === normalizedId;
+    });
 
-            return body?.data || body || { enabled };
+    if (customerFromState) {
+        return customerFromState;
+    }
+
+    return mockData.customers.find(customer => String(customer.id) === normalizedId) || null;
+}
+
+function getPaymentMethodById(paymentId) {
+    return mockData.payments.find(method => method.id === paymentId) || null;
+}
+
+async function fetchPaymentSettingsStatus() {
+    try {
+        const response = await authorizedFetch(PAYMENT_SETTINGS_ENDPOINT);
+        if (!response?.ok) {
+            throw new Error(`HTTP ${response?.status}`);
         }
 
-        function updatePaymentMethodCard(payment) {
-            const card = document.querySelector(`.payment-method-card[data-payment-id="${payment.id}"]`);
-            if (!card) return;
+        const payload = await response.json().catch(() => null);
+        const data = payload?.data || payload;
 
-            let noteEl = card.querySelector('[data-payment-note]');
-            if (payment.note) {
-                if (!noteEl) {
-                    noteEl = document.createElement('p');
-                    noteEl.setAttribute('data-payment-note', 'true');
-                    noteEl.className = 'payment-note';
-                    card.querySelector('.payment-method-details')?.appendChild(noteEl);
-                }
-                noteEl.textContent = payment.note;
-            } else if (noteEl) {
-                noteEl.remove();
-            }
+        if (!data || typeof data !== 'object') {
+            throw new Error('استجابة غير متوقعة من خادم طرق الدفع');
+        }
 
-            const toggle = card.querySelector('.toggle-switch input');
+        Object.entries(data).forEach(([field, value]) => {
+            const paymentId = PAYMENT_ID_BY_STATUS_FIELD[field];
+            if (!paymentId) return;
+
+            const card = document.querySelector(`.payment-method-card[data-payment-id="${paymentId}"]`);
+            const toggle = card?.querySelector('.toggle-switch input');
             if (toggle) {
-                setPaymentToggleState(toggle, payment.enabled);
+                setPaymentToggleState(toggle, Boolean(value));
             }
+        });
+
+        return data;
+    } catch (error) {
+        console.error('❌ فشل جلب حالة إعدادات الدفع:', error);
+        showToast('error', 'إعدادات الدفع', error?.message || 'تعذر جلب حالة طرق الدفع.');
+        throw error;
+    }
+}
+
+async function renderPaymentMethods() {
+    await fetchPaymentSettingsStatus();
+    const methods = mockData.payments;
+    methods.forEach(updatePaymentMethodCard);
+
+    document.querySelectorAll('.payment-method-card .toggle-switch input').forEach(input => {
+        const card = input.closest('.payment-method-card');
+        const stored = card?.dataset.enabled;
+        if (stored == null) {
+            setPaymentToggleState(input, true);
         }
+    });
+}
 
-        // ===== Filter Helpers =====
-        function normalizeFilterValue(value) {
-            return typeof value === 'string' ? value.trim().toLowerCase() : '';
+async function togglePaymentMethod(paymentKey, enabled) {
+    const endpoint = PAYMENT_TOGGLE_ENDPOINTS[paymentKey];
+    if (!endpoint) {
+        throw new Error(`نقطة نهاية غير معروفة للطريقة: ${paymentKey}`);
+    }
+
+    const response = await authorizedFetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ enabled })
+    });
+
+    const handled = handleUnauthorized(response);
+    if (handled !== response) {
+        throw new Error('انتهت الجلسة. يرجى إعادة تسجيل الدخول.');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const body = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
+
+    if (!response.ok) {
+        const message = body?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+    }
+
+    return body?.data || body || { enabled };
+}
+
+function updatePaymentMethodCard(payment) {
+    const card = document.querySelector(`.payment-method-card[data-payment-id="${payment.id}"]`);
+    if (!card) return;
+
+    let noteEl = card.querySelector('[data-payment-note]');
+    if (payment.note) {
+        if (!noteEl) {
+            noteEl = document.createElement('p');
+            noteEl.setAttribute('data-payment-note', 'true');
+            noteEl.className = 'payment-note';
+            card.querySelector('.payment-method-details')?.appendChild(noteEl);
         }
+        noteEl.textContent = payment.note;
+    } else if (noteEl) {
+        noteEl.remove();
+    }
 
-        function filterBySearch(term, fields = []) {
-            const needle = normalizeFilterValue(term);
-            if (!needle) return () => true;
-            const targetFields = Array.isArray(fields) && fields.length ? fields : ['name'];
-            return item => targetFields.some(field => normalizeFilterValue(item?.[field]).includes(needle));
-        }
+    const toggle = card.querySelector('.toggle-switch input');
+    if (toggle) {
+        setPaymentToggleState(toggle, payment.enabled);
+    }
+}
 
-        function applyFilters(collection, filters = []) {
-            return filters.reduce((items, filterFn) => items.filter(filterFn), collection);
-        }
+// ===== Filter Helpers =====
+function normalizeFilterValue(value) {
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
 
-        // ===== Print & Export Functions =====
-        function buildReportTemplate(title, sections = [], options = {}) {
-            const generatedAt = options.generatedAt || new Date().toLocaleString('ar-EG');
-            const {
-                footerNote = 'تم توليد هذا التقرير من لوحة التحكم التجريبية لـ Action Sports.',
-                includePrintButton = true,
-                extraStyles = ''
-            } = options;
+function filterBySearch(term, fields = []) {
+    const needle = normalizeFilterValue(term);
+    if (!needle) return () => true;
+    const targetFields = Array.isArray(fields) && fields.length ? fields : ['name'];
+    return item => targetFields.some(field => normalizeFilterValue(item?.[field]).includes(needle));
+}
 
-            const baseStyles = `
+function applyFilters(collection, filters = []) {
+    return filters.reduce((items, filterFn) => items.filter(filterFn), collection);
+}
+
+// ===== Print & Export Functions =====
+function buildReportTemplate(title, sections = [], options = {}) {
+    const generatedAt = options.generatedAt || new Date().toLocaleString('ar-EG');
+    const {
+        footerNote = 'تم توليد هذا التقرير من لوحة التحكم التجريبية لـ Action Sports.',
+        includePrintButton = true,
+        extraStyles = ''
+    } = options;
+
+    const baseStyles = `
                 body { font-family: 'Tajawal', 'Cairo', Arial, sans-serif; background: #f5f6fa; color: #2c3e50; margin: 0; }
                 .container { max-width: 960px; margin: 0 auto; padding: 32px; background: #ffffff; }
                 .report-header { text-align: center; margin-bottom: 32px; }
@@ -5873,17 +5869,17 @@
                 .report-footer button:hover { background: #c44133; }
             `;
 
-            const styles = `${baseStyles}${extraStyles}`;
-            const buttonHtml = includePrintButton ? `<button onclick="window.print()">طباعة التقرير</button>` : '';
+    const styles = `${baseStyles}${extraStyles}`;
+    const buttonHtml = includePrintButton ? `<button onclick="window.print()">طباعة التقرير</button>` : '';
 
-            const sectionsHtml = sections.map(section => `
+    const sectionsHtml = sections.map(section => `
                 <section class="section">
                     ${section.title ? `<h2>${section.title}</h2>` : ''}
                     ${section.content || ''}
                 </section>
             `).join('');
 
-            return `
+    return `
                 <!DOCTYPE html>
                 <html lang="ar" dir="rtl">
                     <head>
@@ -5906,43 +5902,43 @@
                     </body>
                 </html>
             `;
-        }
+}
 
-        function openReportWindow(html) {
-            const reportWindow = window.open('', '_blank');
-            if (!reportWindow) {
-                return false;
-            }
+function openReportWindow(html) {
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+        return false;
+    }
 
-            reportWindow.document.open();
-            reportWindow.document.write(html);
-            reportWindow.document.close();
-            reportWindow.focus();
-            return true;
-        }
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+    return true;
+}
 
-        function exportOrders() {
-            const orders = filterOrders().slice();
+function exportOrders() {
+    const orders = filterOrders().slice();
 
-            if (!orders.length) {
-                showToast('info', 'تصدير الطلبات', 'لا توجد طلبات متاحة للتقرير حالياً.');
-                return;
-            }
+    if (!orders.length) {
+        showToast('info', 'تصدير الطلبات', 'لا توجد طلبات متاحة للتقرير حالياً.');
+        return;
+    }
 
-            const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-            const totalItems = orders.reduce((sum, order) => sum + (order.items || 0), 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalItems = orders.reduce((sum, order) => sum + (order.items || 0), 0);
 
-            const statusCounts = orders.reduce((acc, order) => {
-                acc[order.status] = (acc[order.status] || 0) + 1;
-                return acc;
-            }, {});
+    const statusCounts = orders.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+    }, {});
 
-            const paymentCounts = orders.reduce((acc, order) => {
-                acc[order.payment] = (acc[order.payment] || 0) + 1;
-                return acc;
-            }, {});
+    const paymentCounts = orders.reduce((acc, order) => {
+        acc[order.payment] = (acc[order.payment] || 0) + 1;
+        return acc;
+    }, {});
 
-            const summaryContent = `
+    const summaryContent = `
                 <table class="data-table">
                     <tbody>
                         <tr><th>عدد الطلبات</th><td>${formatNumber(orders.length)}</td></tr>
@@ -5953,8 +5949,8 @@
                 </table>
             `;
 
-            const statusTable = Object.keys(statusCounts).length
-                ? `
+    const statusTable = Object.keys(statusCounts).length
+        ? `
                     <table class="data-table">
                         <thead>
                             <tr><th>الحالة</th><th>عدد الطلبات</th></tr>
@@ -5966,10 +5962,10 @@
                         </tbody>
                     </table>
                 `
-                : '<p class="empty-state">لا تتوفر بيانات للحالات.</p>';
+        : '<p class="empty-state">لا تتوفر بيانات للحالات.</p>';
 
-            const paymentTable = Object.keys(paymentCounts).length
-                ? `
+    const paymentTable = Object.keys(paymentCounts).length
+        ? `
                     <table class="data-table">
                         <thead>
                             <tr><th>طريقة الدفع</th><th>عدد الطلبات</th></tr>
@@ -5981,9 +5977,9 @@
                         </tbody>
                     </table>
                 `
-                : '<p class="empty-state">لا تتوفر بيانات لطرق الدفع.</p>';
+        : '<p class="empty-state">لا تتوفر بيانات لطرق الدفع.</p>';
 
-            const ordersRows = orders.map((order, index) => `
+    const ordersRows = orders.map((order, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
@@ -5996,7 +5992,7 @@
                 </tr>
             `).join('');
 
-            const ordersTable = `
+    const ordersTable = `
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -6014,84 +6010,84 @@
                 </table>
             `;
 
-            const sections = [
-                { title: 'ملخص سريع', content: summaryContent },
-                {
-                    title: 'تفاصيل الحالة وطرق الدفع',
-                    content: `<div class="grid-2">${statusTable}${paymentTable}</div>`
-                },
-                { title: 'قائمة الطلبات', content: ordersTable }
-            ];
+    const sections = [
+        { title: 'ملخص سريع', content: summaryContent },
+        {
+            title: 'تفاصيل الحالة وطرق الدفع',
+            content: `<div class="grid-2">${statusTable}${paymentTable}</div>`
+        },
+        { title: 'قائمة الطلبات', content: ordersTable }
+    ];
 
-            const reportHtml = buildReportTemplate('تقرير الطلبات', sections, {
-                extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
-            });
+    const reportHtml = buildReportTemplate('تقرير الطلبات', sections, {
+        extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
+    });
 
-            if (!openReportWindow(reportHtml)) {
-                showToast('error', 'تصدير الطلبات', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
-                return;
+    if (!openReportWindow(reportHtml)) {
+        showToast('error', 'تصدير الطلبات', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        return;
+    }
+
+    showToast('success', 'تصدير الطلبات', 'تم فتح تقرير الطلبات في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+}
+
+function exportCustomers() {
+    if (Array.isArray(state.customers) && state.customers.length > 0 && Array.isArray(state.orders)) {
+        updateCustomersOrdersInfo();
+    }
+
+    let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+
+    if ((!customers || customers.length === 0) && state.orders?.length) {
+        createCustomersFromOrders();
+        updateCustomersOrdersInfo();
+        customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    }
+
+    if (!customers.length) {
+        showToast('info', 'تصدير العملاء', 'لا توجد بيانات عملاء متاحة للتقرير حالياً.');
+        return;
+    }
+
+    const orders = Array.isArray(state.orders) ? state.orders : [];
+
+    const customersWithMetrics = customers.map(customer => {
+        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        const ordersCount = relatedOrders.length;
+        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+
+        let lastOrderDisplay = customer.lastOrder || '-';
+        if (relatedOrders.length) {
+            const latestOrder = relatedOrders.reduce((latest, current) => {
+                const latestDate = latest ? getOrderDate(latest) : null;
+                const currentDate = getOrderDate(current);
+                if (!currentDate) return latest;
+                if (!latestDate || currentDate > latestDate) {
+                    return current;
+                }
+                return latest;
+            }, null);
+
+            const latestDate = getOrderDate(latestOrder);
+            if (latestDate) {
+                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
             }
-
-            showToast('success', 'تصدير الطلبات', 'تم فتح تقرير الطلبات في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
         }
 
-        function exportCustomers() {
-            if (Array.isArray(state.customers) && state.customers.length > 0 && Array.isArray(state.orders)) {
-                updateCustomersOrdersInfo();
-            }
+        return {
+            ...customer,
+            ordersCount,
+            totalSpent,
+            lastOrderDisplay
+        };
+    });
 
-            let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    const totalCustomers = customersWithMetrics.length;
+    const totalOrders = customersWithMetrics.reduce((sum, customer) => sum + (customer.ordersCount || 0), 0);
+    const totalSpend = customersWithMetrics.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0);
+    const averageSpend = totalCustomers ? totalSpend / totalCustomers : 0;
 
-            if ((!customers || customers.length === 0) && state.orders?.length) {
-                createCustomersFromOrders();
-                updateCustomersOrdersInfo();
-                customers = Array.isArray(state.customers) ? state.customers.slice() : [];
-            }
-
-            if (!customers.length) {
-                showToast('info', 'تصدير العملاء', 'لا توجد بيانات عملاء متاحة للتقرير حالياً.');
-                return;
-            }
-
-            const orders = Array.isArray(state.orders) ? state.orders : [];
-
-            const customersWithMetrics = customers.map(customer => {
-                const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
-                const ordersCount = relatedOrders.length;
-                const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-
-                let lastOrderDisplay = customer.lastOrder || '-';
-                if (relatedOrders.length) {
-                    const latestOrder = relatedOrders.reduce((latest, current) => {
-                        const latestDate = latest ? getOrderDate(latest) : null;
-                        const currentDate = getOrderDate(current);
-                        if (!currentDate) return latest;
-                        if (!latestDate || currentDate > latestDate) {
-                            return current;
-                        }
-                        return latest;
-                    }, null);
-
-                    const latestDate = getOrderDate(latestOrder);
-                    if (latestDate) {
-                        lastOrderDisplay = latestDate.toLocaleString('ar-EG');
-                    }
-                }
-
-                return {
-                    ...customer,
-                    ordersCount,
-                    totalSpent,
-                    lastOrderDisplay
-                };
-            });
-
-            const totalCustomers = customersWithMetrics.length;
-            const totalOrders = customersWithMetrics.reduce((sum, customer) => sum + (customer.ordersCount || 0), 0);
-            const totalSpend = customersWithMetrics.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0);
-            const averageSpend = totalCustomers ? totalSpend / totalCustomers : 0;
-
-            const summaryContent = `
+    const summaryContent = `
                 <table class="data-table">
                     <tbody>
                         <tr><th>عدد العملاء</th><td>${formatNumber(totalCustomers)}</td></tr>
@@ -6102,7 +6098,7 @@
                 </table>
             `;
 
-            const customersRows = customersWithMetrics.map((customer, index) => `
+    const customersRows = customersWithMetrics.map((customer, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${customer.name || '-'}</td>
@@ -6113,7 +6109,7 @@
                 </tr>
             `).join('');
 
-            const customersTable = `
+    const customersTable = `
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -6129,40 +6125,40 @@
                 </table>
             `;
 
-            const sections = [
-                { title: 'ملخص سريع', content: summaryContent },
-                { title: 'قائمة العملاء', content: customersTable }
-            ];
+    const sections = [
+        { title: 'ملخص سريع', content: summaryContent },
+        { title: 'قائمة العملاء', content: customersTable }
+    ];
 
-            const reportHtml = buildReportTemplate('تقرير العملاء', sections, {
-                extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
-            });
+    const reportHtml = buildReportTemplate('تقرير العملاء', sections, {
+        extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
+    });
 
-            if (!openReportWindow(reportHtml)) {
-                showToast('error', 'تصدير العملاء', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
-                return;
-            }
+    if (!openReportWindow(reportHtml)) {
+        showToast('error', 'تصدير العملاء', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        return;
+    }
 
-            showToast('success', 'تصدير العملاء', 'تم فتح تقرير العملاء في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
-        }
+    showToast('success', 'تصدير العملاء', 'تم فتح تقرير العملاء في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+}
 
-        function exportAuditLogs() {
-            const logs = mockData.auditLogs.slice();
+function exportAuditLogs() {
+    const logs = mockData.auditLogs.slice();
 
-            if (!logs.length) {
-                showToast('info', 'تصدير سجل النشاط', 'لا توجد سجلات نشاط متاحة حالياً.');
-                return;
-            }
+    if (!logs.length) {
+        showToast('info', 'تصدير سجل النشاط', 'لا توجد سجلات نشاط متاحة حالياً.');
+        return;
+    }
 
-            const actionCounts = logs.reduce((acc, log) => {
-                acc[log.action] = (acc[log.action] || 0) + 1;
-                return acc;
-            }, {});
+    const actionCounts = logs.reduce((acc, log) => {
+        acc[log.action] = (acc[log.action] || 0) + 1;
+        return acc;
+    }, {});
 
-            const uniqueUsers = new Set(logs.map(log => log.user)).size;
-            const latestLog = logs[0];
+    const uniqueUsers = new Set(logs.map(log => log.user)).size;
+    const latestLog = logs[0];
 
-            const summaryContent = `
+    const summaryContent = `
                 <table class="data-table">
                     <tbody>
                         <tr><th>إجمالي السجلات</th><td>${formatNumber(logs.length)}</td></tr>
@@ -6172,7 +6168,7 @@
                 </table>
             `;
 
-            const actionTable = `
+    const actionTable = `
                 <table class="data-table">
                     <thead>
                         <tr><th>نوع الإجراء</th><th>عدد المرات</th></tr>
@@ -6185,7 +6181,7 @@
                 </table>
             `;
 
-            const logsRows = logs.map(log => `
+    const logsRows = logs.map(log => `
                 <tr>
                     <td>${log.createdAt}</td>
                     <td>${log.user}</td>
@@ -6195,7 +6191,7 @@
                 </tr>
             `).join('');
 
-            const logsTable = `
+    const logsTable = `
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -6210,83 +6206,83 @@
                 </table>
             `;
 
-            const sections = [
-                { title: 'ملخص سريع', content: summaryContent },
-                { title: 'توزيع الإجراءات', content: actionTable },
-                { title: 'السجل التفصيلي', content: logsTable }
-            ];
+    const sections = [
+        { title: 'ملخص سريع', content: summaryContent },
+        { title: 'توزيع الإجراءات', content: actionTable },
+        { title: 'السجل التفصيلي', content: logsTable }
+    ];
 
-            const reportHtml = buildReportTemplate('تقرير سجل النشاط', sections);
+    const reportHtml = buildReportTemplate('تقرير سجل النشاط', sections);
 
-            if (!openReportWindow(reportHtml)) {
-                showToast('error', 'تصدير سجل النشاط', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
-                return;
-            }
+    if (!openReportWindow(reportHtml)) {
+        showToast('error', 'تصدير سجل النشاط', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        return;
+    }
 
-            showToast('success', 'تصدير سجل النشاط', 'تم فتح تقرير السجل في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast('success', 'تصدير سجل النشاط', 'تم فتح تقرير السجل في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+}
+
+async function exportAnalyticsReport() {
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    if (!chartsLoaded.overview) {
+        loadOverviewCharts();
+        chartsLoaded.overview = true;
+    }
+
+    if (!chartsLoaded.analytics) {
+        loadAnalyticsCharts();
+        chartsLoaded.analytics = true;
+    }
+
+    await wait(200);
+
+    const chartDefinitions = [
+        { scope: 'overview', key: 'sales', title: 'المبيعات الشهرية', description: 'أداء المبيعات خلال آخر ستة أشهر.' },
+        { scope: 'overview', key: 'products', title: 'توزيع أفضل المنتجات', description: 'نسبة المبيعات حسب نوع المنتج.' },
+        { scope: 'analytics', key: 'revenue', title: 'الإيرادات مقابل التكاليف', description: 'مقارنة شهرية بين الإيرادات والتكاليف.' },
+        { scope: 'analytics', key: 'traffic', title: 'مصادر الزيارات', description: 'توزيع مصادر زيارات المتجر خلال الفترة المحددة.' },
+        { scope: 'analytics', key: 'performance', title: 'رادار الأداء العام', description: 'قياس مؤشرات الأداء الرئيسية الحالية.' }
+    ];
+
+    const chartCards = chartDefinitions.map(def => {
+        const chart = chartInstances[def.scope]?.[def.key];
+        if (!chart || !chart.canvas) {
+            return '';
         }
 
-        async function exportAnalyticsReport() {
-            const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        let dataUrl = '';
+        try {
+            dataUrl = chart.canvas.toDataURL('image/png');
+        } catch (error) {
+            console.warn('Failed to export chart image', error);
+        }
 
-            if (!chartsLoaded.overview) {
-                loadOverviewCharts();
-                chartsLoaded.overview = true;
-            }
+        if (!dataUrl) {
+            return '';
+        }
 
-            if (!chartsLoaded.analytics) {
-                loadAnalyticsCharts();
-                chartsLoaded.analytics = true;
-            }
-
-            await wait(200);
-
-            const chartDefinitions = [
-                { scope: 'overview', key: 'sales', title: 'المبيعات الشهرية', description: 'أداء المبيعات خلال آخر ستة أشهر.' },
-                { scope: 'overview', key: 'products', title: 'توزيع أفضل المنتجات', description: 'نسبة المبيعات حسب نوع المنتج.' },
-                { scope: 'analytics', key: 'revenue', title: 'الإيرادات مقابل التكاليف', description: 'مقارنة شهرية بين الإيرادات والتكاليف.' },
-                { scope: 'analytics', key: 'traffic', title: 'مصادر الزيارات', description: 'توزيع مصادر زيارات المتجر خلال الفترة المحددة.' },
-                { scope: 'analytics', key: 'performance', title: 'رادار الأداء العام', description: 'قياس مؤشرات الأداء الرئيسية الحالية.' }
-            ];
-
-            const chartCards = chartDefinitions.map(def => {
-                const chart = chartInstances[def.scope]?.[def.key];
-                if (!chart || !chart.canvas) {
-                    return '';
-                }
-
-                let dataUrl = '';
-                try {
-                    dataUrl = chart.canvas.toDataURL('image/png');
-                } catch (error) {
-                    console.warn('Failed to export chart image', error);
-                }
-
-                if (!dataUrl) {
-                    return '';
-                }
-
-                return `
+        return `
                     <div class="chart-card">
                         <h3>${def.title}</h3>
                         <p>${def.description}</p>
                         <img src="${dataUrl}" alt="${def.title}" />
                     </div>
                 `;
-            }).filter(Boolean).join('');
+    }).filter(Boolean).join('');
 
-            const analyticsData = calculateAnalyticsData();
+    const analyticsData = calculateAnalyticsData();
 
-            const metricsRows = `
+    const metricsRows = `
                 <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(analyticsData.totalRevenue)}</td></tr>
                 <tr><th>متوسط قيمة السلة</th><td>${formatCurrency(analyticsData.avgBasket)}</td></tr>
                 <tr><th>عدد الطلبات</th><td>${formatNumber(analyticsData.ordersCount)}</td></tr>
                 <tr><th>إجمالي المنتجات المباعة</th><td>${formatNumber(analyticsData.totalItems)}</td></tr>
             `;
 
-            const topProductsData = (analyticsData.topProducts || []).filter(product => Number(product.quantity) >= 5);
+    const topProductsData = (analyticsData.topProducts || []).filter(product => Number(product.quantity) >= 5);
 
-            const topProductsRows = topProductsData.map((product, index) => `
+    const topProductsRows = topProductsData.map((product, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${product.name}</td>
@@ -6295,56 +6291,56 @@
                 </tr>
             `).join('');
 
-            const orders = Array.isArray(state.orders) ? state.orders : [];
-            let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    const orders = Array.isArray(state.orders) ? state.orders : [];
+    let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
 
-            if ((!customers || customers.length === 0) && orders.length) {
-                createCustomersFromOrders();
-                customers = Array.isArray(state.customers) ? state.customers.slice() : [];
-            }
+    if ((!customers || customers.length === 0) && orders.length) {
+        createCustomersFromOrders();
+        customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+    }
 
-            const customersWithMetrics = (customers || []).map(customer => {
-                const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
-                const ordersCount = relatedOrders.length;
-                const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+    const customersWithMetrics = (customers || []).map(customer => {
+        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        const ordersCount = relatedOrders.length;
+        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-                let lastOrderDisplay = customer.lastOrder || '-';
-                if (relatedOrders.length) {
-                    const latestOrder = relatedOrders.reduce((latest, current) => {
-                        const latestDate = latest ? getOrderDate(latest) : null;
-                        const currentDate = getOrderDate(current);
-                        if (!currentDate) return latest;
-                        if (!latestDate || currentDate > latestDate) {
-                            return current;
-                        }
-                        return latest;
-                    }, null);
-
-                    const latestDate = getOrderDate(latestOrder);
-                    if (latestDate) {
-                        lastOrderDisplay = latestDate.toLocaleString('ar-EG');
-                    }
+        let lastOrderDisplay = customer.lastOrder || '-';
+        if (relatedOrders.length) {
+            const latestOrder = relatedOrders.reduce((latest, current) => {
+                const latestDate = latest ? getOrderDate(latest) : null;
+                const currentDate = getOrderDate(current);
+                if (!currentDate) return latest;
+                if (!latestDate || currentDate > latestDate) {
+                    return current;
                 }
+                return latest;
+            }, null);
 
-                const status = customer.status || customer.accountStatus || null;
-                const segment = customer.segment || null;
+            const latestDate = getOrderDate(latestOrder);
+            if (latestDate) {
+                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
+            }
+        }
 
-                return {
-                    ...customer,
-                    ordersCount,
-                    totalSpent,
-                    lastOrderDisplay,
-                    status,
-                    segment
-                };
-            });
+        const status = customer.status || customer.accountStatus || null;
+        const segment = customer.segment || null;
 
-            const topCustomersData = customersWithMetrics
-                .filter(customer => (customer.totalSpent || 0) > 0 || (customer.ordersCount || 0) > 0)
-                .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
-                .slice(0, 10);
+        return {
+            ...customer,
+            ordersCount,
+            totalSpent,
+            lastOrderDisplay,
+            status,
+            segment
+        };
+    });
 
-            const topCustomersRows = topCustomersData.map((customer, index) => `
+    const topCustomersData = customersWithMetrics
+        .filter(customer => (customer.totalSpent || 0) > 0 || (customer.ordersCount || 0) > 0)
+        .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
+        .slice(0, 10);
+
+    const topCustomersRows = topCustomersData.map((customer, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${customer.name || '-'}</td>
@@ -6358,180 +6354,180 @@
                 </tr>
             `).join('');
 
-            const chartsMarkup = chartCards || '<p class="empty-state">لا تتوفر رسوم بيانية حالياً.</p>';
-            const productsMarkup = topProductsData.length
-                ? `<table class="data-table"><thead><tr><th>#</th><th>اسم المنتج</th><th>المبيعات (الكمية)</th><th>الإيرادات</th></tr></thead><tbody>${topProductsRows}</tbody></table>`
-                : '<p class="empty-state">لا توجد منتجات حققت 5 مبيعات أو أكثر للعرض.</p>';
-            const customersMarkup = topCustomersData.length
-                ? `<table class="data-table"><thead><tr><th>#</th><th>الاسم</th><th>البريد الإلكتروني</th><th>رقم الهاتف</th><th>التصنيف</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th><th>الحالة</th><th>آخر طلب</th></tr></thead><tbody>${topCustomersRows}</tbody></table>`
-                : '<p class="empty-state">لا توجد بيانات عملاء للعرض.</p>';
+    const chartsMarkup = chartCards || '<p class="empty-state">لا تتوفر رسوم بيانية حالياً.</p>';
+    const productsMarkup = topProductsData.length
+        ? `<table class="data-table"><thead><tr><th>#</th><th>اسم المنتج</th><th>المبيعات (الكمية)</th><th>الإيرادات</th></tr></thead><tbody>${topProductsRows}</tbody></table>`
+        : '<p class="empty-state">لا توجد منتجات حققت 5 مبيعات أو أكثر للعرض.</p>';
+    const customersMarkup = topCustomersData.length
+        ? `<table class="data-table"><thead><tr><th>#</th><th>الاسم</th><th>البريد الإلكتروني</th><th>رقم الهاتف</th><th>التصنيف</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th><th>الحالة</th><th>آخر طلب</th></tr></thead><tbody>${topCustomersRows}</tbody></table>`
+        : '<p class="empty-state">لا توجد بيانات عملاء للعرض.</p>';
 
-            const sections = [
-                {
-                    title: 'المؤشرات الرئيسية',
-                    content: `<table class="data-table"><tbody>${metricsRows}</tbody></table>`
-                },
-                {
-                    title: 'الرسوم البيانية',
-                    content: `<div class="charts-grid">${chartsMarkup}</div>`
-                },
-                {
-                    title: 'أفضل المنتجات أداءً',
-                    content: productsMarkup
-                },
-                {
-                    title: 'أعلى العملاء إنفاقاً',
-                    content: customersMarkup
-                }
-            ];
+    const sections = [
+        {
+            title: 'المؤشرات الرئيسية',
+            content: `<table class="data-table"><tbody>${metricsRows}</tbody></table>`
+        },
+        {
+            title: 'الرسوم البيانية',
+            content: `<div class="charts-grid">${chartsMarkup}</div>`
+        },
+        {
+            title: 'أفضل المنتجات أداءً',
+            content: productsMarkup
+        },
+        {
+            title: 'أعلى العملاء إنفاقاً',
+            content: customersMarkup
+        }
+    ];
 
-            const reportHtml = buildReportTemplate('تقرير التحليلات', sections);
+    const reportHtml = buildReportTemplate('تقرير التحليلات', sections);
 
-            if (!openReportWindow(reportHtml)) {
-                showToast('error', 'تصدير التقرير', 'فشل فتح نافذة جديدة. يرجى السماح بالنوافذ المنبثقة والمحاولة مجدداً.');
-                return;
-            }
+    if (!openReportWindow(reportHtml)) {
+        showToast('error', 'تصدير التقرير', 'فشل فتح نافذة جديدة. يرجى السماح بالنوافذ المنبثقة والمحاولة مجدداً.');
+        return;
+    }
 
-            showToast('success', 'تصدير التقرير', 'تم فتح التقرير في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast('success', 'تصدير التقرير', 'تم فتح التقرير في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+}
+
+// ===== Rendering Functions =====
+/**
+ * تحديث إحصائيات نظرة عامة
+ */
+function updateOverviewStats() {
+    const orders = state.orders || [];
+    const products = state.products || [];
+    const customers = state.customers || [];
+    const now = new Date();
+
+    // 1. الطلبات اليومية (طلبات تاريخ اليوم فقط)
+    const dailyOrdersCount = orders.filter(order => {
+        const orderDate = getOrderDate(order);
+        return isSameDay(orderDate, now);
+    }).length;
+
+    // 2. إجمالي الإيرادات لهذا الشهر (استثناء الملغاة)
+    const monthlyRevenue = orders
+        .filter(order => order.status !== 'cancelled')
+        .filter(order => {
+            const orderDate = getOrderDate(order);
+            return isSameMonth(orderDate, now);
+        })
+        .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+
+    // 3. العملاء الجدد (المضافون اليوم وفق تواريخ الإنشاء)
+    const dailyNewCustomers = customers.filter(customer => {
+        const createdAt = getCustomerCreatedDate(customer);
+        if (createdAt) {
+            return isSameDay(createdAt, now);
         }
 
-        // ===== Rendering Functions =====
-        /**
-         * تحديث إحصائيات نظرة عامة
-         */
-        function updateOverviewStats() {
-            const orders = state.orders || [];
-            const products = state.products || [];
-            const customers = state.customers || [];
-            const now = new Date();
+        // fallback: إذا لم يتوفر تاريخ الإنشاء نتحقق من آخر طلب
+        const customerOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        if (!customerOrders.length) return false;
 
-            // 1. الطلبات اليومية (طلبات تاريخ اليوم فقط)
-            const dailyOrdersCount = orders.filter(order => {
-                const orderDate = getOrderDate(order);
-                return isSameDay(orderDate, now);
-            }).length;
+        const latestOrder = customerOrders.reduce((latest, current) => {
+            const latestDate = latest ? getOrderDate(latest) : null;
+            const currentDate = getOrderDate(current);
+            if (!currentDate) return latest;
+            if (!latestDate || currentDate > latestDate) {
+                return current;
+            }
+            return latest;
+        }, null);
 
-            // 2. إجمالي الإيرادات لهذا الشهر (استثناء الملغاة)
-            const monthlyRevenue = orders
-                .filter(order => order.status !== 'cancelled')
-                .filter(order => {
-                    const orderDate = getOrderDate(order);
-                    return isSameMonth(orderDate, now);
+        const latestOrderDate = getOrderDate(latestOrder);
+        return isSameDay(latestOrderDate, now);
+    }).length;
+
+    // 4. المنتجات منخفضة المخزون (٥ أو أقل)
+    const lowStockProducts = products.filter(product => {
+        const stockValue = product.stock ?? product.quantity ?? product.count ?? 0;
+        return Number.isFinite(stockValue) && stockValue <= 5;
+    });
+
+    // تحديث العناصر في HTML باستخدام IDs
+    const ordersEl = document.getElementById('dailyOrdersCount');
+    const revenueEl = document.getElementById('monthlyRevenue');
+    const customersEl = document.getElementById('newCustomersCount');
+    const lowStockEl = document.getElementById('lowStockCount');
+    const lowStockCard = document.getElementById('lowStockCard');
+
+    if (ordersEl) ordersEl.textContent = formatNumber(dailyOrdersCount);
+    if (revenueEl) revenueEl.textContent = formatCurrency(monthlyRevenue);
+    if (customersEl) customersEl.textContent = formatNumber(dailyNewCustomers);
+    if (lowStockEl) lowStockEl.textContent = lowStockProducts.length;
+
+    if (lowStockCard) {
+        if (lowStockProducts.length === 0) {
+            lowStockCard.removeAttribute('title');
+        } else {
+            const tooltip = lowStockProducts
+                .map(product => {
+                    const name = product.name || product.title || 'منتج غير معروف';
+                    const quantity = product.stock ?? product.quantity ?? product.count ?? 0;
+                    return `${name} — ${quantity}`;
                 })
-                .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-
-            // 3. العملاء الجدد (المضافون اليوم وفق تواريخ الإنشاء)
-            const dailyNewCustomers = customers.filter(customer => {
-                const createdAt = getCustomerCreatedDate(customer);
-                if (createdAt) {
-                    return isSameDay(createdAt, now);
-                }
-
-                // fallback: إذا لم يتوفر تاريخ الإنشاء نتحقق من آخر طلب
-                const customerOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
-                if (!customerOrders.length) return false;
-
-                const latestOrder = customerOrders.reduce((latest, current) => {
-                    const latestDate = latest ? getOrderDate(latest) : null;
-                    const currentDate = getOrderDate(current);
-                    if (!currentDate) return latest;
-                    if (!latestDate || currentDate > latestDate) {
-                        return current;
-                    }
-                    return latest;
-                }, null);
-
-                const latestOrderDate = getOrderDate(latestOrder);
-                return isSameDay(latestOrderDate, now);
-            }).length;
-
-            // 4. المنتجات منخفضة المخزون (٥ أو أقل)
-            const lowStockProducts = products.filter(product => {
-                const stockValue = product.stock ?? product.quantity ?? product.count ?? 0;
-                return Number.isFinite(stockValue) && stockValue <= 5;
-            });
-
-            // تحديث العناصر في HTML باستخدام IDs
-            const ordersEl = document.getElementById('dailyOrdersCount');
-            const revenueEl = document.getElementById('monthlyRevenue');
-            const customersEl = document.getElementById('newCustomersCount');
-            const lowStockEl = document.getElementById('lowStockCount');
-            const lowStockCard = document.getElementById('lowStockCard');
-
-            if (ordersEl) ordersEl.textContent = formatNumber(dailyOrdersCount);
-            if (revenueEl) revenueEl.textContent = formatCurrency(monthlyRevenue);
-            if (customersEl) customersEl.textContent = formatNumber(dailyNewCustomers);
-            if (lowStockEl) lowStockEl.textContent = lowStockProducts.length;
-
-            if (lowStockCard) {
-                if (lowStockProducts.length === 0) {
-                    lowStockCard.removeAttribute('title');
-                } else {
-                    const tooltip = lowStockProducts
-                        .map(product => {
-                            const name = product.name || product.title || 'منتج غير معروف';
-                            const quantity = product.stock ?? product.quantity ?? product.count ?? 0;
-                            return `${name} — ${quantity}`;
-                        })
-                        .join('\n');
-                    lowStockCard.setAttribute('title', tooltip);
-                }
-            }
-
+                .join('\n');
+            lowStockCard.setAttribute('title', tooltip);
         }
+    }
 
-        function renderOverview() {
-            // تحديث الإحصائيات
-            updateOverviewStats();
-            
-            // تحديث جدول أحدث الطلبات
-            const body = document.getElementById('overviewOrdersBody');
-            if (!body) return;
-            
-            const today = new Date();
-            const todaysOrders = (state.orders || []).filter(order => {
-                const orderDate = getOrderDate(order);
-                return isSameDay(orderDate, today);
-            });
+}
 
-            if (todaysOrders.length === 0) {
-                body.innerHTML = `
+function renderOverview() {
+    // تحديث الإحصائيات
+    updateOverviewStats();
+
+    // تحديث جدول أحدث الطلبات
+    const body = document.getElementById('overviewOrdersBody');
+    if (!body) return;
+
+    const today = new Date();
+    const todaysOrders = (state.orders || []).filter(order => {
+        const orderDate = getOrderDate(order);
+        return isSameDay(orderDate, today);
+    });
+
+    if (todaysOrders.length === 0) {
+        body.innerHTML = `
                     <tr>
                         <td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">
                             لا توجد طلبات مسجلة اليوم
                         </td>
                     </tr>
                 `;
-                return;
-            }
-            
-            const sortedTodaysOrders = todaysOrders
-                .slice()
-                .sort((a, b) => {
-                    const dateA = getOrderDate(a);
-                    const dateB = getOrderDate(b);
-                    if (!dateA) return 1;
-                    if (!dateB) return -1;
-                    return dateB - dateA;
-                })
-                .slice(0, 5);
+        return;
+    }
 
-            body.innerHTML = sortedTodaysOrders.map((order, index) => {
-                const orderDateObj = getOrderDate(order);
-                const displayDate = orderDateObj
-                    ? orderDateObj.toLocaleString('ar-EG', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })
-                    : (order.date || '-');
+    const sortedTodaysOrders = todaysOrders
+        .slice()
+        .sort((a, b) => {
+            const dateA = getOrderDate(a);
+            const dateB = getOrderDate(b);
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+            return dateB - dateA;
+        })
+        .slice(0, 5);
 
-                const customerName = order.customer || order.user?.name || '-';
-                const statusBadge = getStatusBadge(order.status);
+    body.innerHTML = sortedTodaysOrders.map((order, index) => {
+        const orderDateObj = getOrderDate(order);
+        const displayDate = orderDateObj
+            ? orderDateObj.toLocaleString('ar-EG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+            : (order.date || '-');
 
-                return `
+        const customerName = order.customer || order.user?.name || '-';
+        const statusBadge = getStatusBadge(order.status);
+
+        return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
@@ -6544,25 +6540,25 @@
                         <button class="action-btn print-order" data-order-id="${order.id}" title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
                     </td>
                 </tr>`;
-            }).join('');
-        }
+    }).join('');
+}
 
-    function renderProducts() {
-        const grid = document.getElementById('productsGrid');
-        if (!grid) return;
+function renderProducts() {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
 
-        if (state.productsLoading) {
-            grid.innerHTML = `
+    if (state.productsLoading) {
+        grid.innerHTML = `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل المنتجات...</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        if (state.productsError) {
-            grid.innerHTML = `
+    if (state.productsError) {
+        grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>حدث خطأ أثناء تحميل المنتجات</h3>
@@ -6570,38 +6566,38 @@
                     <button class="btn-primary" data-action="refresh-products">إعادة المحاولة</button>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        const source = getProductsSource();
+    const source = getProductsSource();
 
-        if (!source.length) {
-            grid.innerHTML = `
+    if (!source.length) {
+        grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <h3>لا توجد منتجات حالياً</h3>
                     <p>استخدم زر "إضافة منتج جديد" لإنشاء أول منتج.</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        const filterFns = [
-            filterBySearch(state.filters.productSearch, ['name', 'sku']),
-            state.filters.productCategory !== 'all' ? item => normalizeFilterValue(item.categoryId || item.categorySlug) === normalizeFilterValue(state.filters.productCategory) : () => true
-        ];
+    const filterFns = [
+        filterBySearch(state.filters.productSearch, ['name', 'sku']),
+        state.filters.productCategory !== 'all' ? item => normalizeFilterValue(item.categoryId || item.categorySlug) === normalizeFilterValue(state.filters.productCategory) : () => true
+    ];
 
-        const filtered = applyFilters(source, filterFns);
-        if (!filtered.length) {
-            grid.innerHTML = `<div class="empty-state">
+    const filtered = applyFilters(source, filterFns);
+    if (!filtered.length) {
+        grid.innerHTML = `<div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <h3>لا توجد منتجات مطابقة</h3>
                 <p>حاول تعديل البحث أو الفلاتر</p>
             </div>`;
-            return;
-        }
+        return;
+    }
 
-        grid.innerHTML = filtered.map(product => `
+    grid.innerHTML = filtered.map(product => `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-thumb">
                     <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
@@ -6620,24 +6616,24 @@
                 </div>
             </div>
         `).join('');
-    }
+}
 
-    function renderCategories() {
-        const list = document.getElementById('categoriesList');
-        if (!list) return;
+function renderCategories() {
+    const list = document.getElementById('categoriesList');
+    if (!list) return;
 
-        if (state.categoriesLoading) {
-            list.innerHTML = `
+    if (state.categoriesLoading) {
+        list.innerHTML = `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل الفئات...</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        if (state.categoriesError) {
-            list.innerHTML = `
+    if (state.categoriesError) {
+        list.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>حدث خطأ أثناء تحميل الفئات</h3>
@@ -6645,33 +6641,33 @@
                     <button class="btn-primary" data-action="refresh-categories">إعادة المحاولة</button>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        const categories = getCategorySource();
-        const filteredCategories = applyFilters(categories, [
-            filterBySearch(state.filters.categorySearch, ['name', 'description'])
-        ]);
+    const categories = getCategorySource();
+    const filteredCategories = applyFilters(categories, [
+        filterBySearch(state.filters.categorySearch, ['name', 'description'])
+    ]);
 
-        if (!filteredCategories.length) {
-            list.innerHTML = `
+    if (!filteredCategories.length) {
+        list.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-tags"></i>
                     <h3>${state.filters.categorySearch ? 'لا توجد نتائج مطابقة لبحثك' : 'لا توجد فئات حالياً'}</h3>
                     <p>${state.filters.categorySearch ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.' : 'استخدم زر "إضافة فئة جديدة" لإنشاء أول فئة.'}</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        list.innerHTML = filteredCategories.map(category => {
-            const loadedSubcategories = getSubcategories(category.id);
-            const subcategoriesCount = loadedSubcategories.length
-                ? loadedSubcategories.length
-                : typeof category.subcategoriesCount === 'number'
-                    ? category.subcategoriesCount
-                    : Number(category.subcategoriesCount) || 0;
-            return `
+    list.innerHTML = filteredCategories.map(category => {
+        const loadedSubcategories = getSubcategories(category.id);
+        const subcategoriesCount = loadedSubcategories.length
+            ? loadedSubcategories.length
+            : typeof category.subcategoriesCount === 'number'
+                ? category.subcategoriesCount
+                : Number(category.subcategoriesCount) || 0;
+        return `
                 <div class="category-card" data-id="${category.id}">
                     <div class="category-content">
                         <div class="category-icon ${category.image ? 'has-image' : ''}">
@@ -6691,14 +6687,14 @@
                     </div>
                 </div>
             `;
-        }).join('');
-    }
+    }).join('');
+}
 
-    function renderCollections() {
-        const grid = document.getElementById('collectionsGrid');
-        if (!grid) return;
+function renderCollections() {
+    const grid = document.getElementById('collectionsGrid');
+    if (!grid) return;
 
-        grid.innerHTML = mockData.collections.map(collection => `
+    grid.innerHTML = mockData.collections.map(collection => `
             <div class="collection-card" data-id="${collection.id}">
                 <div class="collection-cover">
                     <img src="${collection.image}" alt="${collection.name}">
@@ -6714,13 +6710,13 @@
                 </div>
             </div>
         `).join('');
-    }
+}
 
-    function renderPromotions() {
-        const grid = document.getElementById('promotionsGrid');
-        if (!grid) return;
+function renderPromotions() {
+    const grid = document.getElementById('promotionsGrid');
+    if (!grid) return;
 
-        grid.innerHTML = mockData.promotions.map(promotion => `
+    grid.innerHTML = mockData.promotions.map(promotion => `
             <div class="promotion-card" data-id="${promotion.id}">
                 <div class="promotion-header">
                     <h3>${promotion.title}</h3>
@@ -6737,107 +6733,107 @@
                 </div>
             </div>
         `).join('');
+}
+
+function renderShippingSettings() {
+    const form = document.getElementById('shippingSettingsForm');
+    const select = document.getElementById('shippingZoneSelect');
+    const rateInput = document.getElementById('shippingZoneRate');
+    const submitButton = document.getElementById('shippingSettingsSubmit');
+    const deleteButton = document.getElementById('shippingZoneDeleteBtn');
+    const installationCheckbox = document.getElementById('shippingZoneInstallation');
+
+    if (!form || !select || !rateInput || !submitButton || !deleteButton) {
+        return;
     }
 
-    function renderShippingSettings() {
-        const form = document.getElementById('shippingSettingsForm');
-        const select = document.getElementById('shippingZoneSelect');
-        const rateInput = document.getElementById('shippingZoneRate');
-        const submitButton = document.getElementById('shippingSettingsSubmit');
-        const deleteButton = document.getElementById('shippingZoneDeleteBtn');
-        const installationCheckbox = document.getElementById('shippingZoneInstallation');
+    const { shippingZonesLoading, shippingZonesError, shippingZones, selectedShippingZoneId } = state;
 
-        if (!form || !select || !rateInput || !submitButton || !deleteButton) {
-            return;
+    select.disabled = shippingZonesLoading;
+    rateInput.disabled = shippingZonesLoading;
+    submitButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+    deleteButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+
+    if (shippingZonesLoading) {
+        select.innerHTML = '<option value="">جاري التحميل...</option>';
+        if (document.activeElement !== rateInput) {
+            rateInput.value = '';
         }
-
-        const { shippingZonesLoading, shippingZonesError, shippingZones, selectedShippingZoneId } = state;
-
-        select.disabled = shippingZonesLoading;
-        rateInput.disabled = shippingZonesLoading;
-        submitButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
-        deleteButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
-
-        if (shippingZonesLoading) {
-            select.innerHTML = '<option value="">جاري التحميل...</option>';
-            if (document.activeElement !== rateInput) {
-                rateInput.value = '';
-            }
-            if (installationCheckbox) {
-                installationCheckbox.checked = false;
-                installationCheckbox.disabled = true;
-            }
-            return;
-        }
-
-        if (shippingZonesError) {
-            select.innerHTML = `<option value="">${escapeHtml(shippingZonesError)}</option>`;
-            if (document.activeElement !== rateInput) {
-                rateInput.value = '';
-            }
-            if (installationCheckbox) {
-                installationCheckbox.checked = false;
-                installationCheckbox.disabled = true;
-            }
-            return;
-        }
-
-        if (!shippingZones.length) {
-            select.innerHTML = '<option value="">لا توجد مناطق شحن متاحة</option>';
-            if (document.activeElement !== rateInput) {
-                rateInput.value = '';
-            }
-            if (installationCheckbox) {
-                installationCheckbox.checked = false;
-                installationCheckbox.disabled = true;
-            }
-            return;
-        }
-
-        const optionsMarkup = shippingZones
-            .map(zone => `<option value="${escapeHtml(zone.id)}">${escapeHtml(zone.zoneName)}</option>`)
-            .join('');
-
-        select.innerHTML = optionsMarkup;
-
-        const targetZoneId = selectedShippingZoneId && getShippingZoneById(selectedShippingZoneId)
-            ? selectedShippingZoneId
-            : shippingZones[0].id;
-
-        state.selectedShippingZoneId = targetZoneId;
-        select.value = targetZoneId;
-
-        const zone = getShippingZoneById(targetZoneId);
-        if (zone) {
-            if (document.activeElement !== rateInput) {
-                rateInput.value = zone.shippingRate;
-            }
-            if (installationCheckbox) {
-                installationCheckbox.checked = Boolean(zone.installationAvailable);
-                installationCheckbox.disabled = false;
-            }
-        } else if (installationCheckbox) {
+        if (installationCheckbox) {
             installationCheckbox.checked = false;
             installationCheckbox.disabled = true;
         }
+        return;
     }
 
-    function renderBanners() {
-        const grid = document.getElementById('bannersGrid');
-        if (!grid) return;
+    if (shippingZonesError) {
+        select.innerHTML = `<option value="">${escapeHtml(shippingZonesError)}</option>`;
+        if (document.activeElement !== rateInput) {
+            rateInput.value = '';
+        }
+        if (installationCheckbox) {
+            installationCheckbox.checked = false;
+            installationCheckbox.disabled = true;
+        }
+        return;
+    }
 
-        if (state.bannersLoading) {
-            grid.innerHTML = `
+    if (!shippingZones.length) {
+        select.innerHTML = '<option value="">لا توجد مناطق شحن متاحة</option>';
+        if (document.activeElement !== rateInput) {
+            rateInput.value = '';
+        }
+        if (installationCheckbox) {
+            installationCheckbox.checked = false;
+            installationCheckbox.disabled = true;
+        }
+        return;
+    }
+
+    const optionsMarkup = shippingZones
+        .map(zone => `<option value="${escapeHtml(zone.id)}">${escapeHtml(zone.zoneName)}</option>`)
+        .join('');
+
+    select.innerHTML = optionsMarkup;
+
+    const targetZoneId = selectedShippingZoneId && getShippingZoneById(selectedShippingZoneId)
+        ? selectedShippingZoneId
+        : shippingZones[0].id;
+
+    state.selectedShippingZoneId = targetZoneId;
+    select.value = targetZoneId;
+
+    const zone = getShippingZoneById(targetZoneId);
+    if (zone) {
+        if (document.activeElement !== rateInput) {
+            rateInput.value = zone.shippingRate;
+        }
+        if (installationCheckbox) {
+            installationCheckbox.checked = Boolean(zone.installationAvailable);
+            installationCheckbox.disabled = false;
+        }
+    } else if (installationCheckbox) {
+        installationCheckbox.checked = false;
+        installationCheckbox.disabled = true;
+    }
+}
+
+function renderBanners() {
+    const grid = document.getElementById('bannersGrid');
+    if (!grid) return;
+
+    if (state.bannersLoading) {
+        grid.innerHTML = `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل البانرات...</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        if (state.bannersError) {
-            grid.innerHTML = `
+    if (state.bannersError) {
+        grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>حدث خطأ أثناء تحميل البانرات</h3>
@@ -6845,28 +6841,28 @@
                     <button class="btn-primary" data-action="refresh-banners">إعادة المحاولة</button>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        const banners = getBannerSource();
+    const banners = getBannerSource();
 
-        if (!banners.length) {
-            grid.innerHTML = `
+    if (!banners.length) {
+        grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-image"></i>
                     <h3>لا توجد بانرات حالياً</h3>
                     <p>استخدم زر "إضافة بانر جديد" لإنشاء بانر.</p>
                 </div>
             `;
-            return;
-        }
+        return;
+    }
 
-        grid.innerHTML = banners.map(banner => {
-            const bannerId = banner._id || banner.id;
-            const imageUrl = banner.image?.secure_url || banner.image?.url || banner.image || 'https://via.placeholder.com/1200x400?text=Banner';
-            const description = banner.description ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH)) : '';
+    grid.innerHTML = banners.map(banner => {
+        const bannerId = banner._id || banner.id;
+        const imageUrl = banner.image?.secure_url || banner.image?.url || banner.image || 'https://via.placeholder.com/1200x400?text=Banner';
+        const description = banner.description ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH)) : '';
 
-            return `
+        return `
                 <div class="banner-card" data-id="${escapeHtml(bannerId || '')}">
                     <div class="banner-preview">
                         <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(banner.title || 'بانر')}">
@@ -6881,24 +6877,24 @@
                     </div>
                 </div>
             `;
-        }).join('');
+    }).join('');
+}
+
+
+
+/**
+ * عرض قائمة العملاء
+ */
+function renderCustomers() {
+    const body = document.getElementById('customersTableBody');
+    if (!body) {
+        console.warn('⚠️ customersTableBody element not found!');
+        return;
     }
 
 
-
-    /**
-     * عرض قائمة العملاء
-     */
-    function renderCustomers() {
-        const body = document.getElementById('customersTableBody');
-        if (!body) {
-            console.warn('⚠️ customersTableBody element not found!');
-            return;
-        }
-
-
-        if (state.customersLoading) {
-            body.innerHTML = `
+    if (state.customersLoading) {
+        body.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: 40px;">
                         <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #e74c3c;"></i>
@@ -6906,11 +6902,11 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        if (state.customersError) {
-            body.innerHTML = `
+    if (state.customersError) {
+        body.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: 40px;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #f39c12;"></i>
@@ -6919,33 +6915,33 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        let customers = (state.customers || []).filter(customer => (Number(customer.ordersCount) || 0) > 0);
-        
-        // تطبيق البحث بالاسم أو رقم الهاتف
-        const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
-        if (searchTerm) {
-            customers = customers.filter(customer => {
-                const name = (customer.name || '').toLowerCase();
-                const phone = (customer.phone || '').toLowerCase();
-                return name.includes(searchTerm) || phone.includes(searchTerm);
-            });
-        }
+    let customers = (state.customers || []).filter(customer => (Number(customer.ordersCount) || 0) > 0);
 
-        customers.sort((a, b) => {
-            const timeA = Number(a.lastOrderTimestamp) || 0;
-            const timeB = Number(b.lastOrderTimestamp) || 0;
-            return timeB - timeA;
+    // تطبيق البحث بالاسم أو رقم الهاتف
+    const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
+    if (searchTerm) {
+        customers = customers.filter(customer => {
+            const name = (customer.name || '').toLowerCase();
+            const phone = (customer.phone || '').toLowerCase();
+            return name.includes(searchTerm) || phone.includes(searchTerm);
         });
-        
-        if (!customers.length) {
-            const message = searchTerm 
-                ? `لا توجد نتائج للبحث عن "${state.filters.customerSearch}"`
-                : 'لا يوجد عملاء حالياً';
-            
-            body.innerHTML = `
+    }
+
+    customers.sort((a, b) => {
+        const timeA = Number(a.lastOrderTimestamp) || 0;
+        const timeB = Number(b.lastOrderTimestamp) || 0;
+        return timeB - timeA;
+    });
+
+    if (!customers.length) {
+        const message = searchTerm
+            ? `لا توجد نتائج للبحث عن "${state.filters.customerSearch}"`
+            : 'لا يوجد عملاء حالياً';
+
+        body.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: 40px;">
                         <i class="fas fa-users" style="font-size: 24px; color: #95a5a6;"></i>
@@ -6953,15 +6949,15 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        console.log('✅ Rendering', customers.length, 'customers');
-        
-        body.innerHTML = customers.map((customer, index) => {
-            const nameWithBadge = customer.name || '-';
-            
-            return `
+
+
+    body.innerHTML = customers.map((customer, index) => {
+        const nameWithBadge = customer.name || '-';
+
+        return `
                 <tr data-id="${customer._id || customer.id}">
                     <td>${index + 1}</td>
                     <td>${nameWithBadge}</td>
@@ -6978,40 +6974,40 @@
                     </td>
                 </tr>
             `;
-        }).join('');
-    }
+    }).join('');
+}
 
-    function renderTopProducts() {
-        const analyticsData = calculateAnalyticsData();
-        renderTopProductsTable(analyticsData.topProducts || []);
-    }
+function renderTopProducts() {
+    const analyticsData = calculateAnalyticsData();
+    renderTopProductsTable(analyticsData.topProducts || []);
+}
 
-    function renderAnalyticsFilters() {
-        const select = document.getElementById('analyticsTimeFilter');
-        if (!select) return;
+function renderAnalyticsFilters() {
+    const select = document.getElementById('analyticsTimeFilter');
+    if (!select) return;
 
-        select.innerHTML = mockData.analyticsRangeOptions.map(option => `
+    select.innerHTML = mockData.analyticsRangeOptions.map(option => `
             <option value="${option.value}" ${state.filters.analyticsRange === option.value ? 'selected' : ''}>${option.label}</option>
         `).join('');
-    }
+}
 
-    function renderAuditLogs() {
-        const tableBody = document.getElementById('auditLogsTableBody');
-        if (!tableBody) return;
+function renderAuditLogs() {
+    const tableBody = document.getElementById('auditLogsTableBody');
+    if (!tableBody) return;
 
-        const actionFilter = state.filters.auditAction !== 'all'
-            ? item => item.action === state.filters.auditAction
-            : () => true;
+    const actionFilter = state.filters.auditAction !== 'all'
+        ? item => item.action === state.filters.auditAction
+        : () => true;
 
-        const dateFilter = state.filters.auditDate
-            ? item => item.createdAt.startsWith(state.filters.auditDate)
-            : () => true;
+    const dateFilter = state.filters.auditDate
+        ? item => item.createdAt.startsWith(state.filters.auditDate)
+        : () => true;
 
-        const searchFilter = filterBySearch(state.filters.auditSearch, ['user', 'message']);
+    const searchFilter = filterBySearch(state.filters.auditSearch, ['user', 'message']);
 
-        const filtered = applyFilters(mockData.auditLogs, [actionFilter, dateFilter, searchFilter]);
+    const filtered = applyFilters(mockData.auditLogs, [actionFilter, dateFilter, searchFilter]);
 
-        tableBody.innerHTML = filtered.map(log => `
+    tableBody.innerHTML = filtered.map(log => `
             <tr>
                 <td>${log.createdAt}</td>
                 <td>${log.user}</td>
@@ -7020,176 +7016,176 @@
                 <td>${log.ip}</td>
             </tr>
         `).join('');
+}
+
+async function handleChangePasswordSubmit(event) {
+    event.preventDefault();
+
+    if (!window.adminAuth?.getUser) {
+        showToast('error', 'تغيير كلمة المرور', 'حدثت مشكلة في المصادقة. يرجى إعادة تسجيل الدخول.');
+        return;
     }
 
-    async function handleChangePasswordSubmit(event) {
-        event.preventDefault();
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const currentPasswordInput = form.querySelector('#currentPassword');
+    const newPasswordInput = form.querySelector('#newPassword');
+    const confirmPasswordInput = form.querySelector('#confirmPassword');
 
-        if (!window.adminAuth?.getUser) {
-            showToast('error', 'تغيير كلمة المرور', 'حدثت مشكلة في المصادقة. يرجى إعادة تسجيل الدخول.');
-            return;
-        }
+    const currentPassword = currentPasswordInput?.value?.trim();
+    const newPassword = newPasswordInput?.value?.trim();
+    const confirmPassword = confirmPasswordInput?.value?.trim();
 
-        const form = event.currentTarget;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const currentPasswordInput = form.querySelector('#currentPassword');
-        const newPasswordInput = form.querySelector('#newPassword');
-        const confirmPasswordInput = form.querySelector('#confirmPassword');
-
-        const currentPassword = currentPasswordInput?.value?.trim();
-        const newPassword = newPasswordInput?.value?.trim();
-        const confirmPassword = confirmPasswordInput?.value?.trim();
-
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            showToast('error', 'تغيير كلمة المرور', 'يرجى ملء جميع الحقول المطلوبة.');
-            return;
-        }
-
-        if (newPassword.length < 8) {
-            showToast('error', 'تغيير كلمة المرور', 'كلمة المرور الجديدة يجب أن لا تقل عن 8 أحرف.');
-            newPasswordInput?.focus();
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            showToast('error', 'تغيير كلمة المرور', 'تأكيد كلمة المرور لا يطابق الكلمة الجديدة.');
-            confirmPasswordInput?.focus();
-            return;
-        }
-
-        let userId = await resolveCurrentAdminId();
-
-        if (!userId) {
-            userId = await resolveCurrentAdminId(true);
-        }
-
-        if (!userId) {
-            showToast('error', 'تغيير كلمة المرور', 'تعذر تحديد حساب المدير. يرجى إعادة تسجيل الدخول.');
-            return;
-        }
-
-        const setLoading = (loading) => {
-            if (!submitBtn) return;
-            submitBtn.disabled = loading;
-            submitBtn.classList.toggle('is-loading', loading);
-        };
-
-        setLoading(true);
-
-        try {
-            const response = await authorizedFetch(`${USERS_ENDPOINT}/${encodeURIComponent(userId)}/change-password`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                    passwordConfirm: confirmPassword
-                })
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                const message = errorBody?.message || errorBody?.msg || `HTTP ${response.status}`;
-                throw new Error(message);
-            }
-
-            showToast('success', 'تغيير كلمة المرور', 'تم تحديث كلمة المرور بنجاح.');
-            form.reset();
-        } catch (error) {
-            console.error('❌ Failed to change password:', error);
-            const message = error?.message || 'حدث خطأ أثناء تغيير كلمة المرور.';
-            showToast('error', 'تغيير كلمة المرور', message);
-        } finally {
-            setLoading(false);
-        }
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showToast('error', 'تغيير كلمة المرور', 'يرجى ملء جميع الحقول المطلوبة.');
+        return;
     }
 
-    async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
-        if (!orderId || !nextStatus) {
-            return;
+    if (newPassword.length < 8) {
+        showToast('error', 'تغيير كلمة المرور', 'كلمة المرور الجديدة يجب أن لا تقل عن 8 أحرف.');
+        newPasswordInput?.focus();
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showToast('error', 'تغيير كلمة المرور', 'تأكيد كلمة المرور لا يطابق الكلمة الجديدة.');
+        confirmPasswordInput?.focus();
+        return;
+    }
+
+    let userId = await resolveCurrentAdminId();
+
+    if (!userId) {
+        userId = await resolveCurrentAdminId(true);
+    }
+
+    if (!userId) {
+        showToast('error', 'تغيير كلمة المرور', 'تعذر تحديد حساب المدير. يرجى إعادة تسجيل الدخول.');
+        return;
+    }
+
+    const setLoading = (loading) => {
+        if (!submitBtn) return;
+        submitBtn.disabled = loading;
+        submitBtn.classList.toggle('is-loading', loading);
+    };
+
+    setLoading(true);
+
+    try {
+        const response = await authorizedFetch(`${USERS_ENDPOINT}/${encodeURIComponent(userId)}/change-password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                currentPassword,
+                newPassword,
+                passwordConfirm: confirmPassword
+            })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || errorBody?.msg || `HTTP ${response.status}`;
+            throw new Error(message);
         }
 
-        const normalizedStatus = normalizeStatusKey(nextStatus);
-        if (!normalizedStatus || !ORDER_STATUS_FLOW.includes(normalizedStatus)) {
-            showToast('error', 'تحديث حالة الطلب', 'الحالة الجديدة غير مدعومة.');
-            return;
+        showToast('success', 'تغيير كلمة المرور', 'تم تحديث كلمة المرور بنجاح.');
+        form.reset();
+    } catch (error) {
+        console.error('❌ Failed to change password:', error);
+        const message = error?.message || 'حدث خطأ أثناء تغيير كلمة المرور.';
+        showToast('error', 'تغيير كلمة المرور', message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
+    if (!orderId || !nextStatus) {
+        return;
+    }
+
+    const normalizedStatus = normalizeStatusKey(nextStatus);
+    if (!normalizedStatus || !ORDER_STATUS_FLOW.includes(normalizedStatus)) {
+        showToast('error', 'تحديث حالة الطلب', 'الحالة الجديدة غير مدعومة.');
+        return;
+    }
+
+    const targetOrder = getOrderById(orderId);
+    if (!targetOrder) {
+        showToast('error', 'تحديث حالة الطلب', 'تعذر العثور على الطلب المحدد.');
+        return;
+    }
+
+    const currentStatus = normalizeStatusKey(targetOrder.status) || 'new';
+    if (currentStatus === normalizedStatus) {
+        if (triggerElement && triggerElement.tagName === 'SELECT') {
+            triggerElement.value = normalizedStatus;
+        }
+        showToast('info', 'تحديث حالة الطلب', 'الحالة المختارة هي نفس الحالة الحالية.');
+        return;
+    }
+
+    const previousValue = triggerElement && triggerElement.tagName === 'SELECT'
+        ? triggerElement.value
+        : null;
+
+    if (triggerElement) {
+        triggerElement.disabled = true;
+        triggerElement.dataset.loading = 'true';
+    }
+
+    showToast('info', 'تحديث حالة الطلب', 'جاري تحديث حالة الطلب، يرجى الانتظار...');
+
+    try {
+        const response = await authorizedFetch(`${ORDER_ENDPOINT}/${encodeURIComponent(orderId)}/status/${encodeURIComponent(normalizedStatus)}`, {
+            method: 'PATCH'
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody?.message || `HTTP ${response.status}`);
         }
 
-        const targetOrder = getOrderById(orderId);
-        if (!targetOrder) {
-            showToast('error', 'تحديث حالة الطلب', 'تعذر العثور على الطلب المحدد.');
-            return;
+        const result = await response.json().catch(() => null);
+
+
+        const orderIndex = state.orders.findIndex(o => String(o.id) === String(orderId));
+        if (orderIndex !== -1) {
+            state.orders[orderIndex].status = normalizedStatus;
+            state.orders[orderIndex].isDelivered = normalizedStatus === 'delivered';
+            state.orders[orderIndex].isCanceled = normalizedStatus === 'cancelled';
         }
 
-        const currentStatus = normalizeStatusKey(targetOrder.status) || 'new';
-        if (currentStatus === normalizedStatus) {
-            if (triggerElement && triggerElement.tagName === 'SELECT') {
-                triggerElement.value = normalizedStatus;
-            }
-            showToast('info', 'تحديث حالة الطلب', 'الحالة المختارة هي نفس الحالة الحالية.');
-            return;
+        renderOrders();
+        renderOverview();
+        if (state.customers?.length) {
+            updateCustomersOrdersInfo();
         }
 
-        const previousValue = triggerElement && triggerElement.tagName === 'SELECT'
-            ? triggerElement.value
-            : null;
-
+        showToast('success', 'تحديث حالة الطلب', `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`);
+    } catch (error) {
+        console.error('❌ Failed to change order status:', error);
+        showToast('error', 'تحديث حالة الطلب', error.message || 'حدث خطأ أثناء تحديث حالة الطلب.');
+        if (triggerElement && triggerElement.tagName === 'SELECT') {
+            triggerElement.value = currentStatus;
+        }
+    }
+    finally {
         if (triggerElement) {
-            triggerElement.disabled = true;
-            triggerElement.dataset.loading = 'true';
-        }
-
-        showToast('info', 'تحديث حالة الطلب', 'جاري تحديث حالة الطلب، يرجى الانتظار...');
-
-        try {
-            const response = await authorizedFetch(`${ORDER_ENDPOINT}/${encodeURIComponent(orderId)}/status/${encodeURIComponent(normalizedStatus)}`, {
-                method: 'PATCH'
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(errorBody?.message || `HTTP ${response.status}`);
-            }
-
-            const result = await response.json().catch(() => null);
-            console.log('✅ Order status updated via admin:', { orderId, normalizedStatus, result });
-
-            const orderIndex = state.orders.findIndex(o => String(o.id) === String(orderId));
-            if (orderIndex !== -1) {
-                state.orders[orderIndex].status = normalizedStatus;
-                state.orders[orderIndex].isDelivered = normalizedStatus === 'delivered';
-                state.orders[orderIndex].isCanceled = normalizedStatus === 'cancelled';
-            }
-
-            renderOrders();
-            renderOverview();
-            if (state.customers?.length) {
-                updateCustomersOrdersInfo();
-            }
-
-            showToast('success', 'تحديث حالة الطلب', `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`);
-        } catch (error) {
-            console.error('❌ Failed to change order status:', error);
-            showToast('error', 'تحديث حالة الطلب', error.message || 'حدث خطأ أثناء تحديث حالة الطلب.');
-            if (triggerElement && triggerElement.tagName === 'SELECT') {
-                triggerElement.value = currentStatus;
-            }
-        }
-        finally {
-            if (triggerElement) {
-                triggerElement.disabled = false;
-                delete triggerElement.dataset.loading;
-            }
+            triggerElement.disabled = false;
+            delete triggerElement.dataset.loading;
         }
     }
+}
 
-    function renderUsers(users = []) {
-        const tableBody = document.getElementById('usersTableBody');
-        if (!tableBody) return;
+function renderUsers(users = []) {
+    const tableBody = document.getElementById('usersTableBody');
+    if (!tableBody) return;
 
-        tableBody.innerHTML = users.map(user => `
+    tableBody.innerHTML = users.map(user => `
             <tr data-id="${user.id}">
                 <td>${user.name}</td>
                 <td>${user.email}</td>
@@ -7202,544 +7198,539 @@
                 </td>
             </tr>
         `).join('');
-    }
+}
 
-    // ===== Brand Functions =====
-    async function hydrateBrandOptions() {
-        const select = document.getElementById('productBrand');
-        if (!select) return;
+// ===== Brand Functions =====
+async function hydrateBrandOptions() {
+    const select = document.getElementById('productBrand');
+    if (!select) return;
 
-        try {
-            // جلب العلامات التجارية إذا لم تكن محملة
-            if (!state.brands || state.brands.length === 0) {
-                await fetchBrands();
-            }
-
-            // حفظ القيمة المحددة حالياً
-            const currentValue = select.value;
-            
-            // مسح الخيارات الحالية
-            select.innerHTML = '';
-
-            // إضافة الخيار الافتراضي
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'اختر العلامة التجارية';
-            select.appendChild(defaultOption);
-
-            // إضافة العلامات التجارية المتاحة
-            if (state.brands && state.brands.length > 0) {
-                state.brands.forEach(brand => {
-                    const option = document.createElement('option');
-                    option.value = brand._id || brand.id;
-                    option.textContent = brand.name;
-                    select.appendChild(option);
-                });
-
-                // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-                if (currentValue && state.brands.some(b => (b._id || b.id) === currentValue)) {
-                    select.value = currentValue;
-                }
-            }
-        } catch (error) {
-            console.error('❌ Failed to populate brand options:', error);
+    try {
+        // جلب العلامات التجارية إذا لم تكن محملة
+        if (!state.brands || state.brands.length === 0) {
+            await fetchBrands();
         }
-    }
 
-    // ===== Subcategory Functions =====
-    function populateSubcategoryOptions(categoryId) {
-        const subcategorySelect = document.getElementById('productSubcategory');
-        if (!subcategorySelect) return;
-        
-        console.log('🔄 Populating subcategories for category:', categoryId);
-        
         // حفظ القيمة المحددة حالياً
-        const currentValue = subcategorySelect.value;
-        
+        const currentValue = select.value;
+
         // مسح الخيارات الحالية
-        subcategorySelect.innerHTML = '';
+        select.innerHTML = '';
 
         // إضافة الخيار الافتراضي
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
-        defaultOption.textContent = 'اختر الفئة الفرعية';
-        subcategorySelect.appendChild(defaultOption);
+        defaultOption.textContent = 'اختر العلامة التجارية';
+        select.appendChild(defaultOption);
 
-        if (!categoryId) {
-            subcategorySelect.disabled = true;
-            return;
-        }
-
-        // تفعيل حقل الفئة الفرعية
-        subcategorySelect.disabled = false;
-
-        // البحث عن الفئات الفرعية للفئة المحددة
-        console.log('🔍 Searching for subcategories in state:', {
-            'categoryId': categoryId,
-            'state.subcategories': state.subcategories,
-            'state.categories': state.categories
-        });
-        
-        // الحصول على الفئات الفرعية
-        const categorySubcategories = [];
-        
-        // البحث في state.subcategories
-        if (state.subcategories && state.subcategories[categoryId]) {
-            categorySubcategories.push(...state.subcategories[categoryId]);
-            console.log('📋 Found subcategories in state.subcategories:', categorySubcategories);
-        } 
-        
-        // البحث في كائن الفئة
-        if (state.categories) {
-            const category = state.categories.find(cat => cat.id === categoryId);
-            if (category && category.subcategories) {
-                categorySubcategories.push(...category.subcategories);
-                console.log('📋 Found subcategories in category object:', category.subcategories);
-            }
-        }
-        
-        // إزالة التكرارات
-        const uniqueSubcategories = Array.from(new Map(categorySubcategories.map(item => [item.id, item])).values());
-        console.log('📋 Unique subcategories:', uniqueSubcategories);
-        
-        if (uniqueSubcategories.length === 0) {
-            const noOption = document.createElement('option');
-            noOption.value = '';
-            noOption.textContent = 'لا توجد فئات فرعية متاحة';
-            noOption.disabled = true;
-            subcategorySelect.appendChild(noOption);
-            subcategorySelect.disabled = true;
-        } else {
-            uniqueSubcategories.forEach(subcategory => {
+        // إضافة العلامات التجارية المتاحة
+        if (state.brands && state.brands.length > 0) {
+            state.brands.forEach(brand => {
                 const option = document.createElement('option');
-                option.value = subcategory.id;
-                option.textContent = subcategory.name;
-                subcategorySelect.appendChild(option);
+                option.value = brand._id || brand.id;
+                option.textContent = brand.name;
+                select.appendChild(option);
             });
 
             // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-            if (currentValue && uniqueSubcategories.some(s => s.id === currentValue)) {
-                subcategorySelect.value = currentValue;
+            if (currentValue && state.brands.some(b => (b._id || b.id) === currentValue)) {
+                select.value = currentValue;
             }
+        }
+    } catch (error) {
+        console.error('❌ Failed to populate brand options:', error);
+    }
+}
+
+// ===== Subcategory Functions =====
+function populateSubcategoryOptions(categoryId) {
+    const subcategorySelect = document.getElementById('productSubcategory');
+    if (!subcategorySelect) return;
+
+
+
+    // حفظ القيمة المحددة حالياً
+    const currentValue = subcategorySelect.value;
+
+    // مسح الخيارات الحالية
+    subcategorySelect.innerHTML = '';
+
+    // إضافة الخيار الافتراضي
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'اختر الفئة الفرعية';
+    subcategorySelect.appendChild(defaultOption);
+
+    if (!categoryId) {
+        subcategorySelect.disabled = true;
+        return;
+    }
+
+    // تفعيل حقل الفئة الفرعية
+    subcategorySelect.disabled = false;
+
+
+
+    // الحصول على الفئات الفرعية
+    const categorySubcategories = [];
+
+    // البحث في state.subcategories
+    if (state.subcategories && state.subcategories[categoryId]) {
+        categorySubcategories.push(...state.subcategories[categoryId]);
+
+    }
+
+    // البحث في كائن الفئة
+    if (state.categories) {
+        const category = state.categories.find(cat => cat.id === categoryId);
+        if (category && category.subcategories) {
+            categorySubcategories.push(...category.subcategories);
+
         }
     }
 
-    function hydrateSubcategoryCategoryOptions() {
-        const categories = state.categories;
-        const filterSelect = document.getElementById('subcategoryCategoryFilter');
-        const formSelect = document.getElementById('subcategoryCategory');
+    // إزالة التكرارات
+    const uniqueSubcategories = Array.from(new Map(categorySubcategories.map(item => [item.id, item])).values());
 
-        const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
-        const availableIds = new Set(categories.map(category => category.id));
 
-        if (filterSelect) {
-            const currentFilter = state.filters.subcategoryCategory;
-            filterSelect.innerHTML = `<option value="all">جميع الفئات</option>${optionsMarkup}`;
-            if (currentFilter && currentFilter !== 'all' && availableIds.has(currentFilter)) {
-                filterSelect.value = currentFilter;
-            } else {
-                filterSelect.value = 'all';
-                state.filters.subcategoryCategory = 'all';
-            }
+    if (uniqueSubcategories.length === 0) {
+        const noOption = document.createElement('option');
+        noOption.value = '';
+        noOption.textContent = 'لا توجد فئات فرعية متاحة';
+        noOption.disabled = true;
+        subcategorySelect.appendChild(noOption);
+        subcategorySelect.disabled = true;
+    } else {
+        uniqueSubcategories.forEach(subcategory => {
+            const option = document.createElement('option');
+            option.value = subcategory.id;
+            option.textContent = subcategory.name;
+            subcategorySelect.appendChild(option);
+        });
+
+        // استعادة القيمة المحددة إذا كانت لا تزال صالحة
+        if (currentValue && uniqueSubcategories.some(s => s.id === currentValue)) {
+            subcategorySelect.value = currentValue;
         }
+    }
+}
 
-        if (formSelect) {
-            const previousValue = formSelect.value;
-            formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
+function hydrateSubcategoryCategoryOptions() {
+    const categories = state.categories;
+    const filterSelect = document.getElementById('subcategoryCategoryFilter');
+    const formSelect = document.getElementById('subcategoryCategory');
 
-            const filteredSelection = state.filters.subcategoryCategory !== 'all'
-                ? state.filters.subcategoryCategory
-                : '';
+    const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
+    const availableIds = new Set(categories.map(category => category.id));
 
-            const preferredValue = previousValue && availableIds.has(previousValue)
-                ? previousValue
-                : (filteredSelection && availableIds.has(filteredSelection)
-                    ? filteredSelection
-                    : categories[0]?.id || '');
-
-            formSelect.value = preferredValue;
+    if (filterSelect) {
+        const currentFilter = state.filters.subcategoryCategory;
+        filterSelect.innerHTML = `<option value="all">جميع الفئات</option>${optionsMarkup}`;
+        if (currentFilter && currentFilter !== 'all' && availableIds.has(currentFilter)) {
+            filterSelect.value = currentFilter;
+        } else {
+            filterSelect.value = 'all';
+            state.filters.subcategoryCategory = 'all';
         }
     }
 
-    function hydrateFilters() {
-        const productCategoryFilter = document.getElementById('productCategoryFilter');
-        if (productCategoryFilter) {
-            // استخدام جميع الفئات من state.categories
-            const categories = state.categories || [];
-            
-            const categoryOptions = [
-                { value: 'all', label: 'كل الفئات' },
-                ...categories.map(cat => ({
-                    value: cat._id || cat.id || cat.slug,
-                    label: cat.name
-                }))
-            ];
+    if (formSelect) {
+        const previousValue = formSelect.value;
+        formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
 
-            productCategoryFilter.innerHTML = categoryOptions.map(option => `
+        const filteredSelection = state.filters.subcategoryCategory !== 'all'
+            ? state.filters.subcategoryCategory
+            : '';
+
+        const preferredValue = previousValue && availableIds.has(previousValue)
+            ? previousValue
+            : (filteredSelection && availableIds.has(filteredSelection)
+                ? filteredSelection
+                : categories[0]?.id || '');
+
+        formSelect.value = preferredValue;
+    }
+}
+
+function hydrateFilters() {
+    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    if (productCategoryFilter) {
+        // استخدام جميع الفئات من state.categories
+        const categories = state.categories || [];
+
+        const categoryOptions = [
+            { value: 'all', label: 'كل الفئات' },
+            ...categories.map(cat => ({
+                value: cat._id || cat.id || cat.slug,
+                label: cat.name
+            }))
+        ];
+
+        productCategoryFilter.innerHTML = categoryOptions.map(option => `
                 <option value="${option.value}">${option.label}</option>
             `).join('');
 
-            const hasSelectedCategory = categoryOptions.some(option => option.value === state.filters.productCategory);
-            productCategoryFilter.value = hasSelectedCategory ? state.filters.productCategory : 'all';
-            state.filters.productCategory = productCategoryFilter.value;
-        }
+        const hasSelectedCategory = categoryOptions.some(option => option.value === state.filters.productCategory);
+        productCategoryFilter.value = hasSelectedCategory ? state.filters.productCategory : 'all';
+        state.filters.productCategory = productCategoryFilter.value;
+    }
 
-        const categorySearchInput = document.getElementById('categorySearch');
-        if (categorySearchInput) {
-            categorySearchInput.value = state.filters.categorySearch;
-            categorySearchInput.addEventListener('input', event => {
-                state.filters.categorySearch = event.target.value;
-                renderCategories();
-            });
-        }
+    const categorySearchInput = document.getElementById('categorySearch');
+    if (categorySearchInput) {
+        categorySearchInput.value = state.filters.categorySearch;
+        categorySearchInput.addEventListener('input', event => {
+            state.filters.categorySearch = event.target.value;
+            renderCategories();
+        });
+    }
 
-        const subcategorySearchInput = document.getElementById('subcategorySearch');
-        if (subcategorySearchInput) {
-            subcategorySearchInput.value = state.filters.subcategorySearch;
-            subcategorySearchInput.addEventListener('input', event => {
-                state.filters.subcategorySearch = event.target.value;
-                renderSubcategories();
-            });
-        }
+    const subcategorySearchInput = document.getElementById('subcategorySearch');
+    if (subcategorySearchInput) {
+        subcategorySearchInput.value = state.filters.subcategorySearch;
+        subcategorySearchInput.addEventListener('input', event => {
+            state.filters.subcategorySearch = event.target.value;
+            renderSubcategories();
+        });
+    }
 
-        const subcategoryCategoryFilter = document.getElementById('subcategoryCategoryFilter');
-        if (subcategoryCategoryFilter) {
-            subcategoryCategoryFilter.value = state.filters.subcategoryCategory || 'all';
-            subcategoryCategoryFilter.addEventListener('change', event => {
-                state.filters.subcategoryCategory = event.target.value || 'all';
-                renderSubcategories(event.target.value || 'all');
-            });
-        }
+    const subcategoryCategoryFilter = document.getElementById('subcategoryCategoryFilter');
+    if (subcategoryCategoryFilter) {
+        subcategoryCategoryFilter.value = state.filters.subcategoryCategory || 'all';
+        subcategoryCategoryFilter.addEventListener('change', event => {
+            state.filters.subcategoryCategory = event.target.value || 'all';
+            renderSubcategories(event.target.value || 'all');
+        });
+    }
 
-        const orderStatusFilter = document.getElementById('orderStatusFilter');
-        if (orderStatusFilter) {
-            const statusOptions = [`<option value="all">كل الحالات</option>`, ...getOrderStatusOptions().map(option => `
+    const orderStatusFilter = document.getElementById('orderStatusFilter');
+    if (orderStatusFilter) {
+        const statusOptions = [`<option value="all">كل الحالات</option>`, ...getOrderStatusOptions().map(option => `
                 <option value="${option.value}">${option.label}</option>
             `)];
-            orderStatusFilter.innerHTML = statusOptions.join('');
-            orderStatusFilter.value = state.filters.orderStatus || 'all';
-        }
+        orderStatusFilter.innerHTML = statusOptions.join('');
+        orderStatusFilter.value = state.filters.orderStatus || 'all';
+    }
 
-        const customerSegmentFilter = document.getElementById('customerSegmentFilter');
-        if (customerSegmentFilter) {
-            const segments = [...new Set(mockData.customers.map(c => c.segment))];
-            customerSegmentFilter.innerHTML = `
+    const customerSegmentFilter = document.getElementById('customerSegmentFilter');
+    if (customerSegmentFilter) {
+        const segments = [...new Set(mockData.customers.map(c => c.segment))];
+        customerSegmentFilter.innerHTML = `
                 <option value="all">كل الشرائح</option>
                 ${segments.map(segment => `<option value="${segment}">${getCustomerSegmentLabel(segment)
-                    }</option>`).join('')}
+            }</option>`).join('')}
             `;
-        }
+    }
 
-        const auditActionFilter = document.getElementById('auditActionFilter');
-        if (auditActionFilter) {
-            auditActionFilter.innerHTML = `
+    const auditActionFilter = document.getElementById('auditActionFilter');
+    if (auditActionFilter) {
+        auditActionFilter.innerHTML = `
                 <option value="all">كل الإجراءات</option>
                 <option value="create">إضافة</option>
                 <option value="update">تعديل</option>
                 <option value="delete">حذف</option>
                 <option value="login">تسجيل الدخول</option>
             `;
-        }
     }
+}
 
-    function setupProductFilters() {
-        const productSearchInput = document.getElementById('productSearchInput');
-        if (productSearchInput) {
-            productSearchInput.value = state.filters.productSearch;
-            productSearchInput.addEventListener('input', event => {
-                state.filters.productSearch = event.target.value;
-                renderProducts();
-            });
-        }
-
-        const productCategoryFilter = document.getElementById('productCategoryFilter');
-        if (productCategoryFilter) {
-            productCategoryFilter.addEventListener('change', event => {
-                state.filters.productCategory = event.target.value;
-                renderProducts();
-            });
-        }
-
-        const productStatusFilter = document.getElementById('productStatusFilter');
-        if (productStatusFilter) {
-            productStatusFilter.addEventListener('change', event => {
-                state.filters.productStatus = event.target.value;
-                renderProducts();
-            });
-        }
-    }
-
-    function renderDashboard() {
-        renderOverview();
-        renderProducts();
-        renderCategories();
-        renderSubcategories();
-        renderCollections();
-        renderPromotions();
-        renderBanners();
-        renderOrders();
-        renderCustomers();
-        renderTopProducts();
-        renderAnalyticsFilters();
-        renderAuditLogs();
-        renderUsers();
-        renderShippingSettings();
-    }
-
-    function setupModalCancels(root = document) {
-        const closeButtons = root.querySelectorAll('[data-close-modal]');
-        closeButtons.forEach(button => {
-            if (button.dataset.closeBound) return;
-            button.addEventListener('click', () => {
-                const modal = button.closest('.modal');
-                const form = button.closest('form');
-                if (form) {
-                    form.reset();
-                }
-                if (modal?.id) {
-                    closeModal(modal.id);
-                }
-            });
-            button.dataset.closeBound = 'true';
+function setupProductFilters() {
+    const productSearchInput = document.getElementById('productSearchInput');
+    if (productSearchInput) {
+        productSearchInput.value = state.filters.productSearch;
+        productSearchInput.addEventListener('input', event => {
+            state.filters.productSearch = event.target.value;
+            renderProducts();
         });
     }
 
-    // ===== Theme Toggle =====
-    function initTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.classList.toggle('dark-mode', savedTheme === 'dark');
-        updateThemeIcon();
+    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    if (productCategoryFilter) {
+        productCategoryFilter.addEventListener('change', event => {
+            state.filters.productCategory = event.target.value;
+            renderProducts();
+        });
     }
 
-    function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-        localStorage.setItem('theme', theme);
-        updateThemeIcon();
-        showToast('success', 'تم تغيير الوضع', `تم التبديل إلى الوضع ${theme === 'dark' ? 'الداكن' : 'الفاتح'}`);
+    const productStatusFilter = document.getElementById('productStatusFilter');
+    if (productStatusFilter) {
+        productStatusFilter.addEventListener('change', event => {
+            state.filters.productStatus = event.target.value;
+            renderProducts();
+        });
     }
+}
 
-    function updateThemeIcon() {
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            const icon = themeToggle.querySelector('i');
-            if (icon) {
-                if (document.body.classList.contains('dark-mode')) {
-                    icon.className = 'fas fa-sun';
-                } else {
-                    icon.className = 'fas fa-moon';
-                }
+function renderDashboard() {
+    renderOverview();
+    renderProducts();
+    renderCategories();
+    renderSubcategories();
+    renderCollections();
+    renderPromotions();
+    renderBanners();
+    renderOrders();
+    renderCustomers();
+    renderTopProducts();
+    renderAnalyticsFilters();
+    renderAuditLogs();
+    renderUsers();
+    renderShippingSettings();
+}
+
+function setupModalCancels(root = document) {
+    const closeButtons = root.querySelectorAll('[data-close-modal]');
+    closeButtons.forEach(button => {
+        if (button.dataset.closeBound) return;
+        button.addEventListener('click', () => {
+            const modal = button.closest('.modal');
+            const form = button.closest('form');
+            if (form) {
+                form.reset();
             }
-        }
-    }
-
-    // ===== Navigation =====
-    // تفعيل القسم المطلوب في التنقل الجانبي وإعداد الرسوم البيانية عند الحاجة
-    function switchSection(targetSection) {
-        
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-
-        if (sidebar && sidebarOverlay && window.innerWidth <= 992) {
-            sidebar.classList.remove('mobile-active');
-            sidebarOverlay.hidden = true;
-            sidebarOverlay.style.opacity = '0';
-            document.body.classList.remove('sidebar-open');
-            if (mobileMenuBtn) {
-                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            if (modal?.id) {
+                closeModal(modal.id);
             }
-        }
+        });
+        button.dataset.closeBound = 'true';
+    });
+}
 
-        const navItems = document.querySelectorAll('.nav-item');
-        const contentSections = document.querySelectorAll('.content-section');
+// ===== Theme Toggle =====
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+    updateThemeIcon();
+}
 
-        navItems.forEach(item => item.classList.remove('active'));
-        contentSections.forEach(section => section.classList.remove('active'));
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+    localStorage.setItem('theme', theme);
+    updateThemeIcon();
+    showToast('success', 'تم تغيير الوضع', `تم التبديل إلى الوضع ${theme === 'dark' ? 'الداكن' : 'الفاتح'}`);
+}
 
-        const clickedNav = document.querySelector(`[data-section="${targetSection}"]`);
-        if (clickedNav) {
-            clickedNav.classList.add('active');
-        }
-
-        const targetSectionEl = document.getElementById(targetSection);
-        if (targetSectionEl) {
-            targetSectionEl.classList.add('active');
-
-            // تحميل الرسوم البيانية بشكل lazy عند الحاجة
-            if (targetSection === 'overview') {
-                // جلب البيانات إذا لم تكن محملة
-                if (!state.customers || state.customers.length === 0) {
-                    fetchCustomers(true); // بصمت
-                }
-                if (!state.products || state.products.length === 0) {
-                    fetchProducts();
-                }
-                
-                // تحميل الرسومات
-                if (!chartsLoaded.overview) {
-                    setTimeout(() => {
-                        loadOverviewCharts();
-                        chartsLoaded.overview = true;
-                    }, 100);
-                }
-            } else if (targetSection === 'analytics') {
-                if (!state.filters) state.filters = {};
-
-                // ضبط القيمة الافتراضية للفلتر إذا لم تكن موجودة
-                if (!state.filters.analyticsDays) {
-                    const select = document.getElementById('analyticsTimeFilter');
-                    const defaultValue = select ? parseInt(select.value) : 30;
-                    state.filters.analyticsDays = defaultValue || 30;
-                }
-
-                // تحميل الرسومات عند الحاجة
-                if (!chartsLoaded.analytics) {
-                    setTimeout(() => {
-                        loadAnalyticsCharts();
-                        chartsLoaded.analytics = true;
-                    }, 100);
-                } else {
-                    // تحديث فوري عند العودة للقسم
-                    loadAnalyticsCharts();
-                }
-            }
-        }
-
-        saveCurrentSection(targetSection);
-
-        if (targetSection === 'subcategories' && state.filters.subcategoryCategory) {
-            fetchSubcategories(state.filters.subcategoryCategory, { force: true });
-        }
-        
-        // جلب العملاء عند الانتقال لقسم العملاء
-        if (targetSection === 'customers' && (!state.customers || state.customers.length === 0)) {
-            fetchCustomers();
-        }
-
-        if (targetSection === 'brands') {
-            if (!Array.isArray(state.brands) || state.brands.length === 0) {
-                fetchBrands()
-                    .then(() => renderBrands())
-                    .catch(error => console.error('❌ Failed to load brands:', error));
+function updateThemeIcon() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        const icon = themeToggle.querySelector('i');
+        if (icon) {
+            if (document.body.classList.contains('dark-mode')) {
+                icon.className = 'fas fa-sun';
             } else {
-                renderBrands();
+                icon.className = 'fas fa-moon';
             }
         }
+    }
+}
 
-        refreshSectionData(targetSection);
+// ===== Navigation =====
+// تفعيل القسم المطلوب في التنقل الجانبي وإعداد الرسوم البيانية عند الحاجة
+function switchSection(targetSection) {
+
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+    if (sidebar && sidebarOverlay && window.innerWidth <= 992) {
+        sidebar.classList.remove('mobile-active');
+        sidebarOverlay.hidden = true;
+        sidebarOverlay.style.opacity = '0';
+        document.body.classList.remove('sidebar-open');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        }
     }
 
-    function refreshSectionData(sectionKey) {
-        switch (sectionKey) {
-            case 'overview':
-                updateOverviewStats();
-                break;
-            case 'products':
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    navItems.forEach(item => item.classList.remove('active'));
+    contentSections.forEach(section => section.classList.remove('active'));
+
+    const clickedNav = document.querySelector(`[data-section="${targetSection}"]`);
+    if (clickedNav) {
+        clickedNav.classList.add('active');
+    }
+
+    const targetSectionEl = document.getElementById(targetSection);
+    if (targetSectionEl) {
+        targetSectionEl.classList.add('active');
+
+        // تحميل الرسوم البيانية بشكل lazy عند الحاجة
+        if (targetSection === 'overview') {
+            // جلب البيانات إذا لم تكن محملة
+            if (!state.customers || state.customers.length === 0) {
+                fetchCustomers(true); // بصمت
+            }
+            if (!state.products || state.products.length === 0) {
                 fetchProducts();
-                break;
-            case 'categories':
-                fetchCategories();
-                break;
-            case 'subcategories':
-                if (state.filters?.subcategoryCategory) {
-                    fetchSubcategories(state.filters.subcategoryCategory, { force: true });
-                } else {
-                    fetchSubcategories();
-                }
-                break;
-            case 'brands':
-                fetchBrands({ force: true }).then(() => renderBrands()).catch(console.error);
-                break;
-            case 'orders':
-                fetchOrders();
-                break;
-            case 'customers':
-                fetchCustomers();
-                break;
-            case 'cms':
-                fetchMessages({ force: true }).catch(console.error);
-                break;
-            case 'payments':
-                renderPaymentMethods();
-                break;
-            case 'analytics':
-                loadAnalyticsCharts();
-                break;
-            case 'settings':
-                if (typeof hydrateSettingsForms === 'function') {
-                    hydrateSettingsForms();
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    // ===== Modals =====
-    function openModal(modalId, mode = 'create', entity = null) {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
-
-        modal.classList.add('active');
-
-        const form = modal.querySelector('form');
-        if (form) {
-            form.dataset.mode = mode;
-            form.reset();
-        }
-
-        if (entity) {
-            populateModal(modalId, entity, mode);
-        }
-
-        const title = modal.querySelector('[data-modal-title]');
-        if (title) {
-            if (!title.dataset.defaultTitle) {
-                title.dataset.defaultTitle = title.textContent.trim();
             }
-            const defaultTitle = title.dataset.defaultTitle;
-            const editTitle = title.getAttribute('data-modal-edit-title') || defaultTitle;
-            title.textContent = mode === 'edit' ? editTitle : defaultTitle;
-        }
 
-        if (modalId === 'brandModal' && mode === 'create') {
-            prepareBrandCreateForm();
-        }
+            // تحميل الرسومات
+            if (!chartsLoaded.overview) {
+                setTimeout(() => {
+                    loadOverviewCharts();
+                    chartsLoaded.overview = true;
+                }, 100);
+            }
+        } else if (targetSection === 'analytics') {
+            if (!state.filters) state.filters = {};
 
-        initDescriptionInputs(modal);
-        refreshDescriptionCounters(modal);
+            // ضبط القيمة الافتراضية للفلتر إذا لم تكن موجودة
+            if (!state.filters.analyticsDays) {
+                const select = document.getElementById('analyticsTimeFilter');
+                const defaultValue = select ? parseInt(select.value) : 30;
+                state.filters.analyticsDays = defaultValue || 30;
+            }
+
+            // تحميل الرسومات عند الحاجة
+            if (!chartsLoaded.analytics) {
+                setTimeout(() => {
+                    loadAnalyticsCharts();
+                    chartsLoaded.analytics = true;
+                }, 100);
+            } else {
+                // تحديث فوري عند العودة للقسم
+                loadAnalyticsCharts();
+            }
+        }
     }
 
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('active');
+    saveCurrentSection(targetSection);
+
+    if (targetSection === 'subcategories' && state.filters.subcategoryCategory) {
+        fetchSubcategories(state.filters.subcategoryCategory, { force: true });
+    }
+
+    // جلب العملاء عند الانتقال لقسم العملاء
+    if (targetSection === 'customers' && (!state.customers || state.customers.length === 0)) {
+        fetchCustomers();
+    }
+
+    if (targetSection === 'brands') {
+        if (!Array.isArray(state.brands) || state.brands.length === 0) {
+            fetchBrands()
+                .then(() => renderBrands())
+                .catch(error => console.error('❌ Failed to load brands:', error));
+        } else {
+            renderBrands();
         }
     }
 
-    function closeAllModals() {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => modal.classList.remove('active'));
+    refreshSectionData(targetSection);
+}
+
+function refreshSectionData(sectionKey) {
+    switch (sectionKey) {
+        case 'overview':
+            updateOverviewStats();
+            break;
+        case 'products':
+            fetchProducts();
+            break;
+        case 'categories':
+            fetchCategories();
+            break;
+        case 'subcategories':
+            if (state.filters?.subcategoryCategory) {
+                fetchSubcategories(state.filters.subcategoryCategory, { force: true });
+            } else {
+                fetchSubcategories();
+            }
+            break;
+        case 'brands':
+            fetchBrands({ force: true }).then(() => renderBrands()).catch(console.error);
+            break;
+        case 'orders':
+            fetchOrders();
+            break;
+        case 'customers':
+            fetchCustomers();
+            break;
+        case 'cms':
+            fetchMessages({ force: true }).catch(console.error);
+            break;
+        case 'payments':
+            renderPaymentMethods();
+            break;
+        case 'analytics':
+            loadAnalyticsCharts();
+            break;
+        case 'settings':
+            if (typeof hydrateSettingsForms === 'function') {
+                hydrateSettingsForms();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+// ===== Modals =====
+function openModal(modalId, mode = 'create', entity = null) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    modal.classList.add('active');
+
+    const form = modal.querySelector('form');
+    if (form) {
+        form.dataset.mode = mode;
+        form.reset();
     }
 
-    // ===== Toast Notifications =====
-    function showToast(type, title, message) {
-        console.log(`🔔 Toast [${type}]:`, title, '-', message);
-        
-        const toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) return;
+    if (entity) {
+        populateModal(modalId, entity, mode);
+    }
 
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+    const title = modal.querySelector('[data-modal-title]');
+    if (title) {
+        if (!title.dataset.defaultTitle) {
+            title.dataset.defaultTitle = title.textContent.trim();
+        }
+        const defaultTitle = title.dataset.defaultTitle;
+        const editTitle = title.getAttribute('data-modal-edit-title') || defaultTitle;
+        title.textContent = mode === 'edit' ? editTitle : defaultTitle;
+    }
 
-        const iconMap = {
-            success: 'fa-check-circle',
-            error: 'fa-exclamation-circle',
-            info: 'fa-info-circle'
-        };
+    if (modalId === 'brandModal' && mode === 'create') {
+        prepareBrandCreateForm();
+    }
 
-        toast.innerHTML = `
+    initDescriptionInputs(modal);
+    refreshDescriptionCounters(modal);
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => modal.classList.remove('active'));
+}
+
+// ===== Toast Notifications =====
+function showToast(type, title, message) {
+
+
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const iconMap = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+
+    toast.innerHTML = `
             <i class="fas ${iconMap[type]}"></i>
             <div class="toast-content">
                 <h4>${title}</h4>
@@ -7747,375 +7738,369 @@
             </div>
         `;
 
-        toastContainer.appendChild(toast);
+    toastContainer.appendChild(toast);
 
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-100px)';
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-100px)';
-            setTimeout(() => {
-                if (toastContainer.contains(toast)) {
-                    toastContainer.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
-    }
-
-    // ===== Charts =====
-    function createChartInstance(scope, key, canvas, config) {
-        if (!canvas) return null;
-        const store = chartInstances[scope];
-        if (store && store[key]) {
-            store[key].destroy();
-        }
-        const chart = new Chart(canvas, config);
-        if (store) {
-            store[key] = chart;
-        }
-        return chart;
-    }
-
-    /**
-     * حساب المبيعات الشهرية لآخر 6 أشهر
-     */
-    function calculateMonthlySales() {
-        const orders = state.orders || [];
-        const months = [];
-        const sales = [];
-        
-        const rangeStart = parseDateValue(state.filters?.analyticsStart);
-        const rangeEnd = parseDateValue(state.filters?.analyticsEnd);
-        const hasCustomRange = rangeStart && rangeEnd;
-        
-        if (hasCustomRange) {
-            const startMonth = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
-            const endMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
-            let current = new Date(startMonth);
-            let safetyCounter = 0;
-            while (current <= endMonth && safetyCounter < 36) {
-                const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-                months.push(monthName);
-                const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
-                const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
-                const monthSales = orders
-                    .filter(order => {
-                        const orderDate = getOrderDate(order);
-                        return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
-                    })
-                    .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-                sales.push(monthSales);
-                current.setMonth(current.getMonth() + 1);
-                safetyCounter++;
+            if (toastContainer.contains(toast)) {
+                toastContainer.removeChild(toast);
             }
-        } else {
-            const now = new Date();
-            for (let i = 5; i >= 0; i--) {
-                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthName = date.toLocaleDateString('ar-EG', { month: 'long' });
-                months.push(monthName);
-                const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-                const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-                const monthSales = orders
-                    .filter(order => {
-                        const orderDate = getOrderDate(order);
-                        return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
-                    })
-                    .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-                sales.push(monthSales);
-            }
+        }, 300);
+    }, 3000);
+}
+
+// ===== Charts =====
+function createChartInstance(scope, key, canvas, config) {
+    if (!canvas) return null;
+    const store = chartInstances[scope];
+    if (store && store[key]) {
+        store[key].destroy();
+    }
+    const chart = new Chart(canvas, config);
+    if (store) {
+        store[key] = chart;
+    }
+    return chart;
+}
+
+/**
+ * حساب المبيعات الشهرية لآخر 6 أشهر
+ */
+function calculateMonthlySales() {
+    const orders = state.orders || [];
+    const months = [];
+    const sales = [];
+
+    const rangeStart = parseDateValue(state.filters?.analyticsStart);
+    const rangeEnd = parseDateValue(state.filters?.analyticsEnd);
+    const hasCustomRange = rangeStart && rangeEnd;
+
+    if (hasCustomRange) {
+        const startMonth = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
+        const endMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
+        let current = new Date(startMonth);
+        let safetyCounter = 0;
+        while (current <= endMonth && safetyCounter < 36) {
+            const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            months.push(monthName);
+            const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+            const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthSales = orders
+                .filter(order => {
+                    const orderDate = getOrderDate(order);
+                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
+                })
+                .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+            sales.push(monthSales);
+            current.setMonth(current.getMonth() + 1);
+            safetyCounter++;
         }
-        
-        console.log('📊 Monthly sales calculated:', { months, sales });
-        return { labels: months, values: sales };
+    } else {
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthName = date.toLocaleDateString('ar-EG', { month: 'long' });
+            months.push(monthName);
+            const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+            const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthSales = orders
+                .filter(order => {
+                    const orderDate = getOrderDate(order);
+                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
+                })
+                .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+            sales.push(monthSales);
+        }
     }
 
-    /**
-     * حساب أفضل 5 منتجات مبيعاً
-     */
-    function calculateTopProducts() {
-        const orders = state.orders || [];
-        const productSales = {};
-        
-        // جمع مبيعات كل منتج
-        orders.forEach(order => {
-            if (order.status === 'cancelled') return;
-            
-            const items = order.itemsDetails || order.cartItems || [];
-            items.forEach(item => {
-                const productName = item.name || item.product?.name || 'منتج غير معروف';
-                const quantity = item.quantity || item.qty || 0;
-                
-                if (!productSales[productName]) {
-                    productSales[productName] = 0;
-                }
-                productSales[productName] += quantity;
-            });
+
+    return { labels: months, values: sales };
+}
+
+/**
+ * حساب أفضل 5 منتجات مبيعاً
+ */
+function calculateTopProducts() {
+    const orders = state.orders || [];
+    const productSales = {};
+
+    // جمع مبيعات كل منتج
+    orders.forEach(order => {
+        if (order.status === 'cancelled') return;
+
+        const items = order.itemsDetails || order.cartItems || [];
+        items.forEach(item => {
+            const productName = item.name || item.product?.name || 'منتج غير معروف';
+            const quantity = item.quantity || item.qty || 0;
+
+            if (!productSales[productName]) {
+                productSales[productName] = 0;
+            }
+            productSales[productName] += quantity;
         });
-        
-        // ترتيب المنتجات حسب المبيعات
-        const sorted = Object.entries(productSales)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-        
-        if (sorted.length === 0) {
-            return {
-                labels: ['لا توجد مبيعات'],
-                values: [1]
-            };
-        }
-        
+    });
+
+    // ترتيب المنتجات حسب المبيعات
+    const sorted = Object.entries(productSales)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    if (sorted.length === 0) {
         return {
-            labels: sorted.map(([name]) => name),
-            values: sorted.map(([, count]) => count)
+            labels: ['لا توجد مبيعات'],
+            values: [1]
         };
     }
 
-    function loadOverviewCharts() {
-        console.log('📊 Loading overview charts...');
-        console.log('📦 Current orders count:', state.orders?.length || 0);
-        
-        // رسم المبيعات الشهرية
-        const salesCtx = document.getElementById('salesChart');
-        if (salesCtx) {
-            const salesData = calculateMonthlySales();
-            console.log('💰 Sales data for chart:', salesData);
-            
-            createChartInstance('overview', 'sales', salesCtx, {
-                type: 'line',
-                data: {
-                    labels: salesData.labels,
-                    datasets: [{
-                        label: 'المبيعات',
-                        data: salesData.values,
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
+    return {
+        labels: sorted.map(([name]) => name),
+        values: sorted.map(([, count]) => count)
+    };
+}
+
+function loadOverviewCharts() {
+
+    // رسم المبيعات الشهرية
+    const salesCtx = document.getElementById('salesChart');
+    if (salesCtx) {
+        const salesData = calculateMonthlySales();
+
+
+        createChartInstance('overview', 'sales', salesCtx, {
+            type: 'line',
+            data: {
+                labels: salesData.labels,
+                datasets: [{
+                    label: 'المبيعات',
+                    data: salesData.values,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toLocaleString() + ' ريال';
-                                }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return value.toLocaleString() + ' ريال';
                             }
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        // رسم أفضل المنتجات مبيعاً
-        const productsCtx = document.getElementById('productsChart');
-        if (productsCtx) {
-            const topProductsData = calculateTopProducts();
-            
-            createChartInstance('overview', 'products', productsCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: topProductsData.labels,
-                    datasets: [{
-                        data: topProductsData.values,
-                        backgroundColor: [
-                            '#e74c3c',
-                            '#3498db',
-                            '#2ecc71',
-                            '#f1c40f',
-                            '#9b59b6',
-                            '#1abc9c',
-                            '#e67e22',
-                            '#34495e',
-                            '#16a085',
-                            '#8e44ad'
-                        ],
-                        borderColor: [
-                            '#e74c3c',
-                            '#3498db',
-                            '#2ecc71',
-                            '#f1c40f',
-                            '#9b59b6',
-                            '#1abc9c',
-                            '#e67e22',
-                            '#34495e',
-                            '#16a085',
-                            '#8e44ad'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+    // رسم أفضل المنتجات مبيعاً
+    const productsCtx = document.getElementById('productsChart');
+    if (productsCtx) {
+        const topProductsData = calculateTopProducts();
+
+        createChartInstance('overview', 'products', productsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: topProductsData.labels,
+                datasets: [{
+                    data: topProductsData.values,
+                    backgroundColor: [
+                        '#e74c3c',
+                        '#3498db',
+                        '#2ecc71',
+                        '#f1c40f',
+                        '#9b59b6',
+                        '#1abc9c',
+                        '#e67e22',
+                        '#34495e',
+                        '#16a085',
+                        '#8e44ad'
+                    ],
+                    borderColor: [
+                        '#e74c3c',
+                        '#3498db',
+                        '#2ecc71',
+                        '#f1c40f',
+                        '#9b59b6',
+                        '#1abc9c',
+                        '#e67e22',
+                        '#34495e',
+                        '#16a085',
+                        '#8e44ad'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
                     }
                 }
-            });
-        }
-    }
-
-    /**
-     * حساب بيانات التحليلات حسب الفلتر
-     */
-    function calculateAnalyticsData() {
-        const orders = state.orders || [];
-        const rangeStart = parseDateValue(state.filters?.analyticsStart);
-        const rangeEnd = parseDateValue(state.filters?.analyticsEnd);
-        
-        const hasCustomRange = rangeStart instanceof Date && !isNaN(rangeStart) && rangeEnd instanceof Date && !isNaN(rangeEnd);
-        const startDate = hasCustomRange ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()) : null;
-        const endDate = hasCustomRange ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999) : null;
-        
-        const filteredOrders = orders.filter(order => {
-            const orderDate = getOrderDate(order);
-            if (!orderDate || order.status === 'cancelled') return false;
-            
-            if (hasCustomRange) {
-                return orderDate >= startDate && orderDate <= endDate;
             }
-            
-            return true;
         });
-        
-        // 1. إجمالي الإيرادات
-        const totalRevenue = filteredOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-        
-        // 2. متوسط قيمة السلة
-        const avgBasket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+    }
+}
 
-        const ordersCount = filteredOrders.length;
-        const totalItems = filteredOrders.reduce((sum, order) => sum + (Number(order.items) || Number(order.totalItems) || 0), 0);
-        
-        // 3. الإيرادات الشهرية (آخر 8 أشهر)
-        const monthlyRevenue = [];
-        const monthLabels = [];
-        const monthsToInclude = 8;
+/**
+ * حساب بيانات التحليلات حسب الفلتر
+ */
+function calculateAnalyticsData() {
+    const orders = state.orders || [];
+    const rangeStart = parseDateValue(state.filters?.analyticsStart);
+    const rangeEnd = parseDateValue(state.filters?.analyticsEnd);
+
+    const hasCustomRange = rangeStart instanceof Date && !isNaN(rangeStart) && rangeEnd instanceof Date && !isNaN(rangeEnd);
+    const startDate = hasCustomRange ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()) : null;
+    const endDate = hasCustomRange ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999) : null;
+
+    const filteredOrders = orders.filter(order => {
+        const orderDate = getOrderDate(order);
+        if (!orderDate || order.status === 'cancelled') return false;
+
         if (hasCustomRange) {
-            const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-            const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-            let current = new Date(startMonth);
-            let safetyCounter = 0;
-            while (current <= endMonth && safetyCounter < 36) {
-                const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-                monthLabels.push(monthName);
-                const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
-                const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
-                const monthRevenue = filteredOrders
-                    .filter(order => {
-                        const orderDate = getOrderDate(order);
-                        return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
-                    })
-                    .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-                monthlyRevenue.push(monthRevenue);
-                current.setMonth(current.getMonth() + 1);
-                safetyCounter++;
-            }
-        } else {
-            const now = new Date();
-            for (let i = monthsToInclude - 1; i >= 0; i--) {
-                const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthName = monthDate.toLocaleDateString('ar-EG', { month: 'long' });
-                monthLabels.push(monthName);
-                const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-                const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59, 999);
-                const monthRevenue = filteredOrders
-                    .filter(order => {
-                        const orderDate = getOrderDate(order);
-                        return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
-                    })
-                    .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-                monthlyRevenue.push(monthRevenue);
-            }
+            return orderDate >= startDate && orderDate <= endDate;
         }
-        
-        // 4. أكثر المنتجات مبيعاً
-        const productStats = {};
-        filteredOrders.forEach(order => {
-            const items = order.itemsDetails || order.cartItems || [];
-            items.forEach(item => {
-                const productName = item.name || item.product?.name || 'منتج غير معروف';
-                const quantity = Number(item.quantity || item.qty || 0);
-                const price = Number(item.price || 0);
-                const revenue = quantity * price;
-                
-                if (!productStats[productName]) {
-                    productStats[productName] = { quantity: 0, revenue: 0 };
-                }
-                productStats[productName].quantity += quantity;
-                productStats[productName].revenue += revenue;
-            });
-        });
-        
-        const topProducts = Object.entries(productStats)
-            .sort((a, b) => b[1].quantity - a[1].quantity)
-            .slice(0, 10)
-            .map(([name, stats]) => ({ name, ...stats }));
-        
-        return {
-            totalRevenue,
-            avgBasket,
-            ordersCount,
-            totalItems,
-            monthlyRevenue: { labels: monthLabels, values: monthlyRevenue },
-            topProducts
-        };
+
+        return true;
+    });
+
+    // 1. إجمالي الإيرادات
+    const totalRevenue = filteredOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+
+    // 2. متوسط قيمة السلة
+    const avgBasket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+
+    const ordersCount = filteredOrders.length;
+    const totalItems = filteredOrders.reduce((sum, order) => sum + (Number(order.items) || Number(order.totalItems) || 0), 0);
+
+    // 3. الإيرادات الشهرية (آخر 8 أشهر)
+    const monthlyRevenue = [];
+    const monthLabels = [];
+    const monthsToInclude = 8;
+    if (hasCustomRange) {
+        const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+        const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+        let current = new Date(startMonth);
+        let safetyCounter = 0;
+        while (current <= endMonth && safetyCounter < 36) {
+            const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            monthLabels.push(monthName);
+            const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+            const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthRevenue = filteredOrders
+                .filter(order => {
+                    const orderDate = getOrderDate(order);
+                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
+                })
+                .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+            monthlyRevenue.push(monthRevenue);
+            current.setMonth(current.getMonth() + 1);
+            safetyCounter++;
+        }
+    } else {
+        const now = new Date();
+        for (let i = monthsToInclude - 1; i >= 0; i--) {
+            const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthName = monthDate.toLocaleDateString('ar-EG', { month: 'long' });
+            monthLabels.push(monthName);
+            const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthRevenue = filteredOrders
+                .filter(order => {
+                    const orderDate = getOrderDate(order);
+                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
+                })
+                .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+            monthlyRevenue.push(monthRevenue);
+        }
     }
 
-    /**
-     * تحديث إحصائيات التحليلات
-     */
-    function updateAnalyticsStats() {
-        const data = calculateAnalyticsData();
-        
-        // تحديث الإحصائيات
-        const revenueEl = document.getElementById('analyticsRevenue');
-        const avgBasketEl = document.getElementById('analyticsAvgBasket');
-        
-        if (revenueEl) revenueEl.textContent = formatCurrency(data.totalRevenue);
-        if (avgBasketEl) avgBasketEl.textContent = formatCurrency(data.avgBasket);
-        
-        // تحديث جدول المنتجات
-        renderTopProductsTable(data.topProducts);
-        
-        console.log('📊 Analytics stats updated:', {
-            totalRevenue: data.totalRevenue,
-            avgBasket: data.avgBasket,
-            topProducts: data.topProducts.length
+    // 4. أكثر المنتجات مبيعاً
+    const productStats = {};
+    filteredOrders.forEach(order => {
+        const items = order.itemsDetails || order.cartItems || [];
+        items.forEach(item => {
+            const productName = item.name || item.product?.name || 'منتج غير معروف';
+            const quantity = Number(item.quantity || item.qty || 0);
+            const price = Number(item.price || 0);
+            const revenue = quantity * price;
+
+            if (!productStats[productName]) {
+                productStats[productName] = { quantity: 0, revenue: 0 };
+            }
+            productStats[productName].quantity += quantity;
+            productStats[productName].revenue += revenue;
         });
-    }
+    });
 
-    /**
-     * عرض جدول أكثر المنتجات مبيعاً
-     */
-    function renderTopProductsTable(products) {
-        const tbody = document.getElementById('topProductsTableBody');
-        if (!tbody) return;
+    const topProducts = Object.entries(productStats)
+        .sort((a, b) => b[1].quantity - a[1].quantity)
+        .slice(0, 10)
+        .map(([name, stats]) => ({ name, ...stats }));
 
-        const filteredProducts = products.filter(product => Number(product.quantity) >= 5);
+    return {
+        totalRevenue,
+        avgBasket,
+        ordersCount,
+        totalItems,
+        monthlyRevenue: { labels: monthLabels, values: monthlyRevenue },
+        topProducts
+    };
+}
 
-        if (filteredProducts.length === 0) {
-            tbody.innerHTML = `
+/**
+ * تحديث إحصائيات التحليلات
+ */
+function updateAnalyticsStats() {
+    const data = calculateAnalyticsData();
+
+    // تحديث الإحصائيات
+    const revenueEl = document.getElementById('analyticsRevenue');
+    const avgBasketEl = document.getElementById('analyticsAvgBasket');
+
+    if (revenueEl) revenueEl.textContent = formatCurrency(data.totalRevenue);
+    if (avgBasketEl) avgBasketEl.textContent = formatCurrency(data.avgBasket);
+
+    // تحديث جدول المنتجات
+    renderTopProductsTable(data.topProducts);
+
+
+}
+
+/**
+ * عرض جدول أكثر المنتجات مبيعاً
+ */
+function renderTopProductsTable(products) {
+    const tbody = document.getElementById('topProductsTableBody');
+    if (!tbody) return;
+
+    const filteredProducts = products.filter(product => Number(product.quantity) >= 5);
+
+    if (filteredProducts.length === 0) {
+        tbody.innerHTML = `
                 <tr>
                     <td colspan="4" style="text-align: center; padding: 20px; color: #95a5a6;">
                         لا توجد منتجات حققت 5 مبيعات أو أكثر في هذه الفترة
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        tbody.innerHTML = filteredProducts.map((product, index) => `
+    tbody.innerHTML = filteredProducts.map((product, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${product.name}</td>
@@ -8123,61 +8108,61 @@
                 <td>${formatCurrency(product.revenue)}</td>
             </tr>
         `).join('');
-    }
+}
 
-    // ... (rest of the code remains the same)
-    function loadAnalyticsCharts() {
-        console.log('📊 Loading analytics charts...');
-        
-        const data = calculateAnalyticsData();
-        
-        const revenueCtx = document.getElementById('revenueChart');
-        if (revenueCtx) {
-            createChartInstance('analytics', 'revenue', revenueCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.monthlyRevenue.labels,
-                    datasets: [{
-                        label: 'الإيرادات',
-                        data: data.monthlyRevenue.values,
-                        backgroundColor: '#e74c3c'
-                    }]
+// ... (rest of the code remains the same)
+function loadAnalyticsCharts() {
+
+
+    const data = calculateAnalyticsData();
+
+    const revenueCtx = document.getElementById('revenueChart');
+    if (revenueCtx) {
+        createChartInstance('analytics', 'revenue', revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: data.monthlyRevenue.labels,
+                datasets: [{
+                    label: 'الإيرادات',
+                    data: data.monthlyRevenue.values,
+                    backgroundColor: '#e74c3c'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toLocaleString() + ' ريال';
-                                }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return value.toLocaleString() + ' ريال';
                             }
                         }
                     }
                 }
-            });
-        }
-        
-        // تحديث الإحصائيات
-        updateAnalyticsStats();
+            }
+        });
     }
 
-    // ===== Mobile Menu =====
-    function createMobileMenu() {
-        if (window.innerWidth <= 992) {
-            let menuBtn = document.getElementById('mobileMenuBtn');
-            if (!menuBtn) {
-                menuBtn = document.createElement('button');
-                menuBtn.id = 'mobileMenuBtn';
-                menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
-                menuBtn.style.cssText = `
+    // تحديث الإحصائيات
+    updateAnalyticsStats();
+}
+
+// ===== Mobile Menu =====
+function createMobileMenu() {
+    if (window.innerWidth <= 992) {
+        let menuBtn = document.getElementById('mobileMenuBtn');
+        if (!menuBtn) {
+            menuBtn = document.createElement('button');
+            menuBtn.id = 'mobileMenuBtn';
+            menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            menuBtn.style.cssText = `
                     position: fixed;
                     bottom: 20px;
                     right: 20px;
@@ -8196,26 +8181,350 @@
                     align-items: center;
                     justify-content: center;
                 `;
-                document.body.appendChild(menuBtn);
+            document.body.appendChild(menuBtn);
+        }
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
+        }
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('mobile-active');
+        }
+        document.body.classList.remove('sidebar-open');
+    } else {
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        if (menuBtn) {
+            menuBtn.remove();
+        }
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('mobile-active');
+        }
+        document.body.classList.remove('sidebar-open');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
+        }
+    }
+}
+
+function toggleSidebar(forceState = null) {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    if (!sidebar || !overlay) return;
+
+    const isActive = sidebar.classList.contains('mobile-active');
+    const targetState = forceState !== null ? Boolean(forceState) : !isActive;
+
+    sidebar.classList.toggle('mobile-active', targetState);
+    overlay.hidden = !targetState;
+    overlay.style.opacity = targetState ? '1' : '0';
+    document.body.classList.toggle('sidebar-open', targetState);
+
+    if (menuBtn) {
+        menuBtn.innerHTML = targetState
+            ? '<i class="fas fa-times"></i>'
+            : '<i class="fas fa-bars"></i>';
+    }
+}
+
+// ===== Event Delegation =====
+document.addEventListener('click', function (e) {
+    // Theme Toggle
+    if (e.target.closest('#themeToggle')) {
+        e.preventDefault();
+        toggleTheme();
+        return;
+    }
+
+    // Navigation Items
+    const navItem = e.target.closest('.nav-item');
+    if (navItem) {
+        e.preventDefault();
+        const section = navItem.getAttribute('data-section');
+        if (section) {
+            switchSection(section);
+        }
+        return;
+    }
+
+    // Toggle sidebar (mobile FAB)
+    if (e.target.closest('#mobileMenuBtn')) {
+        e.preventDefault();
+        toggleSidebar();
+        return;
+    }
+
+    // Delete Subcategory
+    const deleteSubcategoryBtn = e.target.closest('[data-action="delete-subcategory"]');
+    if (deleteSubcategoryBtn) {
+        e.preventDefault();
+        const subcategoryId = deleteSubcategoryBtn.getAttribute('data-entity-id');
+        const categoryId = deleteSubcategoryBtn.getAttribute('data-category-id')
+            || state.filters.subcategoryCategory;
+
+        if (!subcategoryId || !categoryId) {
+            showToast('error', 'حذف الفئة الفرعية', 'تعذر تحديد الفئة الفرعية أو الفئة الأصلية.');
+            return;
+        }
+
+        const subcategoryName = deleteSubcategoryBtn.getAttribute('data-entity-name')
+            || getSubcategoryById(categoryId, subcategoryId)?.name
+            || 'هذه الفئة الفرعية';
+
+        if (confirm(`هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`)) {
+            deleteSubcategory(categoryId, subcategoryId).catch(() => {
+                // يتم التعامل مع رسائل الخطأ داخل deleteSubcategory بالفعل
+            });
+        }
+        return;
+    }
+
+    // Refresh Categories
+    const refreshCategoriesBtn = e.target.closest('[data-action="refresh-categories"]');
+    if (refreshCategoriesBtn) {
+        e.preventDefault();
+        fetchCategories();
+        return;
+    }
+
+    // Modal Close Buttons
+    if (e.target.closest('.modal-close')) {
+        e.preventDefault();
+        const modal = e.target.closest('.modal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        return;
+    }
+
+    // Modal Overlays
+    if (e.target.classList.contains('modal-overlay')) {
+        e.preventDefault();
+        const modal = e.target.closest('.modal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        return;
+    }
+
+    // Generic Modal Triggers
+    const modalTrigger = e.target.closest('[data-open-modal]');
+    if (modalTrigger) {
+        e.preventDefault();
+        const modalId = modalTrigger.getAttribute('data-open-modal');
+        const mode = modalTrigger.getAttribute('data-modal-mode') || 'create';
+        const entity = modalTrigger.getAttribute('data-entity');
+        const customerId = modalTrigger.getAttribute('data-customer-id');
+        const entityId = modalTrigger.getAttribute('data-entity-id');
+        const categoryIdAttr = modalTrigger.getAttribute('data-category-id');
+
+        openModal(modalId, mode);
+
+        if (modalId === 'categoryModal') {
+            populateCategoryModal(mode === 'edit' ? entityId : null);
+        } else if (modalId === 'addProductModal') {
+            populateProductModal(mode === 'edit' ? entityId : null);
+        } else if (modalId === 'subcategoryModal') {
+            const contextCategoryId = categoryIdAttr
+                || state.filters.subcategoryCategory
+                || state.categories[0]?.id
+                || '';
+            populateSubcategoryModal(contextCategoryId, mode === 'edit' ? entityId : null);
+        } else if (modalId === 'paymentSettingsModal' && entityId) {
+            populatePaymentSettingsModal(entityId);
+        } else if (modalId === 'bannerModal') {
+            if (mode === 'edit' && entityId) {
+                populateBannerModal(entityId);
+            } else {
+                prepareBannerCreateForm();
             }
-            const overlay = document.getElementById('sidebarOverlay');
-            if (overlay) {
-                overlay.hidden = true;
-                overlay.style.opacity = '0';
-            }
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                sidebar.classList.remove('mobile-active');
-            }
-            document.body.classList.remove('sidebar-open');
-        } else {
+        }
+
+        if (entity) {
+            const labels = {
+                product: 'منتج',
+                category: 'فئة',
+                promotion: 'عرض ترويجي',
+                coupon: 'قسيمة',
+                banner: 'بانر',
+                feature: 'ميزة',
+                user: 'مستخدم',
+                payment: 'طريقة دفع'
+            };
+            const actionLabel = mode === 'edit' ? `تعديل ${labels[entity] || 'عنصر'}` : `إضافة ${labels[entity] || 'عنصر'} جديد`;
+            showToast('info', actionLabel, 'تم فتح النموذج بنجاح');
+        }
+
+        if (modalId === 'customerProfileModal' && customerId) {
+            populateCustomerProfile(customerId);
+            showToast('info', 'ملف العميل', 'تم عرض ملف العميل بنجاح');
+        } else if (modalId === 'customerOrdersModal' && customerId) {
+            populateCustomerOrders(customerId);
+            showToast('info', 'طلبات العميل', 'تم تحميل طلبات العميل');
+        }
+        return;
+    }
+
+    // Export Buttons
+    if (e.target.closest('#exportOrdersBtn')) {
+        e.preventDefault();
+        exportOrders();
+        return;
+    }
+
+    if (e.target.closest('#exportCustomersBtn')) {
+        e.preventDefault();
+        exportCustomers();
+        return;
+    }
+
+    if (e.target.closest('#exportReportBtn')) {
+        e.preventDefault();
+        exportAnalyticsReport();
+        return;
+    }
+
+    if (e.target.closest('#exportAuditBtn')) {
+        e.preventDefault();
+        exportAuditLogs();
+        return;
+    }
+
+    // View Order Details
+    if (e.target.closest('.view-order')) {
+        e.preventDefault();
+        const btn = e.target.closest('.view-order');
+        const orderIdAttr = btn?.getAttribute('data-order-id');
+        const row = btn?.closest('tr');
+        const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
+        const orderId = normalizeOrderId(orderIdAttr || fallbackId);
+
+        if (!orderId) {
+            showToast('error', 'تفاصيل الطلب', 'تعذر تحديد رقم الطلب');
+            return;
+        }
+
+        viewOrderDetails(orderId);
+        showToast('info', 'تفاصيل الطلب', `عرض تفاصيل الطلب ${orderId}`);
+        return;
+    }
+
+    // Print Order Invoice
+    if (e.target.closest('.print-order')) {
+        e.preventDefault();
+        const btn = e.target.closest('.print-order');
+        const orderIdAttr = btn?.getAttribute('data-order-id');
+        const row = btn?.closest('tr');
+        const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
+        const orderId = normalizeOrderId(orderIdAttr || fallbackId);
+
+        if (!orderId) {
+            showToast('error', 'طباعة الفاتورة', 'تعذر تحديد رقم الطلب للطباعة');
+            return;
+        }
+
+        printOrder(orderId);
+        return;
+    }
+
+    // Delete Category
+    const refreshBannersBtn = e.target.closest('[data-action="refresh-banners"]');
+    if (refreshBannersBtn) {
+        e.preventDefault();
+        fetchBanners({ force: true }).then(renderBanners).catch(error => {
+            console.error('❌ Failed to refresh banners:', error);
+            showToast('error', 'تحديث البانرات', 'تعذر تحديث قائمة البانرات.');
+        });
+        return;
+    }
+
+    const deleteBannerBtn = e.target.closest('[data-action="delete-banner"]');
+    if (deleteBannerBtn) {
+        e.preventDefault();
+        const bannerId = deleteBannerBtn.getAttribute('data-entity-id');
+        if (!bannerId) {
+            showToast('error', 'حذف البانر', 'تعذر تحديد البانر المطلوب حذفه');
+            return;
+        }
+
+        if (confirm('هل أنت متأكد من حذف هذا البانر؟')) {
+            deleteBanner(bannerId)
+                .then(() => {
+                    showToast('success', 'حذف البانر', 'تم حذف البانر بنجاح');
+                    return fetchBanners({ force: true });
+                })
+                .catch(error => {
+                    console.error('❌ Delete banner error:', error);
+                    showToast('error', 'حذف البانر', error?.message || 'حدث خطأ أثناء حذف البانر');
+                });
+        }
+        return;
+    }
+
+    const deleteCategoryBtn = e.target.closest('[data-action="delete-category"]');
+    if (deleteCategoryBtn) {
+        e.preventDefault();
+        const categoryId = deleteCategoryBtn.getAttribute('data-entity-id');
+        if (!categoryId) return;
+
+        const category = getCategoryById(categoryId);
+        if (!category) {
+            showToast('error', 'حذف الفئة', 'لم يتم العثور على الفئة المحددة');
+            return;
+        }
+
+        if (confirm(`هل أنت متأكد من حذف الفئة "${category.name}"؟`)) {
+            deleteCategory(categoryId);
+        }
+        return;
+    }
+
+    // Delete Product
+    const deleteProductBtn = e.target.closest('[data-action="delete-product"]');
+    if (deleteProductBtn) {
+        e.preventDefault();
+        const productId = deleteProductBtn.getAttribute('data-entity-id');
+        if (!productId) return;
+
+        const product = getProductById(productId);
+        if (!product) {
+            showToast('error', 'حذف المنتج', 'لم يتم العثور على المنتج المحدد');
+            return;
+        }
+
+        deleteProduct(productId, { productName: product.name });
+        return;
+    }
+
+    // Preview Product
+    const previewProductBtn = e.target.closest('[data-action="preview-product"]');
+    if (previewProductBtn) {
+        e.preventDefault();
+        const productId = previewProductBtn.getAttribute('data-entity-id');
+        const product = getProductById(productId);
+        if (!product) {
+            showToast('error', 'عرض المنتج', 'لم يتم العثور على المنتج المحدد');
+            return;
+        }
+
+        viewProductDetails(product.id);
+        return;
+    }
+
+    // Close mobile sidebar when clicking outside
+    const sidebar = document.getElementById('sidebar');
+    if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('mobile-active')) {
+        if (!sidebar.contains(e.target) && !e.target.closest('#mobileMenuBtn')) {
+            sidebar.classList.remove('mobile-active');
             const menuBtn = document.getElementById('mobileMenuBtn');
             if (menuBtn) {
-                menuBtn.remove();
-            }
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                sidebar.classList.remove('mobile-active');
+                menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
             }
             document.body.classList.remove('sidebar-open');
             const overlay = document.getElementById('sidebarOverlay');
@@ -8226,1567 +8535,1242 @@
         }
     }
 
-    function toggleSidebar(forceState = null) {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const menuBtn = document.getElementById('mobileMenuBtn');
+    if (e.target.closest('#sidebarOverlay')) {
+        e.preventDefault();
+        toggleSidebar(false);
+        return;
+    }
 
-        if (!sidebar || !overlay) return;
+    // Toggle messages panel
+    if (e.target.closest('#messagesBtn')) {
+        e.preventDefault();
+        toggleMessagesPanel();
+        return;
+    }
 
-        const isActive = sidebar.classList.contains('mobile-active');
-        const targetState = forceState !== null ? Boolean(forceState) : !isActive;
+    if (e.target.closest('#closeMessagesPanel')) {
+        e.preventDefault();
+        toggleMessagesPanel(false);
+        return;
+    }
 
-        sidebar.classList.toggle('mobile-active', targetState);
-        overlay.hidden = !targetState;
-        overlay.style.opacity = targetState ? '1' : '0';
-        document.body.classList.toggle('sidebar-open', targetState);
+    if (e.target.closest('#markAllMessagesRead')) {
+        e.preventDefault();
+        markMessagesAsRead();
+        showToast('success', 'الرسائل', 'تم تعيين جميع الرسائل كمقروءة');
+        return;
+    }
 
-        if (menuBtn) {
-            menuBtn.innerHTML = targetState
-                ? '<i class="fas fa-times"></i>'
-                : '<i class="fas fa-bars"></i>';
+    if (e.target.id === 'messagesOverlay') {
+        toggleMessagesPanel(false);
+        return;
+    }
+
+    if (window.innerWidth > 992) {
+        const panel = document.getElementById('messagesPanel');
+        if (panel?.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('#messagesBtn')) {
+            toggleMessagesPanel(false);
         }
     }
 
-    // ===== Event Delegation =====
-    document.addEventListener('click', function(e) {
-        // Theme Toggle
-        if (e.target.closest('#themeToggle')) {
-            e.preventDefault();
-            toggleTheme();
-            return;
-        }
+    const messageActionBtn = e.target.closest('[data-action][data-message-id]');
+    if (messageActionBtn) {
+        const action = messageActionBtn.getAttribute('data-action');
+        const messageId = messageActionBtn.getAttribute('data-message-id');
+        handleMessageAction(action, messageId);
+        return;
+    }
+});
 
-        // Navigation Items
-        const navItem = e.target.closest('.nav-item');
-        if (navItem) {
-            e.preventDefault();
-            const section = navItem.getAttribute('data-section');
-            if (section) {
-                switchSection(section);
+document.addEventListener('input', function (e) {
+    if (e.target.id === 'messagesSearchInput') {
+        renderMessagesList(e.target.value || '');
+    }
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const panel = document.getElementById('messagesPanel');
+        if (panel?.classList.contains('active')) {
+            toggleMessagesPanel(false);
+        }
+    }
+});
+
+// ===== Image Upload Functions =====
+async function uploadImages(files) {
+    if (!files || !files.length) return [];
+
+    const UPLOAD_ENDPOINT = '/api/upload';
+    const uploadedUrls = [];
+
+    try {
+        for (const file of files) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await authorizedFetch(UPLOAD_ENDPOINT, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`فشل رفع الصورة: ${file.name}`);
             }
-            return;
-        }
 
-        // Toggle sidebar (mobile FAB)
-        if (e.target.closest('#mobileMenuBtn')) {
-            e.preventDefault();
-            toggleSidebar();
-            return;
-        }
-
-        // Delete Subcategory
-        const deleteSubcategoryBtn = e.target.closest('[data-action="delete-subcategory"]');
-        if (deleteSubcategoryBtn) {
-            e.preventDefault();
-            const subcategoryId = deleteSubcategoryBtn.getAttribute('data-entity-id');
-            const categoryId = deleteSubcategoryBtn.getAttribute('data-category-id')
-                || state.filters.subcategoryCategory;
-
-            if (!subcategoryId || !categoryId) {
-                showToast('error', 'حذف الفئة الفرعية', 'تعذر تحديد الفئة الفرعية أو الفئة الأصلية.');
-                return;
-            }
-
-            const subcategoryName = deleteSubcategoryBtn.getAttribute('data-entity-name')
-                || getSubcategoryById(categoryId, subcategoryId)?.name
-                || 'هذه الفئة الفرعية';
-
-            if (confirm(`هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`)) {
-                deleteSubcategory(categoryId, subcategoryId).catch(() => {
-                    // يتم التعامل مع رسائل الخطأ داخل deleteSubcategory بالفعل
+            const result = await response.json();
+            if (result.url) {
+                uploadedUrls.push({
+                    url: result.url,
+                    alt: file.name,
+                    isMain: uploadedUrls.length === 0 // أول صورة تكون رئيسية
                 });
             }
+        }
+
+        return uploadedUrls;
+    } catch (error) {
+        console.error('❌ Failed to upload images:', error);
+        showToast('error', 'خطأ في رفع الصور', error.message || 'حدث خطأ أثناء رفع الصور');
+        throw error;
+    }
+}
+
+// ===== Toggle Switches =====
+document.addEventListener('change', async function (e) {
+    if (e.target.matches('#subcategoryCategoryFilter')) {
+        const selectedCategoryId = e.target.value;
+        state.filters.subcategoryCategory = selectedCategoryId;
+        if (selectedCategoryId) {
+            fetchSubcategories(selectedCategoryId, { force: true });
+        }
+        renderSubcategories(selectedCategoryId);
+        return;
+    }
+
+    if (e.target.matches('#subcategoryImage')) {
+        handleSubcategoryImageChange(e);
+        return;
+    }
+
+    if (e.target.matches('.toggle-switch input')) {
+        const toggleInput = e.target;
+        const parent = toggleInput.closest('.payment-method-card');
+        if (!parent) return;
+
+        const paymentId = parent.getAttribute('data-payment-id');
+        if (!paymentId) {
+            console.warn('⚠️ لم يتم تحديد معرف طريقة الدفع للزر.', parent);
             return;
         }
 
-        // Refresh Categories
-        const refreshCategoriesBtn = e.target.closest('[data-action="refresh-categories"]');
-        if (refreshCategoriesBtn) {
-            e.preventDefault();
-            fetchCategories();
-            return;
-        }
+        const methodName = parent.querySelector('h3')?.textContent || 'طريقة الدفع';
+        const enabled = toggleInput.checked;
+        const previousStateAttr = parent.dataset.enabled;
+        const previousState = typeof previousStateAttr === 'string'
+            ? previousStateAttr === 'true'
+            : !enabled;
 
-        // Modal Close Buttons
-        if (e.target.closest('.modal-close')) {
-            e.preventDefault();
-            const modal = e.target.closest('.modal');
-            if (modal) {
-                modal.classList.remove('active');
-            }
-            return;
-        }
+        toggleInput.disabled = true;
+        showToast('info', 'جاري التحديث', `يتم الآن ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName}...`);
 
-        // Modal Overlays
-        if (e.target.classList.contains('modal-overlay')) {
-            e.preventDefault();
-            const modal = e.target.closest('.modal');
-            if (modal) {
-                modal.classList.remove('active');
-            }
-            return;
-        }
-
-        // Generic Modal Triggers
-        const modalTrigger = e.target.closest('[data-open-modal]');
-        if (modalTrigger) {
-            e.preventDefault();
-            const modalId = modalTrigger.getAttribute('data-open-modal');
-            const mode = modalTrigger.getAttribute('data-modal-mode') || 'create';
-            const entity = modalTrigger.getAttribute('data-entity');
-            const customerId = modalTrigger.getAttribute('data-customer-id');
-            const entityId = modalTrigger.getAttribute('data-entity-id');
-            const categoryIdAttr = modalTrigger.getAttribute('data-category-id');
-
-            openModal(modalId, mode);
-
-            if (modalId === 'categoryModal') {
-                populateCategoryModal(mode === 'edit' ? entityId : null);
-            } else if (modalId === 'addProductModal') {
-                populateProductModal(mode === 'edit' ? entityId : null);
-            } else if (modalId === 'subcategoryModal') {
-                const contextCategoryId = categoryIdAttr
-                    || state.filters.subcategoryCategory
-                    || state.categories[0]?.id
-                    || '';
-                populateSubcategoryModal(contextCategoryId, mode === 'edit' ? entityId : null);
-            } else if (modalId === 'paymentSettingsModal' && entityId) {
-                populatePaymentSettingsModal(entityId);
-            } else if (modalId === 'bannerModal') {
-                if (mode === 'edit' && entityId) {
-                    populateBannerModal(entityId);
-                } else {
-                    prepareBannerCreateForm();
-                }
-            }
-
-            if (entity) {
-                const labels = {
-                    product: 'منتج',
-                    category: 'فئة',
-                    promotion: 'عرض ترويجي',
-                    coupon: 'قسيمة',
-                    banner: 'بانر',
-                    feature: 'ميزة',
-                    user: 'مستخدم',
-                    payment: 'طريقة دفع'
-                };
-                const actionLabel = mode === 'edit' ? `تعديل ${labels[entity] || 'عنصر'}` : `إضافة ${labels[entity] || 'عنصر'} جديد`;
-                showToast('info', actionLabel, 'تم فتح النموذج بنجاح');
-            }
-
-            if (modalId === 'customerProfileModal' && customerId) {
-                populateCustomerProfile(customerId);
-                showToast('info', 'ملف العميل', 'تم عرض ملف العميل بنجاح');
-            } else if (modalId === 'customerOrdersModal' && customerId) {
-                populateCustomerOrders(customerId);
-                showToast('info', 'طلبات العميل', 'تم تحميل طلبات العميل');
-            }
-            return;
-        }
-
-        // Export Buttons
-        if (e.target.closest('#exportOrdersBtn')) {
-            e.preventDefault();
-            exportOrders();
-            return;
-        }
-
-        if (e.target.closest('#exportCustomersBtn')) {
-            e.preventDefault();
-            exportCustomers();
-            return;
-        }
-
-        if (e.target.closest('#exportReportBtn')) {
-            e.preventDefault();
-            exportAnalyticsReport();
-            return;
-        }
-
-        if (e.target.closest('#exportAuditBtn')) {
-            e.preventDefault();
-            exportAuditLogs();
-            return;
-        }
-
-        // View Order Details
-        if (e.target.closest('.view-order')) {
-            e.preventDefault();
-            const btn = e.target.closest('.view-order');
-            const orderIdAttr = btn?.getAttribute('data-order-id');
-            const row = btn?.closest('tr');
-            const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
-            const orderId = normalizeOrderId(orderIdAttr || fallbackId);
-
-            if (!orderId) {
-                showToast('error', 'تفاصيل الطلب', 'تعذر تحديد رقم الطلب');
-                return;
-            }
-
-            viewOrderDetails(orderId);
-            showToast('info', 'تفاصيل الطلب', `عرض تفاصيل الطلب ${orderId}`);
-            return;
-        }
-
-        // Print Order Invoice
-        if (e.target.closest('.print-order')) {
-            e.preventDefault();
-            const btn = e.target.closest('.print-order');
-            const orderIdAttr = btn?.getAttribute('data-order-id');
-            const row = btn?.closest('tr');
-            const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
-            const orderId = normalizeOrderId(orderIdAttr || fallbackId);
-
-            if (!orderId) {
-                showToast('error', 'طباعة الفاتورة', 'تعذر تحديد رقم الطلب للطباعة');
-                return;
-            }
-
-            printOrder(orderId);
-            return;
-        }
-
-        // Delete Category
-        const refreshBannersBtn = e.target.closest('[data-action="refresh-banners"]');
-        if (refreshBannersBtn) {
-            e.preventDefault();
-            fetchBanners({ force: true }).then(renderBanners).catch(error => {
-                console.error('❌ Failed to refresh banners:', error);
-                showToast('error', 'تحديث البانرات', 'تعذر تحديث قائمة البانرات.');
-            });
-            return;
-        }
-
-        const deleteBannerBtn = e.target.closest('[data-action="delete-banner"]');
-        if (deleteBannerBtn) {
-            e.preventDefault();
-            const bannerId = deleteBannerBtn.getAttribute('data-entity-id');
-            if (!bannerId) {
-                showToast('error', 'حذف البانر', 'تعذر تحديد البانر المطلوب حذفه');
-                return;
-            }
-
-            if (confirm('هل أنت متأكد من حذف هذا البانر؟')) {
-                deleteBanner(bannerId)
-                    .then(() => {
-                        showToast('success', 'حذف البانر', 'تم حذف البانر بنجاح');
-                        return fetchBanners({ force: true });
-                    })
-                    .catch(error => {
-                        console.error('❌ Delete banner error:', error);
-                        showToast('error', 'حذف البانر', error?.message || 'حدث خطأ أثناء حذف البانر');
-                    });
-            }
-            return;
-        }
-
-        const deleteCategoryBtn = e.target.closest('[data-action="delete-category"]');
-        if (deleteCategoryBtn) {
-            e.preventDefault();
-            const categoryId = deleteCategoryBtn.getAttribute('data-entity-id');
-            if (!categoryId) return;
-
-            const category = getCategoryById(categoryId);
-            if (!category) {
-                showToast('error', 'حذف الفئة', 'لم يتم العثور على الفئة المحددة');
-                return;
-            }
-
-            if (confirm(`هل أنت متأكد من حذف الفئة "${category.name}"؟`)) {
-                deleteCategory(categoryId);
-            }
-            return;
-        }
-
-        // Delete Product
-        const deleteProductBtn = e.target.closest('[data-action="delete-product"]');
-        if (deleteProductBtn) {
-            e.preventDefault();
-            const productId = deleteProductBtn.getAttribute('data-entity-id');
-            if (!productId) return;
-
-            const product = getProductById(productId);
-            if (!product) {
-                showToast('error', 'حذف المنتج', 'لم يتم العثور على المنتج المحدد');
-                return;
-            }
-
-            deleteProduct(productId, { productName: product.name });
-            return;
-        }
-
-        // Preview Product
-        const previewProductBtn = e.target.closest('[data-action="preview-product"]');
-        if (previewProductBtn) {
-            e.preventDefault();
-            const productId = previewProductBtn.getAttribute('data-entity-id');
-            const product = getProductById(productId);
-            if (!product) {
-                showToast('error', 'عرض المنتج', 'لم يتم العثور على المنتج المحدد');
-                return;
-            }
-
-            viewProductDetails(product.id);
-            return;
-        }
-
-        // Close mobile sidebar when clicking outside
-        const sidebar = document.getElementById('sidebar');
-        if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('mobile-active')) {
-            if (!sidebar.contains(e.target) && !e.target.closest('#mobileMenuBtn')) {
-                sidebar.classList.remove('mobile-active');
-                const menuBtn = document.getElementById('mobileMenuBtn');
-                if (menuBtn) {
-                    menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-                document.body.classList.remove('sidebar-open');
-                const overlay = document.getElementById('sidebarOverlay');
-                if (overlay) {
-                    overlay.hidden = true;
-                    overlay.style.opacity = '0';
-                }
-            }
-        }
-
-        if (e.target.closest('#sidebarOverlay')) {
-            e.preventDefault();
-            toggleSidebar(false);
-            return;
-        }
-
-        // Toggle messages panel
-        if (e.target.closest('#messagesBtn')) {
-            e.preventDefault();
-            toggleMessagesPanel();
-            return;
-        }
-
-        if (e.target.closest('#closeMessagesPanel')) {
-            e.preventDefault();
-            toggleMessagesPanel(false);
-            return;
-        }
-
-        if (e.target.closest('#markAllMessagesRead')) {
-            e.preventDefault();
-            markMessagesAsRead();
-            showToast('success', 'الرسائل', 'تم تعيين جميع الرسائل كمقروءة');
-            return;
-        }
-
-        if (e.target.id === 'messagesOverlay') {
-            toggleMessagesPanel(false);
-            return;
-        }
-
-        if (window.innerWidth > 992) {
-            const panel = document.getElementById('messagesPanel');
-            if (panel?.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('#messagesBtn')) {
-                toggleMessagesPanel(false);
-            }
-        }
-
-        const messageActionBtn = e.target.closest('[data-action][data-message-id]');
-        if (messageActionBtn) {
-            const action = messageActionBtn.getAttribute('data-action');
-            const messageId = messageActionBtn.getAttribute('data-message-id');
-            handleMessageAction(action, messageId);
-            return;
-        }
-    });
-
-    document.addEventListener('input', function(e) {
-        if (e.target.id === 'messagesSearchInput') {
-            renderMessagesList(e.target.value || '');
-        }
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const panel = document.getElementById('messagesPanel');
-            if (panel?.classList.contains('active')) {
-                toggleMessagesPanel(false);
-            }
-        }
-    });
-
-    // ===== Image Upload Functions =====
-    async function uploadImages(files) {
-        if (!files || !files.length) return [];
-        
-        const UPLOAD_ENDPOINT = '/api/upload';
-        const uploadedUrls = [];
-        
         try {
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('image', file);
-                
-                const response = await authorizedFetch(UPLOAD_ENDPOINT, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`فشل رفع الصورة: ${file.name}`);
-                }
-                
-                const result = await response.json();
-                if (result.url) {
-                    uploadedUrls.push({
-                        url: result.url,
-                        alt: file.name,
-                        isMain: uploadedUrls.length === 0 // أول صورة تكون رئيسية
-                    });
-                }
-            }
-            
-            return uploadedUrls;
+            await togglePaymentMethod(paymentId, enabled);
+            setPaymentToggleState(toggleInput, enabled);
+            showToast('success', 'تم التحديث', `تم ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName} بنجاح`);
         } catch (error) {
-            console.error('❌ Failed to upload images:', error);
-            showToast('error', 'خطأ في رفع الصور', error.message || 'حدث خطأ أثناء رفع الصور');
-            throw error;
+            console.error('❌ فشل تحديث حالة طريقة الدفع:', { paymentId, enabled, error });
+            setPaymentToggleState(toggleInput, previousState);
+            showToast('error', 'خطأ في التحديث', error?.message || 'تعذر تحديث حالة طريقة الدفع. يرجى المحاولة مرة أخرى');
+        } finally {
+            toggleInput.disabled = false;
+        }
+    }
+});
+
+// ===== Image Upload Areas =====
+document.addEventListener('click', function (e) {
+    const uploadArea = e.target.closest('.image-upload-area');
+    if (uploadArea && !e.target.matches('input[type="file"]')) {
+        const input = uploadArea.querySelector('input[type="file"]');
+        if (input) {
+            input.click();
+        }
+    }
+});
+
+document.addEventListener('change', function (e) {
+    if (e.target.matches('.image-upload-area input[type="file"]')) {
+        const files = e.target.files;
+        if (files.length > 0) {
+            showToast('success', 'تحميل الصور', `تم اختيار ${files.length} صورة`);
+        }
+    }
+});
+
+// ===== Initialize =====
+// نقطة البداية الرئيسية عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function () {
+
+    // تهيئة السمة (الوضع الفاتح/الداكن)
+    initTheme();
+
+    // استعادة القسم المحفوظ أو الذهاب للنظرة العامة
+    const savedSection = loadCurrentSection();
+    switchSection(savedSection);
+
+    // تحميل الرسوم البيانية الأولية بعد تأخير قصير
+    setTimeout(() => {
+        if (state.currentSection === 'overview') {
+            loadOverviewCharts();
+            chartsLoaded.overview = true;
+        }
+    }, 100);
+
+    // تهيئة الفلاتر والبيانات
+    hydrateFilters();
+    renderDashboard();
+    setupProductFilters();
+
+    // جلب الفئات مباشرة عند التهيئة (لـ product form)
+    fetchCategories();
+    fetchBrands();
+
+    // ربط حدث إرسال نموذج الفئة
+    const categoryForm = document.getElementById('categoryForm');
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', handleCategoryFormSubmit);
+    }
+
+    // ربط حدث تغيير صورة الفئة
+    const categoryImageInput = document.getElementById('categoryImage');
+    if (categoryImageInput) {
+        categoryImageInput.addEventListener('change', handleCategoryImageChange);
+    }
+
+    const subcategoryForm = document.getElementById('subcategoryForm');
+    if (subcategoryForm) {
+        subcategoryForm.addEventListener('submit', handleSubcategoryFormSubmit);
+    }
+
+    const subcategoryImageInput = document.getElementById('subcategoryImage');
+    if (subcategoryImageInput) {
+        subcategoryImageInput.addEventListener('change', handleSubcategoryImageChange);
+    }
+
+    // ربط حدث إرسال نموذج العلامة التجارية
+    const brandForm = document.getElementById('brandForm');
+    if (brandForm) {
+        brandForm.addEventListener('submit', handleBrandFormSubmit);
+    }
+
+    // ربط حدث تغيير صورة العلامة التجارية
+    const brandImageInput = document.getElementById('brandImage');
+    if (brandImageInput) {
+        brandImageInput.addEventListener('change', handleBrandImageChange);
+    }
+
+    const bannerForm = document.getElementById('bannerForm');
+    if (bannerForm) {
+        bannerForm.addEventListener('submit', handleBannerFormSubmit);
+    }
+
+    const bannerImageInput = document.getElementById('bannerImage');
+    if (bannerImageInput) {
+        bannerImageInput.addEventListener('change', handleBannerImageChange);
+    }
+
+    prepareBannerCreateForm();
+
+    // ربط حدث البحث في العلامات التجارية
+    const brandSearchInput = document.getElementById('brandSearch');
+    if (brandSearchInput) {
+        brandSearchInput.addEventListener('input', (e) => {
+            state.filters.brandSearch = e.target.value;
+            renderBrands();
+        });
+    }
+
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+        productForm.addEventListener('submit', handleProductFormSubmit);
+        const productImageInput = productForm.querySelector('#productImage');
+        if (productImageInput) {
+            productImageInput.addEventListener('change', handleProductImageChange);
         }
     }
 
-    // ===== Toggle Switches =====
-    document.addEventListener('change', async function(e) {
-        if (e.target.matches('#subcategoryCategoryFilter')) {
-            const selectedCategoryId = e.target.value;
-            state.filters.subcategoryCategory = selectedCategoryId;
-            if (selectedCategoryId) {
-                fetchSubcategories(selectedCategoryId, { force: true });
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+    }
+
+    const createAdminForm = document.getElementById('createAdminForm');
+    if (createAdminForm) {
+        createAdminForm.addEventListener('submit', handleCreateAdminSubmit);
+    }
+
+    const shippingSettingsForm = document.getElementById('shippingSettingsForm');
+    const shippingZoneSelect = document.getElementById('shippingZoneSelect');
+    const shippingZoneDeleteBtn = document.getElementById('shippingZoneDeleteBtn');
+    const shippingZoneCreateContainer = document.getElementById('shippingZoneCreateContainer');
+    const shippingZoneCreateToggle = document.getElementById('shippingZoneCreateToggle');
+    const shippingZoneCreateCancel = document.getElementById('shippingZoneCreateCancel');
+
+    if (shippingZoneSelect) {
+        shippingZoneSelect.addEventListener('change', (event) => {
+            const zoneId = event.target.value;
+            state.selectedShippingZoneId = zoneId;
+            const zone = getShippingZoneById(zoneId);
+            const rateInput = document.getElementById('shippingZoneRate');
+            const installationCheckbox = document.getElementById('shippingZoneInstallation');
+            if (zone && rateInput && document.activeElement !== rateInput) {
+                rateInput.value = zone.shippingRate;
             }
-            renderSubcategories(selectedCategoryId);
-            return;
-        }
-
-        if (e.target.matches('#subcategoryImage')) {
-            handleSubcategoryImageChange(e);
-            return;
-        }
-
-        if (e.target.matches('.toggle-switch input')) {
-            const toggleInput = e.target;
-            const parent = toggleInput.closest('.payment-method-card');
-            if (!parent) return;
-
-            const paymentId = parent.getAttribute('data-payment-id');
-            if (!paymentId) {
-                console.warn('⚠️ لم يتم تحديد معرف طريقة الدفع للزر.', parent);
-                return;
+            if (installationCheckbox) {
+                installationCheckbox.checked = Boolean(zone?.installationAvailable);
+                installationCheckbox.disabled = !zone;
             }
+        });
+    }
 
-            const methodName = parent.querySelector('h3')?.textContent || 'طريقة الدفع';
-            const enabled = toggleInput.checked;
-            const previousStateAttr = parent.dataset.enabled;
-            const previousState = typeof previousStateAttr === 'string'
-                ? previousStateAttr === 'true'
-                : !enabled;
+    if (shippingSettingsForm) {
+        shippingSettingsForm.addEventListener('submit', handleShippingSettingsSubmit);
+    }
 
-            toggleInput.disabled = true;
-            showToast('info', 'جاري التحديث', `يتم الآن ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName}...`);
-
-            try {
-                await togglePaymentMethod(paymentId, enabled);
-                setPaymentToggleState(toggleInput, enabled);
-                showToast('success', 'تم التحديث', `تم ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName} بنجاح`);
-            } catch (error) {
-                console.error('❌ فشل تحديث حالة طريقة الدفع:', { paymentId, enabled, error });
-                setPaymentToggleState(toggleInput, previousState);
-                showToast('error', 'خطأ في التحديث', error?.message || 'تعذر تحديث حالة طريقة الدفع. يرجى المحاولة مرة أخرى');
-            } finally {
-                toggleInput.disabled = false;
-            }
-        }
-    });
-
-    // ===== Image Upload Areas =====
-    document.addEventListener('click', function(e) {
-        const uploadArea = e.target.closest('.image-upload-area');
-        if (uploadArea && !e.target.matches('input[type="file"]')) {
-            const input = uploadArea.querySelector('input[type="file"]');
-            if (input) {
-                input.click();
-            }
-        }
-    });
-
-    document.addEventListener('change', function(e) {
-        if (e.target.matches('.image-upload-area input[type="file"]')) {
-            const files = e.target.files;
-            if (files.length > 0) {
-                showToast('success', 'تحميل الصور', `تم اختيار ${files.length} صورة`);
-            }
-        }
-    });
-
-    // ===== Initialize =====
-    // نقطة البداية الرئيسية عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', function() {
-
-        // تهيئة السمة (الوضع الفاتح/الداكن)
-        initTheme();
-
-        // استعادة القسم المحفوظ أو الذهاب للنظرة العامة
-        const savedSection = loadCurrentSection();
-        switchSection(savedSection);
-
-        // تحميل الرسوم البيانية الأولية بعد تأخير قصير
-        setTimeout(() => {
-            if (state.currentSection === 'overview') {
-                loadOverviewCharts();
-                chartsLoaded.overview = true;
-            }
-        }, 100);
-
-        // تهيئة الفلاتر والبيانات
-        hydrateFilters();
-        renderDashboard();
-        setupProductFilters();
-
-        // جلب الفئات مباشرة عند التهيئة (لـ product form)
-        fetchCategories();
-        fetchBrands();
-
-        // ربط حدث إرسال نموذج الفئة
-        const categoryForm = document.getElementById('categoryForm');
-        if (categoryForm) {
-            categoryForm.addEventListener('submit', handleCategoryFormSubmit);
-        }
-
-        // ربط حدث تغيير صورة الفئة
-        const categoryImageInput = document.getElementById('categoryImage');
-        if (categoryImageInput) {
-            categoryImageInput.addEventListener('change', handleCategoryImageChange);
-        }
-
-        const subcategoryForm = document.getElementById('subcategoryForm');
-        if (subcategoryForm) {
-            subcategoryForm.addEventListener('submit', handleSubcategoryFormSubmit);
-        }
-
-        const subcategoryImageInput = document.getElementById('subcategoryImage');
-        if (subcategoryImageInput) {
-            subcategoryImageInput.addEventListener('change', handleSubcategoryImageChange);
-        }
-
-        // ربط حدث إرسال نموذج العلامة التجارية
-        const brandForm = document.getElementById('brandForm');
-        if (brandForm) {
-            brandForm.addEventListener('submit', handleBrandFormSubmit);
-        }
-
-        // ربط حدث تغيير صورة العلامة التجارية
-        const brandImageInput = document.getElementById('brandImage');
-        if (brandImageInput) {
-            brandImageInput.addEventListener('change', handleBrandImageChange);
-        }
-
-        const bannerForm = document.getElementById('bannerForm');
-        if (bannerForm) {
-            bannerForm.addEventListener('submit', handleBannerFormSubmit);
-        }
-
-        const bannerImageInput = document.getElementById('bannerImage');
-        if (bannerImageInput) {
-            bannerImageInput.addEventListener('change', handleBannerImageChange);
-        }
-
-        prepareBannerCreateForm();
-
-        // ربط حدث البحث في العلامات التجارية
-        const brandSearchInput = document.getElementById('brandSearch');
-        if (brandSearchInput) {
-            brandSearchInput.addEventListener('input', (e) => {
-                state.filters.brandSearch = e.target.value;
-                renderBrands();
-            });
-        }
-
-        const productForm = document.getElementById('productForm');
-        if (productForm) {
-            productForm.addEventListener('submit', handleProductFormSubmit);
-            const productImageInput = productForm.querySelector('#productImage');
-            if (productImageInput) {
-                productImageInput.addEventListener('change', handleProductImageChange);
-            }
-        }
-
-        const changePasswordForm = document.getElementById('changePasswordForm');
-        if (changePasswordForm) {
-            changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
-        }
-
-        const createAdminForm = document.getElementById('createAdminForm');
-        if (createAdminForm) {
-            createAdminForm.addEventListener('submit', handleCreateAdminSubmit);
-        }
-
-        const shippingSettingsForm = document.getElementById('shippingSettingsForm');
-        const shippingZoneSelect = document.getElementById('shippingZoneSelect');
-        const shippingZoneDeleteBtn = document.getElementById('shippingZoneDeleteBtn');
-        const shippingZoneCreateContainer = document.getElementById('shippingZoneCreateContainer');
-        const shippingZoneCreateToggle = document.getElementById('shippingZoneCreateToggle');
-        const shippingZoneCreateCancel = document.getElementById('shippingZoneCreateCancel');
-
-        if (shippingZoneSelect) {
-            shippingZoneSelect.addEventListener('change', (event) => {
-                const zoneId = event.target.value;
-                state.selectedShippingZoneId = zoneId;
-                const zone = getShippingZoneById(zoneId);
-                const rateInput = document.getElementById('shippingZoneRate');
-                const installationCheckbox = document.getElementById('shippingZoneInstallation');
-                if (zone && rateInput && document.activeElement !== rateInput) {
-                    rateInput.value = zone.shippingRate;
-                }
-                if (installationCheckbox) {
-                    installationCheckbox.checked = Boolean(zone?.installationAvailable);
-                    installationCheckbox.disabled = !zone;
-                }
-            });
-        }
-
-        if (shippingSettingsForm) {
-            shippingSettingsForm.addEventListener('submit', handleShippingSettingsSubmit);
-        }
-
-        const setCreateZoneVisibility = (visible = false) => {
-            if (!shippingZoneCreateContainer) return;
-            shippingZoneCreateContainer.hidden = !visible;
-
-            if (shippingZoneCreateToggle) {
-                shippingZoneCreateToggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
-                shippingZoneCreateToggle.innerHTML = visible
-                    ? '<i class="fas fa-times"></i> إخفاء نموذج الإضافة'
-                    : '<i class="fas fa-plus"></i> إضافة منطقة جديدة';
-            }
-
-            if (!visible) {
-                const form = shippingZoneCreateContainer.querySelector('#shippingZoneCreateForm');
-                form?.reset();
-            }
-        };
+    const setCreateZoneVisibility = (visible = false) => {
+        if (!shippingZoneCreateContainer) return;
+        shippingZoneCreateContainer.hidden = !visible;
 
         if (shippingZoneCreateToggle) {
-            shippingZoneCreateToggle.addEventListener('click', () => {
-                const shouldShow = shippingZoneCreateContainer?.hidden !== false;
-                setCreateZoneVisibility(shouldShow);
-                if (shouldShow) {
-                    shippingZoneCreateContainer?.querySelector('#newShippingZoneNameAr')?.focus();
-                }
-            });
-            setCreateZoneVisibility(false);
+            shippingZoneCreateToggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
+            shippingZoneCreateToggle.innerHTML = visible
+                ? '<i class="fas fa-times"></i> إخفاء نموذج الإضافة'
+                : '<i class="fas fa-plus"></i> إضافة منطقة جديدة';
         }
 
-        if (shippingZoneCreateCancel) {
-            shippingZoneCreateCancel.addEventListener('click', () => {
-                setCreateZoneVisibility(false);
-            });
+        if (!visible) {
+            const form = shippingZoneCreateContainer.querySelector('#shippingZoneCreateForm');
+            form?.reset();
         }
+    };
 
-        if (shippingZoneDeleteBtn) {
-            shippingZoneDeleteBtn.addEventListener('click', async () => {
-                const zoneId = state.selectedShippingZoneId || shippingZoneSelect?.value;
-                if (!zoneId) {
-                    showToast('error', 'حذف منطقة الشحن', 'يرجى اختيار المنطقة المراد حذفها');
-                    return;
-                }
-
-                const zone = getShippingZoneById(zoneId);
-                const zoneLabel = zone?.zoneName || 'هذه المنطقة';
-
-                const confirmed = window.confirm(`هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`);
-                if (!confirmed) return;
-
-                shippingZoneDeleteBtn.disabled = true;
-                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
-
-                try {
-                    await deleteShippingZone(zoneId);
-                } catch (error) {
-                    console.error('❌ Delete shipping zone failed:', error);
-                } finally {
-                    shippingZoneDeleteBtn.disabled = false;
-                    shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
-                }
-            });
-        }
-
-        const shippingZoneCreateForm = document.getElementById('shippingZoneCreateForm');
-        if (shippingZoneCreateForm) {
-            shippingZoneCreateForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-
-                const form = event.target;
-                const nameArInput = form.querySelector('#newShippingZoneNameAr');
-                const nameEnInput = form.querySelector('#newShippingZoneNameEn');
-                const rateInput = form.querySelector('#newShippingZoneRate');
-                const submitBtn = form.querySelector('#shippingZoneCreateSubmit');
-
-                const nameAr = nameArInput?.value?.trim();
-                const nameEn = nameEnInput?.value?.trim();
-                const shippingRate = rateInput?.value;
-
-                if (!nameAr) {
-                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالعربية');
-                    nameArInput?.focus();
-                    return;
-                }
-
-                if (!nameEn) {
-                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالإنجليزية');
-                    nameEnInput?.focus();
-                    return;
-                }
-
-                const numericRate = Number(shippingRate);
-                if (!Number.isFinite(numericRate) || numericRate < 0) {
-                    showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
-                    rateInput?.focus();
-                    return;
-                }
-
-                const originalState = submitBtn ? { disabled: submitBtn.disabled, label: submitBtn.innerHTML } : null;
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإضافة...';
-                }
-
-                try {
-                    await createShippingZone(nameAr, nameEn, numericRate);
-                    setCreateZoneVisibility(false);
-                } catch (error) {
-                    console.error('❌ Create shipping zone failed:', error);
-                } finally {
-                    if (submitBtn && originalState) {
-                        submitBtn.disabled = originalState.disabled;
-                        submitBtn.innerHTML = originalState.label;
-                    }
-                }
-            });
-        }
-
-        document.querySelectorAll('.toggle-password').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const targetId = btn.getAttribute('data-target');
-                const input = targetId ? document.getElementById(targetId) : btn.previousElementSibling;
-                if (!input) return;
-                const isPassword = input.type === 'password';
-                input.type = isPassword ? 'text' : 'password';
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('fa-eye', !isPassword);
-                    icon.classList.toggle('fa-eye-slash', isPassword);
-                }
-                btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
-            });
+    if (shippingZoneCreateToggle) {
+        shippingZoneCreateToggle.addEventListener('click', () => {
+            const shouldShow = shippingZoneCreateContainer?.hidden !== false;
+            setCreateZoneVisibility(shouldShow);
+            if (shouldShow) {
+                shippingZoneCreateContainer?.querySelector('#newShippingZoneNameAr')?.focus();
+            }
         });
+        setCreateZoneVisibility(false);
+    }
 
-        // جلب الفئات من الـ API
-        fetchCustomers();
-        fetchProducts();
-        fetchBanners();
-        fetchShippingZones();
+    if (shippingZoneCreateCancel) {
+        shippingZoneCreateCancel.addEventListener('click', () => {
+            setCreateZoneVisibility(false);
+        });
+    }
 
-        initMessagesPanel();
+    if (shippingZoneDeleteBtn) {
+        shippingZoneDeleteBtn.addEventListener('click', async () => {
+            const zoneId = state.selectedShippingZoneId || shippingZoneSelect?.value;
+            if (!zoneId) {
+                showToast('error', 'حذف منطقة الشحن', 'يرجى اختيار المنطقة المراد حذفها');
+                return;
+            }
 
-        // إنشاء قائمة الهاتف المحمول إذا لزم الأمر
-        createMobileMenu();
+            const zone = getShippingZoneById(zoneId);
+            const zoneLabel = zone?.zoneName || 'هذه المنطقة';
 
-        // عرض رسالة ترحيب بعد تأخير قصير
-        setTimeout(() => {
-            showToast('success', 'مرحباً بك', 'تم تسجيل الدخول بنجاح إلى لوحة التحكم');
-        }, 500);
+            const confirmed = window.confirm(`هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`);
+            if (!confirmed) return;
 
-        const authBtn = document.getElementById('authBtn');
-        if (authBtn && window.adminAuth) {
-            authBtn.addEventListener('click', () => {
-                authBtn.disabled = true;
-                authBtn.classList.add('is-loading');
-                showToast('info', 'تسجيل الخروج', 'جاري إنهاء الجلسة...');
-                setTimeout(() => {
-                    window.adminAuth.logout();
-                }, 300);
-            });
-        }
+            shippingZoneDeleteBtn.disabled = true;
+            shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
+
+            try {
+                await deleteShippingZone(zoneId);
+            } catch (error) {
+                console.error('❌ Delete shipping zone failed:', error);
+            } finally {
+                shippingZoneDeleteBtn.disabled = false;
+                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
+            }
+        });
+    }
+
+    const shippingZoneCreateForm = document.getElementById('shippingZoneCreateForm');
+    if (shippingZoneCreateForm) {
+        shippingZoneCreateForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const form = event.target;
+            const nameArInput = form.querySelector('#newShippingZoneNameAr');
+            const nameEnInput = form.querySelector('#newShippingZoneNameEn');
+            const rateInput = form.querySelector('#newShippingZoneRate');
+            const submitBtn = form.querySelector('#shippingZoneCreateSubmit');
+
+            const nameAr = nameArInput?.value?.trim();
+            const nameEn = nameEnInput?.value?.trim();
+            const shippingRate = rateInput?.value;
+
+            if (!nameAr) {
+                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالعربية');
+                nameArInput?.focus();
+                return;
+            }
+
+            if (!nameEn) {
+                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالإنجليزية');
+                nameEnInput?.focus();
+                return;
+            }
+
+            const numericRate = Number(shippingRate);
+            if (!Number.isFinite(numericRate) || numericRate < 0) {
+                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+                rateInput?.focus();
+                return;
+            }
+
+            const originalState = submitBtn ? { disabled: submitBtn.disabled, label: submitBtn.innerHTML } : null;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإضافة...';
+            }
+
+            try {
+                await createShippingZone(nameAr, nameEn, numericRate);
+                setCreateZoneVisibility(false);
+            } catch (error) {
+                console.error('❌ Create shipping zone failed:', error);
+            } finally {
+                if (submitBtn && originalState) {
+                    submitBtn.disabled = originalState.disabled;
+                    submitBtn.innerHTML = originalState.label;
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.toggle-password').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            const input = targetId ? document.getElementById(targetId) : btn.previousElementSibling;
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-eye', !isPassword);
+                icon.classList.toggle('fa-eye-slash', isPassword);
+            }
+            btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+        });
     });
 
-    window.updateOrderStatusOptions = getOrderStatusOptions;
-    window.changeOrderStatus = changeOrderStatus;
+    // جلب الفئات من الـ API
+    fetchCustomers();
+    fetchProducts();
+    fetchBanners();
+    fetchShippingZones();
 
-    // ===== Window Resize Handler =====
-    window.addEventListener('resize', createMobileMenu);
+    initMessagesPanel();
 
+    // إنشاء قائمة الهاتف المحمول إذا لزم الأمر
+    createMobileMenu();
 
-    // ========================================
-    // ===== 10. دوال معالجة الطلبات =====
-    // ========================================
+    // عرض رسالة ترحيب بعد تأخير قصير
+    setTimeout(() => {
+        showToast('success', 'مرحباً بك', 'تم تسجيل الدخول بنجاح إلى لوحة التحكم');
+    }, 500);
 
-    /**
-     * تطبيع بيانات الطلبات من استجابة API
-     * @param {Object} payload - البيانات الخام من API
-     * @returns {Array} - مصفوفة الطلبات المطبعة
-     */
-    function normalizeOrdersPayload(payload) {
-        console.log('📦 Raw orders payload:', payload);
-        
-        if (!payload) return [];
-
-        // محاولة استخراج المصفوفة من أماكن مختلفة في الاستجابة
-        const candidates = [
-            payload?.data?.orders,
-            payload?.data?.documents,
-            payload?.orders,
-            payload?.documents,
-            payload?.data,
-            Array.isArray(payload) ? payload : null
-        ];
-
-        const source = candidates.find(Array.isArray) || [];
-        console.log('📋 Extracted orders array:', source.length, 'orders');
-        
-        return source.map(order => normalizeOrderEntity(order)).filter(Boolean);
+    const authBtn = document.getElementById('authBtn');
+    if (authBtn && window.adminAuth) {
+        authBtn.addEventListener('click', () => {
+            authBtn.disabled = true;
+            authBtn.classList.add('is-loading');
+            showToast('info', 'تسجيل الخروج', 'جاري إنهاء الجلسة...');
+            setTimeout(() => {
+                window.adminAuth.logout();
+            }, 300);
+        });
     }
+});
 
-    /**
-     * تطبيع بيانات طلب واحد
-     * @param {Object} order - بيانات الطلب الخام
-     * @returns {Object|null} - الطلب المطبع
-     */
-    function normalizeOrderEntity(order = {}) {
-        if (!order || typeof order !== 'object') return null;
+window.updateOrderStatusOptions = getOrderStatusOptions;
+window.changeOrderStatus = changeOrderStatus;
 
-        const id = order._id || order.id || order.orderId || order.order_id;
-        
-        // استخراج بيانات العميل
-        const customer = extractOrderCustomer(order);
-        const identifiers = extractOrderIdentifiers(order);
-        const userIds = Array.from(identifiers.ids);
-        const userEmails = Array.from(identifiers.emails);
-        const userPhones = Array.from(identifiers.phones);
-        const primaryUserId = userIds.length ? userIds[0] : null;
+// ===== Window Resize Handler =====
+window.addEventListener('resize', createMobileMenu);
 
-        // استخراج عناصر الطلب وتحويلها للتنسيق المطلوب
-        const items = extractOrderItems(order);
 
-        const totalSource = order.totalOrderPrice
-            ?? order.totalAmount
-            ?? order.total
-            ?? order.amount
-            ?? order.summary?.total
-            ?? order.raw?.total
-            ?? 0;
-        const total = Number(totalSource);
+// ========================================
+// ===== 10. دوال معالجة الطلبات =====
+// ========================================
 
-        // تحويل cartItems إلى itemsDetails بالتنسيق الصحيح
-        const itemsDetails = Array.isArray(order.cartItems)
-            ? order.cartItems.map(item => ({
+/**
+ * تطبيع بيانات الطلبات من استجابة API
+ * @param {Object} payload - البيانات الخام من API
+ * @returns {Array} - مصفوفة الطلبات المطبعة
+ */
+function normalizeOrdersPayload(payload) {
+
+
+    if (!payload) return [];
+
+    // محاولة استخراج المصفوفة من أماكن مختلفة في الاستجابة
+    const candidates = [
+        payload?.data?.orders,
+        payload?.data?.documents,
+        payload?.orders,
+        payload?.documents,
+        payload?.data,
+        Array.isArray(payload) ? payload : null
+    ];
+
+    const source = candidates.find(Array.isArray) || [];
+
+
+    return source.map(order => normalizeOrderEntity(order)).filter(Boolean);
+}
+
+/**
+ * تطبيع بيانات طلب واحد
+ * @param {Object} order - بيانات الطلب الخام
+ * @returns {Object|null} - الطلب المطبع
+ */
+function normalizeOrderEntity(order = {}) {
+    if (!order || typeof order !== 'object') return null;
+
+    const id = order._id || order.id || order.orderId || order.order_id;
+
+    // استخراج بيانات العميل
+    const customer = extractOrderCustomer(order);
+    const identifiers = extractOrderIdentifiers(order);
+    const userIds = Array.from(identifiers.ids);
+    const userEmails = Array.from(identifiers.emails);
+    const userPhones = Array.from(identifiers.phones);
+    const primaryUserId = userIds.length ? userIds[0] : null;
+
+    // استخراج عناصر الطلب وتحويلها للتنسيق المطلوب
+    const items = extractOrderItems(order);
+
+    const totalSource = order.totalOrderPrice
+        ?? order.totalAmount
+        ?? order.total
+        ?? order.amount
+        ?? order.summary?.total
+        ?? order.raw?.total
+        ?? 0;
+    const total = Number(totalSource);
+
+    // تحويل cartItems إلى itemsDetails بالتنسيق الصحيح
+    const itemsDetails = Array.isArray(order.cartItems)
+        ? order.cartItems.map(item => ({
+            name: item.productId?.name || item.name || 'منتج',
+            quantity: item.qty || item.quantity || 1,
+            price: item.unitPrice || item.price || 0,
+            image: item.productId?.images?.[0]?.secure_url || '',
+            product: {
                 name: item.productId?.name || item.name || 'منتج',
-                quantity: item.qty || item.quantity || 1,
-                price: item.unitPrice || item.price || 0,
-                image: item.productId?.images?.[0]?.secure_url || '',
-                product: {
-                    name: item.productId?.name || item.name || 'منتج',
-                    _id: item.productId?._id || item.productId || ''
-                }
-            }))
-            : [];
+                _id: item.productId?._id || item.productId || ''
+            }
+        }))
+        : [];
 
-        const status = resolveOrderStatus(order);
-        const payment = order.paymentMethod || order.payment_method || order.payment || 'نقدي';
-        const createdAtSource = order.createdAt || order.created_at || order.date || order.createdDate;
-        const createdAtDate = parseDateValue(createdAtSource);
-        const dateDisplay = createdAtDate ? formatDate(createdAtDate) : '-';
-        const dateValue = createdAtDate ? createdAtDate.toISOString() : '';
+    const status = resolveOrderStatus(order);
+    const payment = order.paymentMethod || order.payment_method || order.payment || 'نقدي';
+    const createdAtSource = order.createdAt || order.created_at || order.date || order.createdDate;
+    const createdAtDate = parseDateValue(createdAtSource);
+    const dateDisplay = createdAtDate ? formatDate(createdAtDate) : '-';
+    const dateValue = createdAtDate ? createdAtDate.toISOString() : '';
 
-        const shippingSource = order.shippingAddress || order.shipping || order.deliveryAddress || order.raw?.shippingAddress || order.raw?.shipping;
-        const shipping = normalizeOrderShipping(shippingSource, order);
+    const shippingSource = order.shippingAddress || order.shipping || order.deliveryAddress || order.raw?.shippingAddress || order.raw?.shipping;
+    const shipping = normalizeOrderShipping(shippingSource, order);
 
-        return {
-            id: String(id),
-            customer: customer.name || 'غير معروف',
-            customerEmail: customer.email || '',
-            customerPhone: customer.phone || '',
-            total: Number(total) || 0,
-            items: items.totalCount,
-            itemsDetails: itemsDetails,
-            status,
-            payment,
-            date: dateDisplay,
-            dateValue,
-            shipping,
-            userId: primaryUserId,
-            userIds,
-            userEmails,
-            userPhones,
-            primaryUserId,
-            isPaid: order.isPaid || false,
-            isDelivered: order.isDelivered || false,
-            isCanceled: order.isCanceled || false,
-            raw: order
-        };
+    return {
+        id: String(id),
+        customer: customer.name || 'غير معروف',
+        customerEmail: customer.email || '',
+        customerPhone: customer.phone || '',
+        total: Number(total) || 0,
+        items: items.totalCount,
+        itemsDetails: itemsDetails,
+        status,
+        payment,
+        date: dateDisplay,
+        dateValue,
+        shipping,
+        userId: primaryUserId,
+        userIds,
+        userEmails,
+        userPhones,
+        primaryUserId,
+        isPaid: order.isPaid || false,
+        isDelivered: order.isDelivered || false,
+        isCanceled: order.isCanceled || false,
+        raw: order
+    };
+}
+
+function resolveShippingText(value) {
+    if (value === null || value === undefined) return '';
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        const text = String(value).trim();
+        if (!text || text === '[object Object]') return '';
+        return text;
     }
 
-    function resolveShippingText(value) {
-        if (value === null || value === undefined) return '';
-
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-            const text = String(value).trim();
-            if (!text || text === '[object Object]') return '';
-            return text;
+    if (Array.isArray(value)) {
+        for (const entry of value) {
+            const resolved = resolveShippingText(entry);
+            if (resolved) return resolved;
         }
-
-        if (Array.isArray(value)) {
-            for (const entry of value) {
-                const resolved = resolveShippingText(entry);
-                if (resolved) return resolved;
-            }
-            return '';
-        }
-
-        if (typeof value === 'object') {
-            const candidates = [
-                value.zoneName, value.nameAr, value.name_ar, value['name-ar'], value.nameAR,
-                value.nameEn, value.name_en, value['name-en'], value.name,
-                value.label, value.title, value.displayName, value.display_name,
-                value.ar, value.arabic, value.en, value.english,
-                value.city, value.cityName, value.region, value.regionName, value.country,
-                value.details, value.address, value.addressLine1, value.addressLine2,
-                value.street, value.value
-            ];
-
-            for (const candidate of candidates) {
-                const resolved = resolveShippingText(candidate);
-                if (resolved) return resolved;
-            }
-        }
-
         return '';
     }
 
-    function resolveShippingZone(rawOrder = {}, shippingObj = {}) {
-        const directZone = shippingObj.shippingZone || shippingObj.zone || shippingObj.area || shippingObj.region || shippingObj.shipping;
-        const rawZone = rawOrder.shippingZone || rawOrder.zone || rawOrder.shipping_area;
+    if (typeof value === 'object') {
+        const candidates = [
+            value.zoneName, value.nameAr, value.name_ar, value['name-ar'], value.nameAR,
+            value.nameEn, value.name_en, value['name-en'], value.name,
+            value.label, value.title, value.displayName, value.display_name,
+            value.ar, value.arabic, value.en, value.english,
+            value.city, value.cityName, value.region, value.regionName, value.country,
+            value.details, value.address, value.addressLine1, value.addressLine2,
+            value.street, value.value
+        ];
 
-        const zoneCandidate = directZone || rawZone;
-        if (!zoneCandidate) {
-            return { zoneName: '', shippingRate: null, zoneId: '' };
+        for (const candidate of candidates) {
+            const resolved = resolveShippingText(candidate);
+            if (resolved) return resolved;
         }
-
-        const zoneName = resolveShippingText(zoneCandidate) || resolveShippingText(zoneCandidate?.name) || '';
-        const rateCandidate = zoneCandidate?.shippingRate
-            ?? zoneCandidate?.rate
-            ?? zoneCandidate?.price
-            ?? zoneCandidate?.cost
-            ?? shippingObj?.shippingRate
-            ?? shippingObj?.shippingCost
-            ?? rawOrder.shippingCost
-            ?? rawOrder.shippingFee
-            ?? rawOrder.deliveryFee
-            ?? rawOrder.deliveryCost
-            ?? null;
-
-        const numericRate = Number(rateCandidate);
-        const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
-
-        const zoneId = zoneCandidate?.id || zoneCandidate?._id || shippingObj?.zoneId || rawOrder.shippingZoneId || rawOrder.zoneId || '';
-
-        return {
-            zoneName,
-            shippingRate,
-            zoneId
-        };
     }
 
-    function normalizeOrderShipping(shippingSource, rawOrder = {}) {
-        if (!shippingSource) return null;
+    return '';
+}
 
-        if (Array.isArray(shippingSource)) {
-            const firstEntry = shippingSource.find(Boolean);
-            return firstEntry ? normalizeOrderShipping(firstEntry, rawOrder) : null;
-        }
+function resolveShippingZone(rawOrder = {}, shippingObj = {}) {
+    const directZone = shippingObj.shippingZone || shippingObj.zone || shippingObj.area || shippingObj.region || shippingObj.shipping;
+    const rawZone = rawOrder.shippingZone || rawOrder.zone || rawOrder.shipping_area;
 
-        if (typeof shippingSource === 'string' || typeof shippingSource === 'number') {
-            const details = resolveShippingText(shippingSource) || String(shippingSource).trim();
-            const zone = resolveShippingZone(rawOrder, {});
-            return {
-                details,
-                city: '',
-                region: '',
-                postalCode: '',
-                phone: '',
-                zoneName: zone.zoneName,
-                shippingRate: zone.shippingRate,
-                zoneId: zone.zoneId
-            };
-        }
+    const zoneCandidate = directZone || rawZone;
+    if (!zoneCandidate) {
+        return { zoneName: '', shippingRate: null, zoneId: '' };
+    }
 
-        if (typeof shippingSource !== 'object') {
-            return null;
-        }
+    const zoneName = resolveShippingText(zoneCandidate) || resolveShippingText(zoneCandidate?.name) || '';
+    const rateCandidate = zoneCandidate?.shippingRate
+        ?? zoneCandidate?.rate
+        ?? zoneCandidate?.price
+        ?? zoneCandidate?.cost
+        ?? shippingObj?.shippingRate
+        ?? shippingObj?.shippingCost
+        ?? rawOrder.shippingCost
+        ?? rawOrder.shippingFee
+        ?? rawOrder.deliveryFee
+        ?? rawOrder.deliveryCost
+        ?? null;
 
-        const details = resolveShippingText([
-            shippingSource.details,
-            shippingSource.address,
-            shippingSource.addressLine1 && `${shippingSource.addressLine1} ${shippingSource.addressLine2 || ''}`.trim(),
-            shippingSource.street,
-            shippingSource.location,
-            shippingSource.description,
-            shippingSource.fullAddress,
-            shippingSource.notes
-        ]);
+    const numericRate = Number(rateCandidate);
+    const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
 
-        const city = resolveShippingText([shippingSource.city, shippingSource.cityName, shippingSource.cityAr, shippingSource.cityEn]);
-        const region = resolveShippingText([shippingSource.region, shippingSource.state, shippingSource.governorate, shippingSource.zone, shippingSource.area]);
-        const postalCode = resolveShippingText(shippingSource.postalCode || shippingSource.zip || shippingSource.zipCode);
-        const phone = resolveShippingText(shippingSource.phone || shippingSource.mobile || shippingSource.contactPhone);
+    const zoneId = zoneCandidate?.id || zoneCandidate?._id || shippingObj?.zoneId || rawOrder.shippingZoneId || rawOrder.zoneId || '';
 
-        const zone = resolveShippingZone(rawOrder, shippingSource);
+    return {
+        zoneName,
+        shippingRate,
+        zoneId
+    };
+}
 
+function normalizeOrderShipping(shippingSource, rawOrder = {}) {
+    if (!shippingSource) return null;
+
+    if (Array.isArray(shippingSource)) {
+        const firstEntry = shippingSource.find(Boolean);
+        return firstEntry ? normalizeOrderShipping(firstEntry, rawOrder) : null;
+    }
+
+    if (typeof shippingSource === 'string' || typeof shippingSource === 'number') {
+        const details = resolveShippingText(shippingSource) || String(shippingSource).trim();
+        const zone = resolveShippingZone(rawOrder, {});
         return {
             details,
-            city,
-            region,
-            postalCode,
-            phone,
+            city: '',
+            region: '',
+            postalCode: '',
+            phone: '',
             zoneName: zone.zoneName,
             shippingRate: zone.shippingRate,
             zoneId: zone.zoneId
         };
     }
 
-    function extractOrderIdentifiers(order = {}) {
-        const ids = new Set();
-        const emails = new Set();
-        const phones = new Set();
+    if (typeof shippingSource !== 'object') {
+        return null;
+    }
 
-        const normalizePhone = (phone) => {
-            if (!phone) return '';
-            return String(phone)
-                .replace(/[^0-9+]/g, '')
-                .replace(/^[^0-9+]*/, '');
-        };
+    const details = resolveShippingText([
+        shippingSource.details,
+        shippingSource.address,
+        shippingSource.addressLine1 && `${shippingSource.addressLine1} ${shippingSource.addressLine2 || ''}`.trim(),
+        shippingSource.street,
+        shippingSource.location,
+        shippingSource.description,
+        shippingSource.fullAddress,
+        shippingSource.notes
+    ]);
 
-        const pushId = (value) => {
-            if (value === null || value === undefined) return;
-            const normalized = String(value).trim();
-            if (normalized) ids.add(normalized);
-        };
+    const city = resolveShippingText([shippingSource.city, shippingSource.cityName, shippingSource.cityAr, shippingSource.cityEn]);
+    const region = resolveShippingText([shippingSource.region, shippingSource.state, shippingSource.governorate, shippingSource.zone, shippingSource.area]);
+    const postalCode = resolveShippingText(shippingSource.postalCode || shippingSource.zip || shippingSource.zipCode);
+    const phone = resolveShippingText(shippingSource.phone || shippingSource.mobile || shippingSource.contactPhone);
 
-        const pushEmail = (value) => {
-            if (!value) return;
-            const normalized = String(value).trim().toLowerCase();
-            if (normalized) emails.add(normalized);
-        };
+    const zone = resolveShippingZone(rawOrder, shippingSource);
 
-        const pushPhone = (value) => {
-            const normalized = normalizePhone(value);
-            if (normalized) phones.add(normalized);
-        };
+    return {
+        details,
+        city,
+        region,
+        postalCode,
+        phone,
+        zoneName: zone.zoneName,
+        shippingRate: zone.shippingRate,
+        zoneId: zone.zoneId
+    };
+}
 
-        const possibleUserRefs = [
-            order.userId,
-            order.user,
-            order.customer,
-            order.customerId,
-            order.user_id,
-            order.customer_id
-        ];
+function extractOrderIdentifiers(order = {}) {
+    const ids = new Set();
+    const emails = new Set();
+    const phones = new Set();
 
-        possibleUserRefs.forEach(ref => {
-            if (!ref) return;
-            if (typeof ref === 'string' || typeof ref === 'number') {
-                pushId(ref);
-            } else if (typeof ref === 'object') {
-                pushId(ref._id || ref.id || ref.userId || ref.customerId);
-                pushEmail(ref.email);
-                pushPhone(ref.phone);
+    const normalizePhone = (phone) => {
+        if (!phone) return '';
+        return String(phone)
+            .replace(/[^0-9+]/g, '')
+            .replace(/^[^0-9+]*/, '');
+    };
+
+    const pushId = (value) => {
+        if (value === null || value === undefined) return;
+        const normalized = String(value).trim();
+        if (normalized) ids.add(normalized);
+    };
+
+    const pushEmail = (value) => {
+        if (!value) return;
+        const normalized = String(value).trim().toLowerCase();
+        if (normalized) emails.add(normalized);
+    };
+
+    const pushPhone = (value) => {
+        const normalized = normalizePhone(value);
+        if (normalized) phones.add(normalized);
+    };
+
+    const possibleUserRefs = [
+        order.userId,
+        order.user,
+        order.customer,
+        order.customerId,
+        order.user_id,
+        order.customer_id
+    ];
+
+    possibleUserRefs.forEach(ref => {
+        if (!ref) return;
+        if (typeof ref === 'string' || typeof ref === 'number') {
+            pushId(ref);
+        } else if (typeof ref === 'object') {
+            pushId(ref._id || ref.id || ref.userId || ref.customerId);
+            pushEmail(ref.email);
+            pushPhone(ref.phone);
+        }
+    });
+
+    if (order.shippingAddress) {
+        pushEmail(order.shippingAddress.email);
+        pushPhone(order.shippingAddress.phone);
+        pushId(order.shippingAddress.userId || order.shippingAddress.customerId);
+    }
+
+    pushEmail(order.userEmail || order.customerEmail);
+    pushPhone(order.userPhone || order.customerPhone);
+
+    return { ids, emails, phones };
+}
+
+function doesOrderBelongToCustomer(order, customer) {
+    if (!order || !customer) return false;
+
+    // ============================================
+    // ✅ الطريقة المحسّنة: المقارنة بناءً على:
+    // 1. معرف العميل (userId) - الأولوية الأولى
+    // 2. اسم المستخدم (name) - الأولوية الثانية
+    // 3. الحساب (username/account) - الأولوية الثالثة
+    // ⛔ بدون البريد الإلكتروني ولا الهاتف
+    // ============================================
+
+    // ============================================
+    // المرحلة 1: المقارنة بناءً على معرف العميل (userId)
+    // ============================================
+    const customerIds = new Set();
+    const addCustomerId = (value) => {
+        if (value === null || value === undefined) return;
+        const normalized = String(value).trim();
+        if (normalized) customerIds.add(normalized);
+    };
+
+    // جمع جميع معرفات العميل الممكنة
+    addCustomerId(customer._id);
+    addCustomerId(customer.id);
+    addCustomerId(customer.userId);
+    if (customer.user && typeof customer.user === 'object') {
+        addCustomerId(customer.user._id || customer.user.id);
+    }
+
+    // التحقق من معرفات الطلب الأساسية
+    const orderIds = order.userIds || [];
+    for (const id of orderIds) {
+        if (customerIds.has(String(id))) {
+            return true;
+        }
+    }
+
+    if (order.userId) {
+        const orderUserId = String(order.userId).trim();
+        if (customerIds.has(orderUserId)) {
+            return true;
+        }
+    }
+
+    // ============================================
+    // المرحلة 2: المقارنة بناءً على اسم المستخدم (name)
+    // ============================================
+    const normalizeText = (text) => {
+        if (!text) return '';
+        return String(text).trim().toLowerCase();
+    };
+
+    // جمع أسماء العميل الممكنة
+    const customerNames = new Set(
+        [
+            customer.name,
+            customer.fullName,
+            customer.user?.name,
+            customer.user?.fullName
+        ]
+            .filter(Boolean)
+            .map(normalizeText)
+            .filter(name => name.length > 0)
+    );
+
+    // مقارنة أسماء من الطلب
+    const orderUsernames = (order.usernames || [])
+        .map(normalizeText)
+        .filter(Boolean);
+
+    // أيضاً محاولة استخراج اسم من order.customer
+    if (order.customer && typeof order.customer === 'object') {
+        const custName = normalizeText(order.customer.name || order.customer.fullName);
+        if (custName) orderUsernames.push(custName);
+    }
+
+    // مقارنة الأسماء
+    for (const customerName of customerNames) {
+        for (const orderUsername of orderUsernames) {
+            if (customerName === orderUsername && customerName.length > 0) {
+                return true;
             }
+        }
+    }
+
+    // ============================================
+    // المرحلة 3: المقارنة بناءً على الحساب (username/account)
+    // ============================================
+    const customerAccounts = new Set(
+        [
+            customer.username,
+            customer.account,
+            customer.user?.username,
+            customer.user?.account
+        ]
+            .filter(Boolean)
+            .map(normalizeText)
+            .filter(acc => acc.length > 0)
+    );
+
+    // مقارنة الحسابات من الطلب
+    const orderAccounts = (order.userAccounts || [])
+        .map(normalizeText)
+        .filter(Boolean);
+
+    // أيضاً محاولة استخراج حساب من order.customer
+    if (order.customer && typeof order.customer === 'object') {
+        const custAccount = normalizeText(order.customer.username || order.customer.account);
+        if (custAccount) orderAccounts.push(custAccount);
+    }
+
+    // مقارنة الحسابات
+    for (const customerAccount of customerAccounts) {
+        for (const orderAccount of orderAccounts) {
+            if (customerAccount === orderAccount && customerAccount.length > 0) {
+                return true;
+            }
+        }
+    }
+
+    // ⛔ لا نقارن بالبريد أو الهاتف نهائياً
+    return false;
+}
+
+function extractOrderCustomer(order = {}) {
+    // إذا كان userId موجود وهو كائن
+    if (order.userId && typeof order.userId === 'object') {
+        return {
+            name: order.userId.name || '',
+            email: order.userId.email || '',
+            phone: order.userId.phone || order.shippingAddress?.phone || ''
+        };
+    }
+
+    // إذا كان user موجود
+    if (order.user && typeof order.user === 'object') {
+        return {
+            name: order.user.name || '',
+            email: order.user.email || '',
+            phone: order.user.phone || order.shippingAddress?.phone || ''
+        };
+    }
+
+    // إذا كان customer موجود
+    if (order.customer) {
+        if (typeof order.customer === 'string') {
+            return { name: order.customer, email: '', phone: '' };
+        }
+        if (typeof order.customer === 'object') {
+            return {
+                name: order.customer.name || order.customer.fullName || '',
+                email: order.customer.email || '',
+                phone: order.customer.phone || order.shippingAddress?.phone || ''
+            };
+        }
+    }
+
+    // محاولة استخراج من shippingAddress
+    if (order.shippingAddress) {
+        return {
+            name: order.shippingAddress.name || order.shippingAddress.fullName || '',
+            email: order.shippingAddress.email || '',
+            phone: order.shippingAddress.phone || ''
+        };
+    }
+
+    return { name: '', email: '', phone: '' };
+}
+
+function extractOrderItems(order = {}) {
+    const cartItems = Array.isArray(order.cartItems) ? order.cartItems : [];
+
+    if (!cartItems.length && Array.isArray(order.items)) {
+        const totalCount = order.items.reduce((sum, item) => {
+            return sum + (Number(item.quantity || item.qty || 0));
+        }, 0);
+        return { list: order.items, totalCount };
+    }
+
+    const totalCount = cartItems.reduce((sum, item) => {
+        return sum + (Number(item.qty || item.quantity || 0));
+    }, 0);
+
+    return { list: cartItems, totalCount };
+}
+
+function resolveOrderStatus(order = {}) {
+    if (!order || typeof order !== 'object') return 'new';
+
+    const raw = (order.raw && typeof order.raw === 'object') ? order.raw : null;
+
+    const isCancelledFlags = [
+        order.isCanceled,
+        order.isCancelled,
+        order.cancelled,
+        raw?.isCanceled,
+        raw?.isCancelled,
+        raw?.cancelled
+    ];
+    if (isCancelledFlags.some(Boolean)) {
+        return 'cancelled';
+    }
+
+    const candidateStatuses = [
+        order.status,
+        order.statusKey,
+        order.currentStatus,
+        order.orderStatus,
+        order.state,
+        order.deliveryStatus,
+        order.delivery_status,
+        order.liveryStatus,
+        raw?.status,
+        raw?.statusKey,
+        raw?.currentStatus,
+        raw?.orderStatus,
+        raw?.state,
+        raw?.deliveryStatus,
+        raw?.delivery_status,
+        raw?.liveryStatus
+    ];
+
+    for (const candidate of candidateStatuses) {
+        const normalized = normalizeStatusKey(candidate);
+        if (normalized && ORDER_STATUS_FLOW.includes(normalized)) {
+            return normalized;
+        }
+    }
+
+    const isDeliveredFlags = [order.isDelivered, raw?.isDelivered];
+    if (isDeliveredFlags.some(Boolean)) {
+        return 'delivered';
+    }
+
+    const isPaidFlags = [order.isPaid, raw?.isPaid];
+    if (isPaidFlags.some(Boolean)) {
+        return 'processing';
+    }
+
+    return 'new';
+}
+
+/**
+ * جلب الطلبات من API
+ */
+async function fetchOrders(options = {}) {
+    const { page = 1, append = false } = options || {};
+
+    if (!append) {
+        state.ordersLoading = true;
+    }
+
+
+    state.ordersError = null;
+    renderOrders();
+
+    try {
+        const url = ORDER_ENDPOINT.startsWith('http')
+            ? `${ORDER_ENDPOINT}?page=${page}`
+            : `${ORDER_ENDPOINT}?page=${page}`;
+
+        const response = await authorizedFetch(url);
+
+
+        const handled = handleUnauthorized(response);
+        if (handled !== response) return; // تم إعادة التوجيه للتسجيل
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const payload = await response.json();
+
+
+        const normalized = normalizeOrdersPayload(payload);
+
+
+        if (append) {
+            const existingIds = new Set(state.orders.map(order => order.id));
+            const merged = [
+                ...state.orders,
+                ...normalized.filter(order => !existingIds.has(order.id))
+            ];
+            state.orders = merged;
+        } else {
+            state.orders = normalized;
+        }
+        state.ordersError = null;
+
+        state.ordersPagination = {
+            currentPage: Number(payload?.currentPage || page || 1),
+            totalPages: Number(payload?.totalPages || 1),
+            totalOrders: Number(payload?.totalOrders || state.orders.length)
+        };
+
+        // إعادة جلب العملاء لضمان ظهور أي عملاء جدد
+        // أو تحديث بيانات العملاء الموجودين
+        if (state.customers && state.customers.length > 0) {
+            // إنشاء عملاء من الطلبات للعملاء المفقودين
+            createCustomersFromOrders();
+
+            // إذا كانت بيانات العملاء محملة، نعيد جلبها لتحديثها (بصمت)
+            fetchCustomers(true).catch(err => {
+                console.warn('⚠️ Failed to refresh customers:', err);
+                // في حالة الفشل، نحدث البيانات الموجودة فقط
+                updateCustomersOrdersInfo();
+            });
+        } else {
+            // إذا لم تكن العملاء محملة، نحاول إنشاءهم من الطلبات
+            state.customers = [];
+            createCustomersFromOrders();
+            updateCustomersOrdersInfo();
+        }
+
+        // تحديث الرسومات إذا كانت محملة
+        if (chartsLoaded.overview) {
+            loadOverviewCharts();
+        }
+
+        showToast('success', 'تحميل الطلبات', append
+            ? `تم إضافة ${normalized.length} طلب`
+            : `تم تحميل ${normalized.length} طلب بنجاح`);
+    } catch (error) {
+        console.error('❌ Failed to fetch orders:', error);
+        state.orders = [];
+        state.ordersError = error?.message || 'تعذر تحميل الطلبات. حاول مرة أخرى.';
+        showToast('error', 'خطأ في تحميل الطلبات', state.ordersError);
+    } finally {
+        if (!append) {
+            state.ordersLoading = false;
+        }
+        renderOrders();
+        renderOverview();
+
+        // تحديث معلومات الطلبات للعملاء الموجودين
+        if (state.customers && state.customers.length > 0) {
+            updateCustomersOrdersInfo();
+        }
+    }
+}
+
+/**
+ * تحديث حالة تسليم الطلب
+ * @param {string} orderId - معرف الطلب
+ */
+async function updateOrderDeliveryStatus(orderId) {
+    if (!orderId) return;
+
+
+
+    try {
+        const response = await authorizedFetch(`${ORDER_ENDPOINT}/${orderId}/deliver`, {
+            method: 'PATCH'
         });
 
-        if (order.shippingAddress) {
-            pushEmail(order.shippingAddress.email);
-            pushPhone(order.shippingAddress.phone);
-            pushId(order.shippingAddress.userId || order.shippingAddress.customerId);
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody?.message || `HTTP ${response.status}`);
         }
 
-        pushEmail(order.userEmail || order.customerEmail);
-        pushPhone(order.userPhone || order.customerPhone);
+        const result = await response.json();
 
-        return { ids, emails, phones };
-    }
-
-    function doesOrderBelongToCustomer(order, customer) {
-        if (!order || !customer) return false;
-
-        // ============================================
-        // ✅ الطريقة المحسّنة: المقارنة بناءً على:
-        // 1. معرف العميل (userId) - الأولوية الأولى
-        // 2. اسم المستخدم (name) - الأولوية الثانية
-        // 3. الحساب (username/account) - الأولوية الثالثة
-        // ⛔ بدون البريد الإلكتروني ولا الهاتف
-        // ============================================
-
-        // ============================================
-        // المرحلة 1: المقارنة بناءً على معرف العميل (userId)
-        // ============================================
-        const customerIds = new Set();
-        const addCustomerId = (value) => {
-            if (value === null || value === undefined) return;
-            const normalized = String(value).trim();
-            if (normalized) customerIds.add(normalized);
-        };
-
-        // جمع جميع معرفات العميل الممكنة
-        addCustomerId(customer._id);
-        addCustomerId(customer.id);
-        addCustomerId(customer.userId);
-        if (customer.user && typeof customer.user === 'object') {
-            addCustomerId(customer.user._id || customer.user.id);
+        // تحديث الطلب في الحالة المحلية
+        const orderIndex = state.orders.findIndex(o => o.id === orderId);
+        if (orderIndex !== -1) {
+            state.orders[orderIndex].isDelivered = true;
+            state.orders[orderIndex].status = 'delivered';
         }
 
-        // التحقق من معرفات الطلب الأساسية
-        const orderIds = order.userIds || [];
-        for (const id of orderIds) {
-            if (customerIds.has(String(id))) {
-                return true;
-            }
-        }
-
-        if (order.userId) {
-            const orderUserId = String(order.userId).trim();
-            if (customerIds.has(orderUserId)) {
-                return true;
-            }
-        }
-
-        // ============================================
-        // المرحلة 2: المقارنة بناءً على اسم المستخدم (name)
-        // ============================================
-        const normalizeText = (text) => {
-            if (!text) return '';
-            return String(text).trim().toLowerCase();
-        };
-
-        // جمع أسماء العميل الممكنة
-        const customerNames = new Set(
-            [
-                customer.name,
-                customer.fullName,
-                customer.user?.name,
-                customer.user?.fullName
-            ]
-                .filter(Boolean)
-                .map(normalizeText)
-                .filter(name => name.length > 0)
-        );
-
-        // مقارنة أسماء من الطلب
-        const orderUsernames = (order.usernames || [])
-            .map(normalizeText)
-            .filter(Boolean);
-
-        // أيضاً محاولة استخراج اسم من order.customer
-        if (order.customer && typeof order.customer === 'object') {
-            const custName = normalizeText(order.customer.name || order.customer.fullName);
-            if (custName) orderUsernames.push(custName);
-        }
-
-        // مقارنة الأسماء
-        for (const customerName of customerNames) {
-            for (const orderUsername of orderUsernames) {
-                if (customerName === orderUsername && customerName.length > 0) {
-                    return true;
-                }
-            }
-        }
-
-        // ============================================
-        // المرحلة 3: المقارنة بناءً على الحساب (username/account)
-        // ============================================
-        const customerAccounts = new Set(
-            [
-                customer.username,
-                customer.account,
-                customer.user?.username,
-                customer.user?.account
-            ]
-                .filter(Boolean)
-                .map(normalizeText)
-                .filter(acc => acc.length > 0)
-        );
-
-        // مقارنة الحسابات من الطلب
-        const orderAccounts = (order.userAccounts || [])
-            .map(normalizeText)
-            .filter(Boolean);
-
-        // أيضاً محاولة استخراج حساب من order.customer
-        if (order.customer && typeof order.customer === 'object') {
-            const custAccount = normalizeText(order.customer.username || order.customer.account);
-            if (custAccount) orderAccounts.push(custAccount);
-        }
-
-        // مقارنة الحسابات
-        for (const customerAccount of customerAccounts) {
-            for (const orderAccount of orderAccounts) {
-                if (customerAccount === orderAccount && customerAccount.length > 0) {
-                    return true;
-                }
-            }
-        }
-
-        // ⛔ لا نقارن بالبريد أو الهاتف نهائياً
-        return false;
-    }
-
-    function extractOrderCustomer(order = {}) {
-        // إذا كان userId موجود وهو كائن
-        if (order.userId && typeof order.userId === 'object') {
-            return {
-                name: order.userId.name || '',
-                email: order.userId.email || '',
-                phone: order.userId.phone || order.shippingAddress?.phone || ''
-            };
-        }
-
-        // إذا كان user موجود
-        if (order.user && typeof order.user === 'object') {
-            return {
-                name: order.user.name || '',
-                email: order.user.email || '',
-                phone: order.user.phone || order.shippingAddress?.phone || ''
-            };
-        }
-
-        // إذا كان customer موجود
-        if (order.customer) {
-            if (typeof order.customer === 'string') {
-                return { name: order.customer, email: '', phone: '' };
-            }
-            if (typeof order.customer === 'object') {
-                return {
-                    name: order.customer.name || order.customer.fullName || '',
-                    email: order.customer.email || '',
-                    phone: order.customer.phone || order.shippingAddress?.phone || ''
-                };
-            }
-        }
-
-        // محاولة استخراج من shippingAddress
-        if (order.shippingAddress) {
-            return {
-                name: order.shippingAddress.name || order.shippingAddress.fullName || '',
-                email: order.shippingAddress.email || '',
-                phone: order.shippingAddress.phone || ''
-            };
-        }
-
-        return { name: '', email: '', phone: '' };
-    }
-
-    function extractOrderItems(order = {}) {
-        const cartItems = Array.isArray(order.cartItems) ? order.cartItems : [];
-
-        if (!cartItems.length && Array.isArray(order.items)) {
-            const totalCount = order.items.reduce((sum, item) => {
-                return sum + (Number(item.quantity || item.qty || 0));
-            }, 0);
-            return { list: order.items, totalCount };
-        }
-
-        const totalCount = cartItems.reduce((sum, item) => {
-            return sum + (Number(item.qty || item.quantity || 0));
-        }, 0);
-        
-        return { list: cartItems, totalCount };
-    }
-
-    function resolveOrderStatus(order = {}) {
-        if (!order || typeof order !== 'object') return 'new';
-
-        const raw = (order.raw && typeof order.raw === 'object') ? order.raw : null;
-
-        const isCancelledFlags = [
-            order.isCanceled,
-            order.isCancelled,
-            order.cancelled,
-            raw?.isCanceled,
-            raw?.isCancelled,
-            raw?.cancelled
-        ];
-        if (isCancelledFlags.some(Boolean)) {
-            return 'cancelled';
-        }
-
-        const candidateStatuses = [
-            order.status,
-            order.statusKey,
-            order.currentStatus,
-            order.orderStatus,
-            order.state,
-            order.deliveryStatus,
-            order.delivery_status,
-            order.liveryStatus,
-            raw?.status,
-            raw?.statusKey,
-            raw?.currentStatus,
-            raw?.orderStatus,
-            raw?.state,
-            raw?.deliveryStatus,
-            raw?.delivery_status,
-            raw?.liveryStatus
-        ];
-
-        for (const candidate of candidateStatuses) {
-            const normalized = normalizeStatusKey(candidate);
-            if (normalized && ORDER_STATUS_FLOW.includes(normalized)) {
-                return normalized;
-            }
-        }
-
-        const isDeliveredFlags = [order.isDelivered, raw?.isDelivered];
-        if (isDeliveredFlags.some(Boolean)) {
-            return 'delivered';
-        }
-
-        const isPaidFlags = [order.isPaid, raw?.isPaid];
-        if (isPaidFlags.some(Boolean)) {
-            return 'processing';
-        }
-
-        return 'new';
-    }
-
-    /**
-     * جلب الطلبات من API
-     */
-    async function fetchOrders(options = {}) {
-        const { page = 1, append = false } = options || {};
-
-        if (!append) {
-            state.ordersLoading = true;
-        }
-
-        console.log('🔄 Fetching orders from API...');
-        state.ordersError = null;
+        // إعادة عرض الطلبات
         renderOrders();
+        renderOverview();
 
-        try {
-            const url = ORDER_ENDPOINT.startsWith('http')
-                ? `${ORDER_ENDPOINT}?page=${page}`
-                : `${ORDER_ENDPOINT}?page=${page}`;
-
-            const response = await authorizedFetch(url);
-            console.log('📡 Orders response status:', response.status);
-
-            const handled = handleUnauthorized(response);
-            if (handled !== response) return; // تم إعادة التوجيه للتسجيل
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const payload = await response.json();
-            console.log('📦 Raw orders response:', payload);
-
-            const normalized = normalizeOrdersPayload(payload);
-            console.log(`✅ Normalized ${normalized.length} orders`);
-
-            if (append) {
-                const existingIds = new Set(state.orders.map(order => order.id));
-                const merged = [
-                    ...state.orders,
-                    ...normalized.filter(order => !existingIds.has(order.id))
-                ];
-                state.orders = merged;
-            } else {
-                state.orders = normalized;
-            }
-            state.ordersError = null;
-
-            state.ordersPagination = {
-                currentPage: Number(payload?.currentPage || page || 1),
-                totalPages: Number(payload?.totalPages || 1),
-                totalOrders: Number(payload?.totalOrders || state.orders.length)
-            };
-            
-            // إعادة جلب العملاء لضمان ظهور أي عملاء جدد
-            // أو تحديث بيانات العملاء الموجودين
-            if (state.customers && state.customers.length > 0) {
-                // إنشاء عملاء من الطلبات للعملاء المفقودين
-                createCustomersFromOrders();
-                
-                // إذا كانت بيانات العملاء محملة، نعيد جلبها لتحديثها (بصمت)
-                fetchCustomers(true).catch(err => {
-                    console.warn('⚠️ Failed to refresh customers:', err);
-                    // في حالة الفشل، نحدث البيانات الموجودة فقط
-                    updateCustomersOrdersInfo();
-                });
-            } else {
-                // إذا لم تكن العملاء محملة، نحاول إنشاءهم من الطلبات
-                state.customers = [];
-                createCustomersFromOrders();
-                updateCustomersOrdersInfo();
-            }
-            
-            // تحديث الرسومات إذا كانت محملة
-            if (chartsLoaded.overview) {
-                loadOverviewCharts();
-            }
-            
-            showToast('success', 'تحميل الطلبات', append
-                ? `تم إضافة ${normalized.length} طلب`
-                : `تم تحميل ${normalized.length} طلب بنجاح`);
-        } catch (error) {
-            console.error('❌ Failed to fetch orders:', error);
-            state.orders = [];
-            state.ordersError = error?.message || 'تعذر تحميل الطلبات. حاول مرة أخرى.';
-            showToast('error', 'خطأ في تحميل الطلبات', state.ordersError);
-        } finally {
-            if (!append) {
-                state.ordersLoading = false;
-            }
-            renderOrders();
-            renderOverview();
-            
-            // تحديث معلومات الطلبات للعملاء الموجودين
-            if (state.customers && state.customers.length > 0) {
-                updateCustomersOrdersInfo();
-            }
-        }
-    }
-
-    /**
-     * تحديث حالة تسليم الطلب
-     * @param {string} orderId - معرف الطلب
-     */
-    async function updateOrderDeliveryStatus(orderId) {
-        if (!orderId) return;
-        
-        console.log('🚚 Updating delivery status for order:', orderId);
-        
-        try {
-            const response = await authorizedFetch(`${ORDER_ENDPOINT}/${orderId}/deliver`, {
-                method: 'PATCH'
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(errorBody?.message || `HTTP ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('✅ Delivery status updated:', result);
-
-            // تحديث الطلب في الحالة المحلية
-            const orderIndex = state.orders.findIndex(o => o.id === orderId);
-            if (orderIndex !== -1) {
-                state.orders[orderIndex].isDelivered = true;
-                state.orders[orderIndex].status = 'delivered';
-            }
-
-            // إعادة عرض الطلبات
-            renderOrders();
-            renderOverview();
-            
-            // تحديث بيانات العملاء
-            if (state.customers && state.customers.length > 0) {
-                updateCustomersOrdersInfo();
-            }
-            
-            showToast('success', 'تحديث حالة التسليم', `تم تحديث حالة الطلب ${orderId} إلى "تم التسليم"`);
-        } catch (error) {
-            console.error('❌ Failed to update delivery status:', error);
-            showToast('error', 'خطأ في التحديث', error.message || 'حدث خطأ أثناء تحديث حالة التسليم');
-        }
-    }
-
-    function getOrdersSource() {
-        return Array.isArray(state.orders) ? state.orders : [];
-    }
-
-    function getOrderById(orderId) {
-        const normalizedId = String(orderId).trim();
-        return getOrdersSource().find(order => String(order.id) === normalizedId);
-    }
-
-    function getOrdersPagination() {
-        return {
-            currentPage: state.ordersPagination.currentPage || 1,
-            totalPages: state.ordersPagination.totalPages || 1,
-            totalOrders: state.ordersPagination.totalOrders || state.orders.length
-        };
-    }
-
-    function hasMoreOrders() {
-        const pagination = getOrdersPagination();
-        return pagination.currentPage < pagination.totalPages;
-    }
-
-    async function loadMoreOrders() {
-        if (!hasMoreOrders()) {
-            showToast('info', 'الطلبات', 'تم عرض جميع الطلبات.');
-            return;
+        // تحديث بيانات العملاء
+        if (state.customers && state.customers.length > 0) {
+            updateCustomersOrdersInfo();
         }
 
-        const nextPage = state.ordersPagination.currentPage + 1;
-        try {
-            await fetchOrders({ page: nextPage, append: true });
-        } catch (error) {
-            console.error('❌ Failed to load more orders:', error);
-        }
+        showToast('success', 'تحديث حالة التسليم', `تم تحديث حالة الطلب ${orderId} إلى "تم التسليم"`);
+    } catch (error) {
+        console.error('❌ Failed to update delivery status:', error);
+        showToast('error', 'خطأ في التحديث', error.message || 'حدث خطأ أثناء تحديث حالة التسليم');
+    }
+}
+
+function getOrdersSource() {
+    return Array.isArray(state.orders) ? state.orders : [];
+}
+
+function getOrderById(orderId) {
+    const normalizedId = String(orderId).trim();
+    return getOrdersSource().find(order => String(order.id) === normalizedId);
+}
+
+function getOrdersPagination() {
+    return {
+        currentPage: state.ordersPagination.currentPage || 1,
+        totalPages: state.ordersPagination.totalPages || 1,
+        totalOrders: state.ordersPagination.totalOrders || state.orders.length
+    };
+}
+
+function hasMoreOrders() {
+    const pagination = getOrdersPagination();
+    return pagination.currentPage < pagination.totalPages;
+}
+
+async function loadMoreOrders() {
+    if (!hasMoreOrders()) {
+        showToast('info', 'الطلبات', 'تم عرض جميع الطلبات.');
+        return;
     }
 
-    function filterOrders() {
-        let filtered = getOrdersSource();
+    const nextPage = state.ordersPagination.currentPage + 1;
+    try {
+        await fetchOrders({ page: nextPage, append: true });
+    } catch (error) {
+        console.error('❌ Failed to load more orders:', error);
+    }
+}
 
-        // Filter by search
-        if (state.filters.orderSearch) {
-            const search = state.filters.orderSearch.toLowerCase().trim();
+function filterOrders() {
+    let filtered = getOrdersSource();
+
+    // Filter by search
+    if (state.filters.orderSearch) {
+        const search = state.filters.orderSearch.toLowerCase().trim();
+        filtered = filtered.filter(order => {
+            const idMatch = String(order.id).toLowerCase().includes(search);
+            const nameMatch = (order.customer || '').toLowerCase().includes(search);
+            const emailMatch = (order.customerEmail || '').toLowerCase().includes(search);
+            return idMatch || nameMatch || emailMatch;
+        });
+    }
+
+    // Filter by status
+    if (state.filters.orderStatus !== 'all') {
+        const targetStatus = normalizeStatusKey(state.filters.orderStatus);
+        filtered = filtered.filter(order => normalizeStatusKey(order.status) === targetStatus);
+    }
+
+    // Filter by date
+    if (state.filters.orderDate) {
+        const selectedDate = parseDateValue(state.filters.orderDate);
+        if (selectedDate) {
             filtered = filtered.filter(order => {
-                const idMatch = String(order.id).toLowerCase().includes(search);
-                const nameMatch = (order.customer || '').toLowerCase().includes(search);
-                const emailMatch = (order.customerEmail || '').toLowerCase().includes(search);
-                return idMatch || nameMatch || emailMatch;
+                const orderDate = getOrderDate(order);
+                return isSameDay(orderDate, selectedDate);
             });
         }
-
-        // Filter by status
-        if (state.filters.orderStatus !== 'all') {
-            const targetStatus = normalizeStatusKey(state.filters.orderStatus);
-            filtered = filtered.filter(order => normalizeStatusKey(order.status) === targetStatus);
-        }
-
-        // Filter by date
-        if (state.filters.orderDate) {
-            const selectedDate = parseDateValue(state.filters.orderDate);
-            if (selectedDate) {
-                filtered = filtered.filter(order => {
-                    const orderDate = getOrderDate(order);
-                    return isSameDay(orderDate, selectedDate);
-                });
-            }
-        }
-
-        return filtered;
     }
 
-    /**
-     * عرض جدول الطلبات
-     * يعرض قائمة الطلبات مع الفلاتر المطبقة
-     */
-    function renderOrders() {
-        const body = document.getElementById('ordersTableBody');
-        const loadMoreRowId = 'ordersLoadMoreRow';
-        if (!body) return;
+    return filtered;
+}
 
-        // حالة التحميل
-        if (state.ordersLoading) {
-            body.innerHTML = `
+/**
+ * عرض جدول الطلبات
+ * يعرض قائمة الطلبات مع الفلاتر المطبقة
+ */
+function renderOrders() {
+    const body = document.getElementById('ordersTableBody');
+    const loadMoreRowId = 'ordersLoadMoreRow';
+    if (!body) return;
+
+    // حالة التحميل
+    if (state.ordersLoading) {
+        body.innerHTML = `
                 <tr>
                     <td colspan="8" style="text-align: center; padding: 40px;">
                         <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #e74c3c;"></i>
@@ -9794,11 +9778,11 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        if (state.ordersError) {
-            body.innerHTML = `
+    if (state.ordersError) {
+        body.innerHTML = `
                 <tr>
                     <td colspan="8" style="text-align: center; padding: 40px; color: #e74c3c;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
@@ -9809,13 +9793,13 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        const filtered = filterOrders();
+    const filtered = filterOrders();
 
-        if (!filtered.length) {
-            body.innerHTML = `
+    if (!filtered.length) {
+        body.innerHTML = `
                 <tr>
                     <td colspan="8" style="text-align: center; padding: 40px; color: #7a7a7a;">
                         <i class="fas fa-inbox" style="font-size: 24px;"></i>
@@ -9823,13 +9807,13 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+        return;
+    }
 
-        const rows = filtered.map((order, index) => {
-            const orderIdLiteral = JSON.stringify(order?.id ?? '');
+    const rows = filtered.map((order, index) => {
+        const orderIdLiteral = JSON.stringify(order?.id ?? '');
 
-            return `
+        return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
@@ -9852,13 +9836,13 @@
                     </td>
                 </tr>
             `;
-        }).join('');
+    }).join('');
 
-        const pagination = getOrdersPagination();
-        const showLoadMore = hasMoreOrders();
+    const pagination = getOrdersPagination();
+    const showLoadMore = hasMoreOrders();
 
-        body.innerHTML = showLoadMore
-            ? `${rows}
+    body.innerHTML = showLoadMore
+        ? `${rows}
                 <tr id="${loadMoreRowId}">
                     <td colspan="8" style="text-align: center; padding: 20px;">
                         <button id="ordersLoadMoreBtn" class="btn-secondary" style="padding: 10px 24px;">
@@ -9869,91 +9853,90 @@
                         </div>
                     </td>
                 </tr>`
-            : rows;
+        : rows;
 
-        const loadMoreBtn = document.getElementById('ordersLoadMoreBtn');
-        if (loadMoreBtn) {
-            loadMoreBtn.addEventListener('click', () => {
-                loadMoreBtn.disabled = true;
-                loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
-                loadMoreOrders().finally(() => {
-                    loadMoreBtn.disabled = false;
-                });
+    const loadMoreBtn = document.getElementById('ordersLoadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+            loadMoreOrders().finally(() => {
+                loadMoreBtn.disabled = false;
             });
-        }
+        });
+    }
+}
+
+// تم حذف الدالة المكررة - يوجد renderOverview أعلى في الملف
+
+/**
+ * عرض تفاصيل الطلب في نافذة منبثقة
+ * @param {string} orderId - معرف الطلب
+ */
+function viewOrderDetails(orderId) {
+    const order = getOrderById(orderId);
+    if (!order) {
+        showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
+        return;
     }
 
-    // تم حذف الدالة المكررة - يوجد renderOverview أعلى في الملف
 
-    /**
-     * عرض تفاصيل الطلب في نافذة منبثقة
-     * @param {string} orderId - معرف الطلب
-     */
-    function viewOrderDetails(orderId) {
-        const order = getOrderById(orderId);
-        if (!order) {
-            showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
-            return;
-        }
+    const orderDetails = getOrderDetails(order.id) || {};
+    let summary = orderDetails.summary || {
+        subtotal: (order.itemsDetails || []).reduce((sum, item) => {
+            const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+            const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+            return sum + quantity * price;
+        }, 0),
+        shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+        discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
+        total: (() => {
+            const totalValue = Number(order.total);
+            if (Number.isFinite(totalValue)) {
+                return totalValue;
+            }
+            return (
+                ((order.itemsDetails || []).reduce((sum, item) => {
+                    const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+                    const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+                    return sum + quantity * price;
+                }, 0))
+                + (Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0)
+                - (Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0)
+            );
+        })()
+    };
 
-        console.log('📋 Order details:', order);
+    const installationAmount = Number(
+        summary.installation
+        ?? order.raw?.totalInstallationPrice
+        ?? order.raw?.installationCost
+        ?? order.raw?.installation_price
+        ?? order.raw?.installationFee
+        ?? order.installationCost
+        ?? order.totalInstallationPrice
+        ?? 0
+    ) || 0;
 
-        const orderDetails = getOrderDetails(order.id) || {};
-        let summary = orderDetails.summary || {
-            subtotal: (order.itemsDetails || []).reduce((sum, item) => {
-                const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
-                const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
-                return sum + quantity * price;
-            }, 0),
-            shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
-            discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
-            total: (() => {
-                const totalValue = Number(order.total);
-                if (Number.isFinite(totalValue)) {
-                    return totalValue;
-                }
-                return (
-                    ((order.itemsDetails || []).reduce((sum, item) => {
-                        const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
-                        const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
-                        return sum + quantity * price;
-                    }, 0))
-                    + (Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0)
-                    - (Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0)
-                );
-            })()
-        };
+    const subtotalValue = Number(summary.subtotal) || 0;
+    const shippingValue = Number(summary.shipping) || 0;
+    const discountValue = Number(summary.discount) || 0;
+    const totalValue = Number(summary.total);
+    const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
 
-        const installationAmount = Number(
-            summary.installation
-            ?? order.raw?.totalInstallationPrice
-            ?? order.raw?.installationCost
-            ?? order.raw?.installation_price
-            ?? order.raw?.installationFee
-            ?? order.installationCost
-            ?? order.totalInstallationPrice
-            ?? 0
-        ) || 0;
+    summary = {
+        ...summary,
+        installation: installationAmount,
+        subtotal: subtotalValue,
+        shipping: shippingValue,
+        discount: discountValue,
+        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
+    };
 
-        const subtotalValue = Number(summary.subtotal) || 0;
-        const shippingValue = Number(summary.shipping) || 0;
-        const discountValue = Number(summary.discount) || 0;
-        const totalValue = Number(summary.total);
-        const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
-
-        summary = {
-            ...summary,
-            installation: installationAmount,
-            subtotal: subtotalValue,
-            shipping: shippingValue,
-            discount: discountValue,
-            total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
-        };
-
-        // إنشاء النافذة المنبثقة
-        const modal = document.createElement('div');
-        modal.className = 'order-details-modal';
-        modal.style.cssText = `
+    // إنشاء النافذة المنبثقة
+    const modal = document.createElement('div');
+    modal.className = 'order-details-modal';
+    modal.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -9970,11 +9953,11 @@
             box-sizing: border-box;
         `;
 
-        // محتوى النافذة
-        const statusOptions = getOrderStatusOptions();
-        const normalizedStatus = normalizeStatusKey(order.status) || 'new';
+    // محتوى النافذة
+    const statusOptions = getOrderStatusOptions();
+    const normalizedStatus = normalizeStatusKey(order.status) || 'new';
 
-        modal.innerHTML = `
+    modal.innerHTML = `
             <div class="order-details-content" style="
                 background: var(--bg-base);
                 color: var(--text-main);
@@ -10114,16 +10097,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${order.itemsDetails && order.itemsDetails.length > 0 
-                                ? order.itemsDetails.map(item => `
+                            ${order.itemsDetails && order.itemsDetails.length > 0
+            ? order.itemsDetails.map(item => `
                                     <tr>
                                         <td style="padding: 10px; border: 1px solid var(--border); color: var(--text-main);">${item.name || item.product?.name || 'منتج'}</td>
                                         <td style="padding: 10px; text-align: center; border: 1px solid var(--border); color: var(--text-main);">${item.quantity || item.qty || 1}</td>
                                         <td style="padding: 10px; border: 1px solid var(--border); color: var(--text-main);">${formatCurrency(item.price || 0)}</td>
                                     </tr>
                                 `).join('')
-                                : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #999;">لا توجد تفاصيل المنتجات</td></tr>'
-                            }
+            : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #999;">لا توجد تفاصيل المنتجات</td></tr>'
+        }
                         </tbody>
                     </table>
                 </div>
@@ -10141,136 +10124,136 @@
             </div>
         `;
 
-        document.body.appendChild(modal);
-        
-        const rootStyles = getComputedStyle(document.documentElement);
-        const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
+    document.body.appendChild(modal);
 
-        const applyModalPadding = () => {
-            if (window.innerWidth > 992) {
-                modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
-            } else {
-                modal.style.paddingRight = '20px';
-            }
-        };
+    const rootStyles = getComputedStyle(document.documentElement);
+    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
 
-        applyModalPadding();
-        const handleResize = () => applyModalPadding();
-        window.addEventListener('resize', handleResize);
-        const cleanupHandlers = () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('resize', handleResize);
-        };
-        const fadeOutAndRemove = () => {
-            modal.style.opacity = '0';
-            setTimeout(() => {
-                cleanupHandlers();
-                if (modal.parentNode) {
-                    modal.parentNode.removeChild(modal);
-                }
-            }, 300);
-        };
+    const applyModalPadding = () => {
+        if (window.innerWidth > 992) {
+            modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
+        } else {
+            modal.style.paddingRight = '20px';
+        }
+    };
 
-        // إظهار النافذة
+    applyModalPadding();
+    const handleResize = () => applyModalPadding();
+    window.addEventListener('resize', handleResize);
+    const cleanupHandlers = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('resize', handleResize);
+    };
+    const fadeOutAndRemove = () => {
+        modal.style.opacity = '0';
         setTimeout(() => {
-            modal.style.opacity = '1';
-        }, 10);
-        
-        // إغلاق النافذة
-        const closeBtn = modal.querySelector('.close-btn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', fadeOutAndRemove);
-        }
-
-        // إغلاق عند النقر خارج المحتوى
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                fadeOutAndRemove();
+            cleanupHandlers();
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
             }
-        });
+        }, 300);
+    };
 
-        // إغلاق بمفتاح ESC
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                fadeOutAndRemove();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
+    // إظهار النافذة
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
 
-        const statusSelect = modal.querySelector('#orderStatusSelect');
-        const updateStatusBtn = modal.querySelector('#orderStatusUpdateBtn');
-
-        if (statusSelect && updateStatusBtn) {
-            updateStatusBtn.addEventListener('click', async () => {
-                const selectedStatus = statusSelect.value;
-                await changeOrderStatus(order.id, selectedStatus, statusSelect);
-                // تحديث الشارة المعروضة بعد الحفظ
-                const badgeWrapper = modal.querySelector('.order-status-badge-wrapper');
-                if (badgeWrapper) {
-                    badgeWrapper.innerHTML = getStatusBadge(selectedStatus);
-                }
-            });
-        }
+    // إغلاق النافذة
+    const closeBtn = modal.querySelector('.close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', fadeOutAndRemove);
     }
 
-    /**
-     * طباعة فاتورة الطلب
-     * @param {string} orderId - معرف الطلب
-     */
-    function printOrder(orderId) {
-        const order = getOrderById(orderId);
-        if (!order) {
-            showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
-            return;
+    // إغلاق عند النقر خارج المحتوى
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            fadeOutAndRemove();
         }
+    });
 
-        // فتح نافذة الطباعة
-        const win = window.open('', '_blank', 'width=900,height=700');
-        if (!win) {
-            showToast('error', 'طباعة الفاتورة', 'يبدو أن النوافذ المنبثقة محظورة');
-            return;
+    // إغلاق بمفتاح ESC
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            fadeOutAndRemove();
         }
+    };
+    document.addEventListener('keydown', handleKeyDown);
 
-        // محتوى الفاتورة
-        const orderDetails = getOrderDetails(order.id) || {};
-        let summary = orderDetails.summary || {
-            subtotal: (order.itemsDetails || []).reduce((sum, item) => {
-                const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
-                const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
-                return sum + quantity * price;
-            }, 0),
-            shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
-            discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
-            total: Number(order.total) || 0
-        };
+    const statusSelect = modal.querySelector('#orderStatusSelect');
+    const updateStatusBtn = modal.querySelector('#orderStatusUpdateBtn');
 
-        const installationAmount = Number(
-            summary.installation
-            ?? order.raw?.totalInstallationPrice
-            ?? order.raw?.installationCost
-            ?? order.raw?.installation_price
-            ?? order.raw?.installationFee
-            ?? order.installationCost
-            ?? order.totalInstallationPrice
-            ?? 0
-        ) || 0;
+    if (statusSelect && updateStatusBtn) {
+        updateStatusBtn.addEventListener('click', async () => {
+            const selectedStatus = statusSelect.value;
+            await changeOrderStatus(order.id, selectedStatus, statusSelect);
+            // تحديث الشارة المعروضة بعد الحفظ
+            const badgeWrapper = modal.querySelector('.order-status-badge-wrapper');
+            if (badgeWrapper) {
+                badgeWrapper.innerHTML = getStatusBadge(selectedStatus);
+            }
+        });
+    }
+}
 
-        const subtotalValue = Number(summary.subtotal) || 0;
-        const shippingValue = Number(summary.shipping) || 0;
-        const discountValue = Number(summary.discount) || 0;
-        const totalValue = Number(summary.total);
-        const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+/**
+ * طباعة فاتورة الطلب
+ * @param {string} orderId - معرف الطلب
+ */
+function printOrder(orderId) {
+    const order = getOrderById(orderId);
+    if (!order) {
+        showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
+        return;
+    }
 
-        summary = {
-            ...summary,
-            installation: installationAmount,
-            subtotal: subtotalValue,
-            shipping: shippingValue,
-            discount: discountValue,
-            total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
-        };
+    // فتح نافذة الطباعة
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+        showToast('error', 'طباعة الفاتورة', 'يبدو أن النوافذ المنبثقة محظورة');
+        return;
+    }
 
-        win.document.write(`
+    // محتوى الفاتورة
+    const orderDetails = getOrderDetails(order.id) || {};
+    let summary = orderDetails.summary || {
+        subtotal: (order.itemsDetails || []).reduce((sum, item) => {
+            const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+            const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
+            return sum + quantity * price;
+        }, 0),
+        shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+        discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
+        total: Number(order.total) || 0
+    };
+
+    const installationAmount = Number(
+        summary.installation
+        ?? order.raw?.totalInstallationPrice
+        ?? order.raw?.installationCost
+        ?? order.raw?.installation_price
+        ?? order.raw?.installationFee
+        ?? order.installationCost
+        ?? order.totalInstallationPrice
+        ?? 0
+    ) || 0;
+
+    const subtotalValue = Number(summary.subtotal) || 0;
+    const shippingValue = Number(summary.shipping) || 0;
+    const discountValue = Number(summary.discount) || 0;
+    const totalValue = Number(summary.total);
+    const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+
+    summary = {
+        ...summary,
+        installation: installationAmount,
+        subtotal: subtotalValue,
+        shipping: shippingValue,
+        discount: discountValue,
+        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
+    };
+
+    win.document.write(`
             <!doctype html>
             <html lang="ar" dir="rtl">
             <head>
@@ -10398,11 +10381,11 @@
                     </thead>
                     <tbody>
                         ${order.itemsDetails && order.itemsDetails.length > 0
-                            ? order.itemsDetails.map(item => {
-                                const quantity = item.quantity || item.qty || 1;
-                                const price = item.price || 0;
-                                const total = quantity * price;
-                                return `
+            ? order.itemsDetails.map(item => {
+                const quantity = item.quantity || item.qty || 1;
+                const price = item.price || 0;
+                const total = quantity * price;
+                return `
                                     <tr>
                                         <td>${item.name || item.product?.name || 'منتج'}</td>
                                         <td style="text-align: center;">${quantity}</td>
@@ -10410,9 +10393,9 @@
                                         <td><strong>${formatCurrency(total)}</strong></td>
                                     </tr>
                                 `;
-                            }).join('')
-                            : '<tr><td colspan="4" style="text-align: center; padding: 20px;">لا توجد تفاصيل المنتجات</td></tr>'
-                        }
+            }).join('')
+            : '<tr><td colspan="4" style="text-align: center; padding: 20px;">لا توجد تفاصيل المنتجات</td></tr>'
+        }
                     </tbody>
                 </table>
                 
@@ -10434,125 +10417,255 @@
             </html>
         `);
 
-        win.document.close();
+    win.document.close();
+    win.focus();
+    win.onload = () => {
         win.focus();
-        win.onload = () => {
-            win.focus();
-            win.print();
+        win.print();
+    };
+
+    showToast('success', 'طباعة الفاتورة', `تم إرسال فاتورة الطلب ${order.id} للطباعة`);
+}
+
+// ===== Filters Setup =====
+function setupOrderFilters() {
+    const searchInput = document.getElementById('orderSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            state.filters.orderSearch = e.target.value;
+            renderOrders();
+        });
+    }
+
+    const statusFilter = document.getElementById('orderStatusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+            state.filters.orderStatus = e.target.value;
+            renderOrders();
+        });
+    }
+
+    const dateFilter = document.getElementById('orderDateFilter');
+    if (dateFilter) {
+        dateFilter.addEventListener('change', (e) => {
+            state.filters.orderDate = e.target.value;
+            renderOrders();
+        });
+    }
+}
+
+// ========================================
+// ===== 11. دوال إدارة المستخدمين =====
+// ========================================
+
+/**
+ * إنشاء عملاء من الطلبات للعملاء المفقودين
+ */
+function createCustomersFromOrders() {
+    if (!state.orders || state.orders.length === 0) return;
+
+
+    const existingCustomerIds = new Set();
+    const existingCustomerEmails = new Set();
+
+    // جمع معرفات وإيميلات العملاء الموجودين
+    (state.customers || []).forEach(customer => {
+        const id = customer._id || customer.id;
+        if (id) existingCustomerIds.add(id);
+        if (customer.email) existingCustomerEmails.add(customer.email.toLowerCase());
+    });
+
+    const newCustomers = [];
+    const processedIds = new Set();
+
+    // استخراج العملاء من الطلبات
+    state.orders.forEach(order => {
+        const userId = order.userId || order.user?._id || order.user?.id;
+
+        // تخطي إذا كان العميل موجود بالفعل
+        if (userId && (existingCustomerIds.has(userId) || processedIds.has(userId))) {
+            return;
+        }
+
+        const customerInfo = extractOrderCustomer(order);
+
+        // تخطي إذا لم نحصل على معلومات كافية
+        if (!customerInfo.name && !customerInfo.email) {
+            return;
+        }
+
+        // تخطي إذا كان الإيميل موجود بالفعل
+        if (customerInfo.email && existingCustomerEmails.has(customerInfo.email.toLowerCase())) {
+            return;
+        }
+
+        // إنشاء عميل جديد
+        const newCustomer = {
+            _id: userId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: userId,
+            name: customerInfo.name || 'عميل',
+            email: customerInfo.email || '',
+            phone: customerInfo.phone || '',
+            role: 'user',
+            ordersCount: 0,
+            lastOrder: '-',
+            isFromOrders: true // علامة للتمييز
         };
 
-        showToast('success', 'طباعة الفاتورة', `تم إرسال فاتورة الطلب ${order.id} للطباعة`);
+        if (userId) processedIds.add(userId);
+        if (customerInfo.email) existingCustomerEmails.add(customerInfo.email.toLowerCase());
+
+        newCustomers.push(newCustomer);
+    });
+
+    if (newCustomers.length > 0) {
+        state.customers = [...(state.customers || []), ...newCustomers];
+    }
+}
+
+/**
+ * تحديث معلومات الطلبات للعملاء الموجودين
+ */
+function updateCustomersOrdersInfo() {
+    if (!state.customers || state.customers.length === 0) return;
+
+
+    state.customers = state.customers.map(customer => {
+        const customerId = customer._id || customer.id;
+
+        // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
+        const customerOrders = state.orders?.filter(order => {
+            // محاولة المطابقة بالـ ID أولاً
+            if (order.userId === customerId || order.user?._id === customerId || order.user?.id === customerId) {
+                return true;
+            }
+            // محاولة المطابقة بالبريد الإلكتروني
+            if (customer.email && order.user?.email === customer.email) {
+                return true;
+            }
+            // محاولة المطابقة بالهاتف
+            if (customer.phone && order.user?.phone === customer.phone) {
+                return true;
+            }
+            // استخدام دالة المطابقة المتقدمة
+            return doesOrderBelongToCustomer(order, customer);
+        }) || [];
+
+        // حساب عدد الطلبات (عدد الطلبات وليس عدد المنتجات)
+        const ordersCount = customerOrders.length;
+
+        if (ordersCount > 0 && customer.name) {
+        }
+
+        // إيجاد آخر طلب
+        let lastOrder = '-';
+        let lastOrderTimestamp = null;
+        if (customerOrders.length > 0) {
+            // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
+            const sortedOrders = customerOrders.sort((a, b) => {
+                const dateA = getOrderDate(a);
+                const dateB = getOrderDate(b);
+                if (!dateA || !dateB) return 0;
+                return dateB - dateA;
+            });
+
+            const latestOrder = sortedOrders[0];
+            const orderDate = getOrderDate(latestOrder);
+            if (orderDate) {
+                lastOrderTimestamp = orderDate.getTime();
+                lastOrder = orderDate.toLocaleDateString('ar-EG');
+            }
+        }
+
+        return {
+            ...customer,
+            ordersCount,
+            lastOrder,
+            lastOrderTimestamp
+        };
+    });
+
+    // إعادة عرض العملاء إذا كان القسم نشطاً
+    const customersSection = document.getElementById('customers');
+    if (customersSection && customersSection.classList.contains('active')) {
+        renderCustomers();
     }
 
-    // ===== Filters Setup =====
-    function setupOrderFilters() {
-        const searchInput = document.getElementById('orderSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                state.filters.orderSearch = e.target.value;
-                renderOrders();
-            });
+
+}
+
+/**
+ * جلب العملاء من API
+ * @param {boolean} silent - إذا كان true، لا تظهر رسالة النجاح
+ */
+async function fetchCustomers(silent = false) {
+
+    state.customersLoading = true;
+    state.customersError = null;
+    renderCustomers();
+
+    try {
+        const response = await authorizedFetch(USERS_ENDPOINT);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const statusFilter = document.getElementById('orderStatusFilter');
-        if (statusFilter) {
-            statusFilter.addEventListener('change', (e) => {
-                state.filters.orderStatus = e.target.value;
-                renderOrders();
-            });
-        }
+        const payload = await response.json();
 
-        const dateFilter = document.getElementById('orderDateFilter');
-        if (dateFilter) {
-            dateFilter.addEventListener('change', (e) => {
-                state.filters.orderDate = e.target.value;
-                renderOrders();
-            });
-        }
-    }
+        // استخراج العملاء من الاستجابة - جرب جميع الاحتمالات
+        const allUsers = Array.isArray(payload?.data?.users)
+            ? payload.data.users
+            : Array.isArray(payload?.data?.documents)
+                ? payload.data.documents
+                : Array.isArray(payload?.data)
+                    ? payload.data
+                    : Array.isArray(payload)
+                        ? payload
+                        : [];
 
-    // ========================================
-    // ===== 11. دوال إدارة المستخدمين =====
-    // ========================================
+        // تصفية المستخدمين العاديين فقط (إخفاء المدراء)
+        const fetchedCustomers = allUsers.filter(user => user.role !== 'admin');
 
-    /**
-     * إنشاء عملاء من الطلبات للعملاء المفقودين
-     */
-    function createCustomersFromOrders() {
-        if (!state.orders || state.orders.length === 0) return;
-        
-        console.log('🔄 Creating customers from orders...');
-        
-        const existingCustomerIds = new Set();
-        const existingCustomerEmails = new Set();
-        
-        // جمع معرفات وإيميلات العملاء الموجودين
-        (state.customers || []).forEach(customer => {
+
+        // دمج العملاء الجدد مع الموجودين دون تكرار
+        const existingCustomers = Array.isArray(state.customers) ? state.customers : [];
+        const seenIds = new Set();
+        const seenEmails = new Set();
+
+        existingCustomers.forEach(customer => {
             const id = customer._id || customer.id;
-            if (id) existingCustomerIds.add(id);
-            if (customer.email) existingCustomerEmails.add(customer.email.toLowerCase());
+            if (id) seenIds.add(String(id));
+            if (customer.email) {
+                seenEmails.add(String(customer.email).toLowerCase());
+            }
         });
-        
-        const newCustomers = [];
-        const processedIds = new Set();
-        
-        // استخراج العملاء من الطلبات
-        state.orders.forEach(order => {
-            const userId = order.userId || order.user?._id || order.user?.id;
-            
-            // تخطي إذا كان العميل موجود بالفعل
-            if (userId && (existingCustomerIds.has(userId) || processedIds.has(userId))) {
-                return;
-            }
-            
-            const customerInfo = extractOrderCustomer(order);
-            
-            // تخطي إذا لم نحصل على معلومات كافية
-            if (!customerInfo.name && !customerInfo.email) {
-                return;
-            }
-            
-            // تخطي إذا كان الإيميل موجود بالفعل
-            if (customerInfo.email && existingCustomerEmails.has(customerInfo.email.toLowerCase())) {
-                return;
-            }
-            
-            // إنشاء عميل جديد
-            const newCustomer = {
-                _id: userId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                id: userId,
-                name: customerInfo.name || 'عميل',
-                email: customerInfo.email || '',
-                phone: customerInfo.phone || '',
-                role: 'user',
-                ordersCount: 0,
-                lastOrder: '-',
-                isFromOrders: true // علامة للتمييز
-            };
-            
-            if (userId) processedIds.add(userId);
-            if (customerInfo.email) existingCustomerEmails.add(customerInfo.email.toLowerCase());
-            
-            newCustomers.push(newCustomer);
-        });
-        
-        if (newCustomers.length > 0) {
-            console.log(`✅ Created ${newCustomers.length} customers from orders`);
-            state.customers = [...(state.customers || []), ...newCustomers];
-        }
-    }
 
-    /**
-     * تحديث معلومات الطلبات للعملاء الموجودين
-     */
-    function updateCustomersOrdersInfo() {
-        if (!state.customers || state.customers.length === 0) return;
-        
-        console.log('🔄 Updating customers orders info...');
-        
-        state.customers = state.customers.map(customer => {
+        const mergedCustomers = [
+            ...existingCustomers
+        ];
+
+        fetchedCustomers.forEach(customer => {
+            const id = customer._id || customer.id;
+            const email = customer.email ? String(customer.email).toLowerCase() : null;
+
+            const normalizedId = id ? String(id) : null;
+
+            const alreadyExists =
+                (normalizedId && seenIds.has(normalizedId)) ||
+                (email && seenEmails.has(email));
+
+            if (!alreadyExists) {
+                mergedCustomers.push(customer);
+                if (normalizedId) seenIds.add(normalizedId);
+                if (email) seenEmails.add(email);
+            }
+        });
+
+        // إضافة معلومات الطلبات لكل عميل
+        const customersWithOrders = mergedCustomers.map(customer => {
             const customerId = customer._id || customer.id;
-            
+
             // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
             const customerOrders = state.orders?.filter(order => {
                 // محاولة المطابقة بالـ ID أولاً
@@ -10570,17 +10683,12 @@
                 // استخدام دالة المطابقة المتقدمة
                 return doesOrderBelongToCustomer(order, customer);
             }) || [];
-            
-            // حساب عدد الطلبات (عدد الطلبات وليس عدد المنتجات)
+
+            // حساب عدد الطلبات
             const ordersCount = customerOrders.length;
-            
-            if (ordersCount > 0 && customer.name) {
-                console.log(`📊 ${customer.name}: ${ordersCount} طلب/طلبات`);
-            }
-            
+
             // إيجاد آخر طلب
             let lastOrder = '-';
-            let lastOrderTimestamp = null;
             if (customerOrders.length > 0) {
                 // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
                 const sortedOrders = customerOrders.sort((a, b) => {
@@ -10589,305 +10697,164 @@
                     if (!dateA || !dateB) return 0;
                     return dateB - dateA;
                 });
-                
+
                 const latestOrder = sortedOrders[0];
                 const orderDate = getOrderDate(latestOrder);
                 if (orderDate) {
-                    lastOrderTimestamp = orderDate.getTime();
                     lastOrder = orderDate.toLocaleDateString('ar-EG');
                 }
             }
-            
+
+            if (ordersCount > 0) {
+            }
+
             return {
                 ...customer,
                 ordersCount,
-                lastOrder,
-                lastOrderTimestamp
+                lastOrder
             };
         });
-        
-        // إعادة عرض العملاء إذا كان القسم نشطاً
-        const customersSection = document.getElementById('customers');
-        if (customersSection && customersSection.classList.contains('active')) {
-            renderCustomers();
+
+
+        state.customers = customersWithOrders;
+
+        // إنشاء عملاء من الطلبات للعملاء المفقودين
+        if (state.orders && state.orders.length > 0) {
+            createCustomersFromOrders();
+            // تحديث معلومات الطلبات للعملاء الجدد
+            updateCustomersOrdersInfo();
         }
-        
-        console.log('✅ Customers orders info updated:', state.customers.filter(c => c.ordersCount > 0).length, 'with orders /', state.customers.length, 'total');
-    }
 
-    /**
-     * جلب العملاء من API
-     * @param {boolean} silent - إذا كان true، لا تظهر رسالة النجاح
-     */
-    async function fetchCustomers(silent = false) {
-
-        state.customersLoading = true;
         state.customersError = null;
+
+        if (!silent) {
+            showToast('success', 'تحميل العملاء', `تم تحميل ${state.customers.length} عميل بنجاح`);
+        }
+    } catch (error) {
+        console.error('❌ Failed to fetch customers:', error);
+        state.customers = [];
+        state.customersError = error.message || 'حدث خطأ أثناء تحميل العملاء';
+        showToast('error', 'خطأ في تحميل العملاء', state.customersError);
+    } finally {
+        state.customersLoading = false;
         renderCustomers();
-        
-        try {
-            const response = await authorizedFetch(USERS_ENDPOINT);
-            console.log('📡 Customers response status:', response.status);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const payload = await response.json();
-            console.log('📦 Raw customers response:', payload);
-
-            // استخراج العملاء من الاستجابة - جرب جميع الاحتمالات
-            const allUsers = Array.isArray(payload?.data?.users) 
-                ? payload.data.users 
-                : Array.isArray(payload?.data?.documents)
-                ? payload.data.documents
-                : Array.isArray(payload?.data) 
-                ? payload.data 
-                : Array.isArray(payload) 
-                ? payload 
-                : [];
-            
-            // تصفية المستخدمين العاديين فقط (إخفاء المدراء)
-            const fetchedCustomers = allUsers.filter(user => user.role !== 'admin');
-
-            console.log('👥 Total users:', allUsers.length, '| Customers (non-admin):', fetchedCustomers.length, '| Total orders:', state.orders?.length || 0);
-
-            // دمج العملاء الجدد مع الموجودين دون تكرار
-            const existingCustomers = Array.isArray(state.customers) ? state.customers : [];
-            const seenIds = new Set();
-            const seenEmails = new Set();
-
-            existingCustomers.forEach(customer => {
-                const id = customer._id || customer.id;
-                if (id) seenIds.add(String(id));
-                if (customer.email) {
-                    seenEmails.add(String(customer.email).toLowerCase());
-                }
-            });
-
-            const mergedCustomers = [
-                ...existingCustomers
-            ];
-
-            fetchedCustomers.forEach(customer => {
-                const id = customer._id || customer.id;
-                const email = customer.email ? String(customer.email).toLowerCase() : null;
-
-                const normalizedId = id ? String(id) : null;
-
-                const alreadyExists =
-                    (normalizedId && seenIds.has(normalizedId)) ||
-                    (email && seenEmails.has(email));
-
-                if (!alreadyExists) {
-                    mergedCustomers.push(customer);
-                    if (normalizedId) seenIds.add(normalizedId);
-                    if (email) seenEmails.add(email);
-                }
-            });
-
-            // إضافة معلومات الطلبات لكل عميل
-            const customersWithOrders = mergedCustomers.map(customer => {
-                const customerId = customer._id || customer.id;
-                
-                // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
-                const customerOrders = state.orders?.filter(order => {
-                    // محاولة المطابقة بالـ ID أولاً
-                    if (order.userId === customerId || order.user?._id === customerId || order.user?.id === customerId) {
-                        return true;
-                    }
-                    // محاولة المطابقة بالبريد الإلكتروني
-                    if (customer.email && order.user?.email === customer.email) {
-                        return true;
-                    }
-                    // محاولة المطابقة بالهاتف
-                    if (customer.phone && order.user?.phone === customer.phone) {
-                        return true;
-                    }
-                    // استخدام دالة المطابقة المتقدمة
-                    return doesOrderBelongToCustomer(order, customer);
-                }) || [];
-                
-                // حساب عدد الطلبات
-                const ordersCount = customerOrders.length;
-                
-                // إيجاد آخر طلب
-                let lastOrder = '-';
-                if (customerOrders.length > 0) {
-                    // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
-                    const sortedOrders = customerOrders.sort((a, b) => {
-                        const dateA = getOrderDate(a);
-                        const dateB = getOrderDate(b);
-                        if (!dateA || !dateB) return 0;
-                        return dateB - dateA;
-                    });
-                    
-                    const latestOrder = sortedOrders[0];
-                    const orderDate = getOrderDate(latestOrder);
-                    if (orderDate) {
-                        lastOrder = orderDate.toLocaleDateString('ar-EG');
-                    }
-                }
-                
-                if (ordersCount > 0) {
-                    console.log(`📊 Customer ${customer.name || customer.email}: ${ordersCount} orders, last: ${lastOrder}`);
-                }
-                
-                return {
-                    ...customer,
-                    ordersCount,
-                    lastOrder
-                };
-            });
-            
-            console.log('✅ Customers with orders info:', customersWithOrders.filter(c => c.ordersCount > 0).length, '/', customersWithOrders.length);
-            
-            state.customers = customersWithOrders;
-            
-            // إنشاء عملاء من الطلبات للعملاء المفقودين
-            if (state.orders && state.orders.length > 0) {
-                createCustomersFromOrders();
-                // تحديث معلومات الطلبات للعملاء الجدد
-                updateCustomersOrdersInfo();
-            }
-            
-            state.customersError = null;
-            
-            if (!silent) {
-                showToast('success', 'تحميل العملاء', `تم تحميل ${state.customers.length} عميل بنجاح`);
-            }
-        } catch (error) {
-            console.error('❌ Failed to fetch customers:', error);
-            state.customers = [];
-            state.customersError = error.message || 'حدث خطأ أثناء تحميل العملاء';
-            showToast('error', 'خطأ في تحميل العملاء', state.customersError);
-        } finally {
-            state.customersLoading = false;
-            renderCustomers();
-            
-            // تحديث إحصائيات نظرة عامة إذا كانت محملة
-            if (state.currentSection === 'overview') {
-                updateOverviewStats();
-            }
+        // تحديث إحصائيات نظرة عامة إذا كانت محملة
+        if (state.currentSection === 'overview') {
+            updateOverviewStats();
         }
     }
+}
 
-    /**
-     * جلب المستخدمين من API
-     */
-    async function fetchUsers() {
-        console.log('🔄 Fetching users from API...');
-        
-        try {
-            const response = await authorizedFetch(USERS_ENDPOINT);
-            console.log('📡 Users response status:', response.status);
+/**
+ * جلب المستخدمين من API
+ */
+async function fetchUsers() {
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+    try {
+        const response = await authorizedFetch(USERS_ENDPOINT);
 
-            const payload = await response.json();
-            console.log('📦 Raw users response:', payload);
-
-            // استخراج المستخدمين من الاستجابة
-            const users = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
-            
-            showToast('success', 'تحميل المستخدمين', `تم تحميل ${users.length} مستخدم بنجاح`);
-            return users;
-        } catch (error) {
-            console.error('❌ Failed to fetch users:', error);
-            showToast('error', 'خطأ في تحميل المستخدمين', error.message || 'حدث خطأ أثناء تحميل المستخدمين');
-            return [];
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+
+        const payload = await response.json();
+
+        // استخراج المستخدمين من الاستجابة
+        const users = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+
+        showToast('success', 'تحميل المستخدمين', `تم تحميل ${users.length} مستخدم بنجاح`);
+        return users;
+    } catch (error) {
+        console.error('❌ Failed to fetch users:', error);
+        showToast('error', 'خطأ في تحميل المستخدمين', error.message || 'حدث خطأ أثناء تحميل المستخدمين');
+        return [];
+    }
+}
+
+/**
+ * حذف مستخدم
+ * @param {string} userId - معرف المستخدم
+ */
+async function deleteUser(userId) {
+    if (!userId) return;
+
+    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+        return;
     }
 
-    /**
-     * حذف مستخدم
-     * @param {string} userId - معرف المستخدم
-     */
-    async function deleteUser(userId) {
-        if (!userId) return;
-        
-        if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
-            return;
-        }
-        
-        console.log('🗑️ Deleting user:', userId);
-        
-        try {
-            const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
-                method: 'DELETE'
-            });
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(errorBody?.message || `HTTP ${response.status}`);
-            }
+    try {
+        const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
+            method: 'DELETE'
+        });
 
-            console.log('✅ User deleted successfully');
-            
-            showToast('success', 'حذف المستخدم', 'تم حذف المستخدم بنجاح');
-            
-            // إعادة تحميل قائمة المستخدمين
-            await fetchUsers();
-        } catch (error) {
-            console.error('❌ Failed to delete user:', error);
-            showToast('error', 'خطأ في الحذف', error.message || 'حدث خطأ أثناء حذف المستخدم');
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody?.message || `HTTP ${response.status}`);
         }
+
+
+        showToast('success', 'حذف المستخدم', 'تم حذف المستخدم بنجاح');
+
+        // إعادة تحميل قائمة المستخدمين
+        await fetchUsers();
+    } catch (error) {
+        console.error('❌ Failed to delete user:', error);
+        showToast('error', 'خطأ في الحذف', error.message || 'حدث خطأ أثناء حذف المستخدم');
+    }
+}
+
+/**
+ * تغيير كلمة مرور المستخدم
+ * @param {string} userId - معرف المستخدم
+ * @param {string} newPassword - كلمة المرور الجديدة
+ */
+async function changeUserPassword(userId, newPassword) {
+    if (!userId || !newPassword) {
+        showToast('error', 'خطأ', 'يرجى إدخال كلمة المرور الجديدة');
+        return;
     }
 
-    /**
-     * تغيير كلمة مرور المستخدم
-     * @param {string} userId - معرف المستخدم
-     * @param {string} newPassword - كلمة المرور الجديدة
-     */
-    async function changeUserPassword(userId, newPassword) {
-        if (!userId || !newPassword) {
-            showToast('error', 'خطأ', 'يرجى إدخال كلمة المرور الجديدة');
-            return;
-        }
-        
-        console.log('🔐 Changing password for user:', userId);
-        
-        try {
-            const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}/change-password`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ newPassword })
-            });
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(errorBody?.message || `HTTP ${response.status}`);
-            }
+    try {
+        const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}/change-password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ newPassword })
+        });
 
-            const result = await response.json();
-            console.log('✅ Password changed successfully:', result);
-            
-            showToast('success', 'تغيير كلمة المرور', 'تم تغيير كلمة المرور بنجاح');
-        } catch (error) {
-            console.error('❌ Failed to change password:', error);
-            showToast('error', 'خطأ في التغيير', error.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(errorBody?.message || `HTTP ${response.status}`);
         }
+
+        const result = await response.json();
+
+        showToast('success', 'تغيير كلمة المرور', 'تم تغيير كلمة المرور بنجاح');
+    } catch (error) {
+        console.error('❌ Failed to change password:', error);
+        showToast('error', 'خطأ في التغيير', error.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+    }
+}
+
+/**
+ * عرض تفاصيل العميل
+ * @param {string} customerId - معرف العميل
+ */
+function viewCustomerDetails(customerId) {
+    const existingCustomer = state.customers?.find(c => (c._id || c.id) === customerId);
+
+    if (!existingCustomer) {
+        showToast('error', 'خطأ', 'لم يتم العثور على العميل');
+        return;
     }
 
-    /**
-     * عرض تفاصيل العميل
-     * @param {string} customerId - معرف العميل
-     */
-    function viewCustomerDetails(customerId) {
-        const existingCustomer = state.customers?.find(c => (c._id || c.id) === customerId);
-
-        if (!existingCustomer) {
-            showToast('error', 'خطأ', 'لم يتم العثور على العميل');
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.className = 'order-details-modal';
-        modal.style.cssText = `
+    const modal = document.createElement('div');
+    modal.className = 'order-details-modal';
+    modal.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -10902,9 +10869,9 @@
             transition: opacity 0.3s ease;
         `;
 
-        const content = document.createElement('div');
-        content.className = 'order-details-content';
-        content.style.cssText = `
+    const content = document.createElement('div');
+    content.className = 'order-details-content';
+    content.style.cssText = `
             background: var(--bg-base);
             color: var(--text-main);
             padding: 30px;
@@ -10917,11 +10884,11 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         `;
 
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'close-btn';
-        closeBtn.type = 'button';
-        closeBtn.textContent = '×';
-        closeBtn.style.cssText = `
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.type = 'button';
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = `
             position: absolute;
             top: 15px;
             left: 15px;
@@ -10939,122 +10906,102 @@
             transition: all 0.3s ease;
         `;
 
-        const bodyWrapper = document.createElement('div');
+    const bodyWrapper = document.createElement('div');
 
-        const renderContent = ({ customer, loading = false, error = null }) => {
-            bodyWrapper.innerHTML = buildCustomerDetailsContent({ customer, loading, error, customerId });
-            const ordersBtn = bodyWrapper.querySelector('[data-action="view-customer-orders"]');
-            if (ordersBtn) {
-                ordersBtn.addEventListener('click', () => {
-                    closeModal();
-                    viewCustomerOrders(customerId);
-                });
-            }
-        };
-
-        const closeModal = () => {
-            modal.style.opacity = '0';
-            setTimeout(() => modal.remove(), 300);
-        };
-
-        closeBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
+    const renderContent = ({ customer, loading = false, error = null }) => {
+        bodyWrapper.innerHTML = buildCustomerDetailsContent({ customer, loading, error, customerId });
+        const ordersBtn = bodyWrapper.querySelector('[data-action="view-customer-orders"]');
+        if (ordersBtn) {
+            ordersBtn.addEventListener('click', () => {
                 closeModal();
-            }
-        });
-
-        content.appendChild(closeBtn);
-        content.appendChild(bodyWrapper);
-        modal.appendChild(content);
-        document.body.appendChild(modal);
-
-        requestAnimationFrame(() => {
-            modal.style.opacity = '1';
-        });
-
-        renderContent({ customer: existingCustomer, loading: true });
-
-        getFreshCustomerData(customerId)
-            .then(freshCustomer => {
-                if (freshCustomer) {
-                    const customers = Array.isArray(state.customers) ? [...state.customers] : [];
-                    const index = customers.findIndex(c => (c._id || c.id) === customerId);
-                    if (index !== -1) {
-                        customers[index] = {
-                            ...customers[index],
-                            ...freshCustomer,
-                            addresses: Array.isArray(freshCustomer.addresses) ? freshCustomer.addresses : []
-                        };
-                        state.customers = customers;
-                    }
-
-                    renderContent({ customer: freshCustomer, loading: false });
-                } else {
-                    renderContent({ customer: existingCustomer, loading: false, error: 'تعذر تحميل بيانات العميل.' });
-                }
-            })
-            .catch(error => {
-                console.error('❌ فشل جلب بيانات العميل:', error);
-                showToast('error', 'بيانات العميل', error?.message || 'تعذر تحميل بيانات العميل من الخادم.');
-                renderContent({ customer: existingCustomer, loading: false, error: error?.message || 'تعذر تحميل بيانات العميل من الخادم.' });
+                viewCustomerOrders(customerId);
             });
+        }
+    };
+
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    content.appendChild(closeBtn);
+    content.appendChild(bodyWrapper);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+    });
+
+    renderContent({ customer: existingCustomer, loading: true });
+
+    getFreshCustomerData(customerId)
+        .then(freshCustomer => {
+            if (freshCustomer) {
+                const customers = Array.isArray(state.customers) ? [...state.customers] : [];
+                const index = customers.findIndex(c => (c._id || c.id) === customerId);
+                if (index !== -1) {
+                    customers[index] = {
+                        ...customers[index],
+                        ...freshCustomer,
+                        addresses: Array.isArray(freshCustomer.addresses) ? freshCustomer.addresses : []
+                    };
+                    state.customers = customers;
+                }
+
+                renderContent({ customer: freshCustomer, loading: false });
+            } else {
+                renderContent({ customer: existingCustomer, loading: false, error: 'تعذر تحميل بيانات العميل.' });
+            }
+        })
+        .catch(error => {
+            console.error('❌ فشل جلب بيانات العميل:', error);
+            showToast('error', 'بيانات العميل', error?.message || 'تعذر تحميل بيانات العميل من الخادم.');
+            renderContent({ customer: existingCustomer, loading: false, error: error?.message || 'تعذر تحميل بيانات العميل من الخادم.' });
+        });
+}
+
+/**
+ * عرض طلبات العميل فقط
+ * تصفية بناءً على معرف العميل واسم المستخدم والبريد الإلكتروني
+ * ⛔ لا نستخدم الهاتف للمقارنة
+ * @param {string} customerId - معرف العميل
+ */
+function viewCustomerOrders(customerId) {
+    const customer = state.customers?.find(c => (c._id || c.id) === customerId);
+
+    if (!customer) {
+        showToast('error', 'خطأ', 'لم يتم العثور على العميل');
+        return;
     }
 
-    /**
-     * عرض طلبات العميل فقط
-     * تصفية بناءً على معرف العميل واسم المستخدم والبريد الإلكتروني
-     * ⛔ لا نستخدم الهاتف للمقارنة
-     * @param {string} customerId - معرف العميل
-     */
-    function viewCustomerOrders(customerId) {
-        const customer = state.customers?.find(c => (c._id || c.id) === customerId);
-        
-        if (!customer) {
-            showToast('error', 'خطأ', 'لم يتم العثور على العميل');
-            return;
+    // تصفية الطلبات الخاصة بهذا العميل فقط
+    // استخدام دالة doesOrderBelongToCustomer للتأكد من أن الطلب ينتمي إلى هذا العميل تحديداً
+    const customerOrders = (state.orders || []).filter(order => {
+        const belongs = doesOrderBelongToCustomer(order, customer);
+        if (belongs) {
         }
-        
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('👤 عرض طلبات العميل');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('معرف العميل (User ID):', customerId);
-        console.log('اسم العميل (Name):', customer.name);
-        console.log('الحساب (Account/Username):', customer.username || customer.account || customer.user?.username || 'غير محدد');
-        console.log('');
-        console.log('✅ معايير المقارنة المستخدمة:');
-        console.log('  1️⃣ معرف العميل (User ID) - الأولوية الأولى');
-        console.log('  2️⃣ اسم المستخدم (Name) - الأولوية الثانية');
-        console.log('  3️⃣ الحساب (Account/Username) - الأولوية الثالثة');
-        console.log('');
-        console.log('❌ معايير غير مستخدمة:');
-        console.log('  ⛔ البريد الإلكتروني (Email)');
-        console.log('  ⛔ رقم الهاتف (Phone)');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        // تصفية الطلبات الخاصة بهذا العميل فقط
-        // استخدام دالة doesOrderBelongToCustomer للتأكد من أن الطلب ينتمي إلى هذا العميل تحديداً
-        const customerOrders = (state.orders || []).filter(order => {
-            const belongs = doesOrderBelongToCustomer(order, customer);
-            if (belongs) {
-                console.log(`✅ الطلب ${order.id} ينتمي إلى ${customer.name}`);
-            }
-            return belongs;
-        });
-        
-        
-        console.log(`📦 إجمالي طلبات العميل ${customer.name}: ${customerOrders.length} من ${state.orders?.length || 0} طلب`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        // التحقق من أن جميع الطلبات تنتمي لهذا العميل فقط
-        if (customerOrders.length === 0) {
-            showToast('info', 'معلومة', `لا توجد طلبات مسجلة للعميل ${customer.name}`);
-        }
-        
-        // إنشاء النافذة المنبثقة
-        const modal = document.createElement('div');
-        modal.className = 'order-details-modal';
-        modal.style.cssText = `
+        return belongs;
+    });
+
+
+
+    // التحقق من أن جميع الطلبات تنتمي لهذا العميل فقط
+    if (customerOrders.length === 0) {
+        showToast('info', 'معلومة', `لا توجد طلبات مسجلة للعميل ${customer.name}`);
+    }
+
+    // إنشاء النافذة المنبثقة
+    const modal = document.createElement('div');
+    modal.className = 'order-details-modal';
+    modal.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -11068,12 +11015,12 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         `;
-        
-        // حساب إجمالي المبيعات للعميل
-        const totalOrderValue = customerOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-        
-        const ordersHTML = customerOrders.length > 0
-            ? `
+
+    // حساب إجمالي المبيعات للعميل
+    const totalOrderValue = customerOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+    const ordersHTML = customerOrders.length > 0
+        ? `
                 <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                     <thead>
                         <tr style="background: var(--bg-light); color: var(--text-main);">
@@ -11104,9 +11051,9 @@
                     </tbody>
                 </table>
             `
-            : '<p style="text-align: center; color: var(--text-muted); padding: 40px;"><i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 20px;"></i>لا توجد طلبات لهذا العميل</p>';
-        
-        modal.innerHTML = `
+        : '<p style="text-align: center; color: var(--text-muted); padding: 40px;"><i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 20px;"></i>لا توجد طلبات لهذا العميل</p>';
+
+    modal.innerHTML = `
             <div class="order-details-content" style="
                 background: var(--bg-base);
                 color: var(--text-main);
@@ -11161,139 +11108,137 @@
                 ${ordersHTML}
             </div>
         `;
-        
-        document.body.appendChild(modal);
-        const rootStyles = getComputedStyle(document.documentElement);
-        const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
 
-        const applyModalPadding = () => {
-            if (window.innerWidth > 992) {
-                modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
-            } else {
-                modal.style.paddingRight = '20px';
-            }
-        };
+    document.body.appendChild(modal);
+    const rootStyles = getComputedStyle(document.documentElement);
+    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
 
-        applyModalPadding();
-        const handleResize = () => applyModalPadding();
-        window.addEventListener('resize', handleResize);
+    const applyModalPadding = () => {
+        if (window.innerWidth > 992) {
+            modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
+        } else {
+            modal.style.paddingRight = '20px';
+        }
+    };
 
-        const cleanupHandlers = () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('resize', handleResize);
-        };
-        const fadeOutAndRemove = () => {
-            modal.style.opacity = '0';
-            setTimeout(() => {
-                cleanupHandlers();
-                if (modal.parentNode) {
-                    modal.parentNode.removeChild(modal);
-                }
-            }, 300);
-        };
-        
+    applyModalPadding();
+    const handleResize = () => applyModalPadding();
+    window.addEventListener('resize', handleResize);
+
+    const cleanupHandlers = () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('resize', handleResize);
+    };
+    const fadeOutAndRemove = () => {
+        modal.style.opacity = '0';
         setTimeout(() => {
-            modal.style.opacity = '1';
-        }, 10);
-        
-        // إغلاق النافذة
-        const closeBtn = modal.querySelector('.close-btn');
-        closeBtn.addEventListener('click', fadeOutAndRemove);
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                fadeOutAndRemove();
+            cleanupHandlers();
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
             }
+        }, 300);
+    };
+
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
+
+    // إغلاق النافذة
+    const closeBtn = modal.querySelector('.close-btn');
+    closeBtn.addEventListener('click', fadeOutAndRemove);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            fadeOutAndRemove();
+        }
+    });
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            fadeOutAndRemove();
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    // إضافة معالجات للأزرار
+    modal.querySelectorAll('.view-order-details').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const orderId = e.currentTarget.dataset.orderId;
+            fadeOutAndRemove();
+            viewOrderDetails(orderId);
         });
-        
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                fadeOutAndRemove();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        
-        // إضافة معالجات للأزرار
-        modal.querySelectorAll('.view-order-details').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const orderId = e.currentTarget.dataset.orderId;
-                fadeOutAndRemove();
-                viewOrderDetails(orderId);
+    });
+
+    modal.querySelectorAll('.print-order').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const orderId = e.currentTarget.dataset.orderId;
+            printOrder(orderId);
+        });
+    });
+}
+
+// ========================================
+// ===== 12. تهيئة التطبيق =====
+// ========================================
+
+/**
+ * تهيئة لوحة التحكم عند تحميل الصفحة
+ * - إعداد الفلاتر
+ * - ربط الأحداث
+ * - جلب البيانات الأولية
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+
+    // إظهار شاشة التحميل
+    dashboardLoader.show();
+
+    try {
+        // الخطوة 1: تهيئة الواجهة الأساسية
+        dashboardLoader.updateStep(1, 'active');
+        dashboardLoader.setProgress(10);
+
+        initDescriptionInputs();
+        refreshDescriptionCounters();
+
+        // إعداد فلاتر الطلبات
+        setupOrderFilters();
+        setupModalCancels();
+
+        dashboardLoader.setProgress(25);
+
+        // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
+        const categorySelect = document.getElementById('productCategory');
+        if (categorySelect) {
+            categorySelect.addEventListener('change', (e) => {
+                const categoryId = e.target.value;
+                populateSubcategoryOptions(categoryId);
             });
-        });
-        
-        modal.querySelectorAll('.print-order').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const orderId = e.currentTarget.dataset.orderId;
-                printOrder(orderId);
+        }
+
+        // جلب البيانات الأولية من API
+        dashboardLoader.updateStep(2, 'active');
+        dashboardLoader.setProgress(40);
+
+        await fetchOrders();
+        await fetchCustomers();
+
+        dashboardLoader.setProgress(80);
+
+        // إعداد زر التحديث
+        const refreshBtn = document.getElementById('refreshOrdersBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', fetchOrders);
+        }
+
+        // إعداد حقل البحث عن العملاء
+        const customerSearchInput = document.getElementById('customerSearchInput');
+        if (customerSearchInput) {
+            customerSearchInput.addEventListener('input', (e) => {
+                if (!state.filters) state.filters = {};
+                state.filters.customerSearch = e.target.value;
+                renderCustomers();
             });
-        });
-    }
-
-    // ========================================
-    // ===== 12. تهيئة التطبيق =====
-    // ========================================
-
-    /**
-     * تهيئة لوحة التحكم عند تحميل الصفحة
-     * - إعداد الفلاتر
-     * - ربط الأحداث
-     * - جلب البيانات الأولية
-     */
-    document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🚀 Initializing dashboard...');
-        
-        // إظهار شاشة التحميل
-        dashboardLoader.show();
-        
-        try {
-            // الخطوة 1: تهيئة الواجهة الأساسية
-            dashboardLoader.updateStep(1, 'active');
-            dashboardLoader.setProgress(10);
-            
-            initDescriptionInputs();
-            refreshDescriptionCounters();
-
-            // إعداد فلاتر الطلبات
-            setupOrderFilters();
-            setupModalCancels();
-            
-            dashboardLoader.setProgress(25);
-
-            // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
-            const categorySelect = document.getElementById('productCategory');
-            if (categorySelect) {
-                categorySelect.addEventListener('change', (e) => {
-                    const categoryId = e.target.value;
-                    console.log('🔽 Selected category changed to:', categoryId);
-                    populateSubcategoryOptions(categoryId);
-                });
-            }
-
-            // جلب البيانات الأولية من API
-            dashboardLoader.updateStep(2, 'active');
-            dashboardLoader.setProgress(40);
-            
-            await fetchOrders();
-            await fetchCustomers();
-            
-            dashboardLoader.setProgress(80);
-
-            // إعداد زر التحديث
-            const refreshBtn = document.getElementById('refreshOrdersBtn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', fetchOrders);
-            }
-
-            // إعداد حقل البحث عن العملاء
-            const customerSearchInput = document.getElementById('customerSearchInput');
-            if (customerSearchInput) {
-                customerSearchInput.addEventListener('input', (e) => {
-                    if (!state.filters) state.filters = {};
-                    state.filters.customerSearch = e.target.value;
-                    renderCustomers();
-                });
-            }
+        }
 
         // إعداد فلاتر التحليلات ونطاق التاريخ
         const analyticsTimeFilter = document.getElementById('analyticsTimeFilter');
@@ -11436,12 +11381,11 @@
             });
         }
 
-        console.log('Dashboard initialized');
 
         // =========================================
         // دالة تشخيصية: مساعدة المسؤول على فهم سبب تعدد الطلبات
         // =========================================
-        window.debugCustomerOrders = function(customerIndex = 0) {
+        window.debugCustomerOrders = function (customerIndex = 0) {
             const customers = state.customers || [];
             if (customerIndex >= customers.length) {
                 console.error('❌ العميل غير موجود');
@@ -11449,73 +11393,55 @@
             }
 
             const customer = customers[customerIndex];
-            console.log('\n\n╔════════════════════════════════════════════════════════════════╗');
-            console.log('║          تشخيص طلبات العميل - DEBUG REPORT                  ║');
-            console.log('╚════════════════════════════════════════════════════════════════╝\n');
-            
-            console.log('👤 معلومات العميل:');
-            console.log('  • الاسم:', customer.name);
-            console.log('  • البريد:', customer.email);
-            console.log('  • الهاتف:', customer.phone);
-            console.log('  • _id:', customer._id);
-            console.log('  • id:', customer.id);
-            console.log('  • userId:', customer.userId);
-            console.log('');
+
 
             const orders = state.orders || [];
-            console.log(`📦 إجمالي الطلبات في النظام: ${orders.length}\n`);
 
             orders.forEach((order, idx) => {
                 const belongs = doesOrderBelongToCustomer(order, customer);
                 const status = belongs ? '✅' : '❌';
-                
-                console.log(`${status} الطلب #${idx + 1}:`);
-                console.log(`  • معرف الطلب: ${order.id}`);
-                console.log(`  • userIds: ${order.userIds?.join(', ') || 'غير محدد'}`);
-                console.log(`  • userId: ${order.userId || 'غير محدد'}`);
-                console.log(`  • userEmails: ${order.userEmails?.join(', ') || 'غير محدد'}`);
-                console.log(`  • userPhones: ${order.userPhones?.join(', ') || 'غير محدد'}`);
-                console.log('');
+
+
             });
         };
 
         // مثال على الاستخدام:
         // debugCustomerOrders(0)  // لتشخيص العميل الأول
         // debugCustomerOrders(1)  // لتشخيص العميل الثاني
-        
+
         // الخطوة 2: تحديث الخطوة الثانية
         dashboardLoader.updateStep(1, 'completed');
         dashboardLoader.updateStep(2, 'active');
         dashboardLoader.setProgress(60);
-        
-            // جلب البيانات
-            await fetchOrders();
-            await fetchCustomers();
-            
-            dashboardLoader.setProgress(85);
-            
-            // الخطوة 3: تحميل الرسوم البيانية
-            dashboardLoader.updateStep(2, 'completed');
-            dashboardLoader.updateStep(3, 'active');
-            
-            // تأكد من تحميل الرسوم البيانية
-            setTimeout(() => {
-                dashboardLoader.updateStep(3, 'completed');
-                dashboardLoader.setProgress(100);
-                
-                // إخفاء الـ Loader
-                setTimeout(() => {
-                    dashboardLoader.hide();
-                }, 500);
-            }, 800);
-            
-        } catch (error) {
-            console.error('❌ خطأ في تحميل Dashboard:', error);
+
+        // جلب البيانات
+        await fetchOrders();
+        await fetchCustomers();
+
+        dashboardLoader.setProgress(85);
+
+        // الخطوة 3: تحميل الرسوم البيانية
+        dashboardLoader.updateStep(2, 'completed');
+        dashboardLoader.updateStep(3, 'active');
+
+        // تأكد من تحميل الرسوم البيانية
+        setTimeout(() => {
+            dashboardLoader.updateStep(3, 'completed');
             dashboardLoader.setProgress(100);
+
+            // إخفاء الـ Loader
             setTimeout(() => {
                 dashboardLoader.hide();
-                showToast('error', 'خطأ', 'تعذر تحميل لوحة التحكم. حاول مرة أخرى.');
-            }, 1000);
-        }
-        
-    }); 
+            }, 500);
+        }, 800);
+
+    } catch (error) {
+        console.error('❌ خطأ في تحميل Dashboard:', error);
+        dashboardLoader.setProgress(100);
+        setTimeout(() => {
+            dashboardLoader.hide();
+            showToast('error', 'خطأ', 'تعذر تحميل لوحة التحكم. حاول مرة أخرى.');
+        }, 1000);
+    }
+
+}); 
