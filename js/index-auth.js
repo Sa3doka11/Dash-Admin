@@ -1,5 +1,5 @@
 const AUTH_CONFIG = {
-    apiBase: 'https://action-sports-api.vercel.app/api',
+    apiBase: 'https://api.actionsports4u.com/api',
     userKey: 'actionSportsAuthUser',
     redirectKey: 'redirectAfterLogin',
     refreshTokenKey: 'actionSportsRefreshToken',

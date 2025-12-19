@@ -122,7 +122,7 @@ const dashboardLoader = new DashboardLoader();
 // ===== 1. إعدادات API =====
 // ========================================
 
-const ADMIN_API_BASE_URL = 'https://action-sports-api.vercel.app/api';
+const ADMIN_API_BASE_URL = 'https://api.actionsports4u.com/api';
 const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
 const BANNER_API = `${ADMIN_API_BASE_URL}/banners`;
 const SHIPPING_ZONES_ENDPOINT = `${ADMIN_API_BASE_URL}/shipping-zones`;
