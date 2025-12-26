@@ -1643,7 +1643,6 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
                         <div class="subcategory-info">
                             <h3>${escapeHtml(subcategory.name)}</h3>
                             ${parentCategory ? `<p class="subcategory-parent"><i class="fas fa-tags"></i> ${escapeHtml(parentCategory.name)}</p>` : ''}
-                            <p class="subcategory-description">${escapeHtml(truncateText(description, DESCRIPTION_MAX_LENGTH))}</p>
                         </div>
                         <div class="subcategory-actions">
                             <button class="btn-danger btn-sm" data-action="delete-subcategory" data-entity-id="${subcategory.id}" data-category-id="${parentCategoryId}" data-entity-name="${escapeHtml(subcategory.name)}" title="حذف"><i class="fas fa-trash"></i></button>
@@ -2015,6 +2014,7 @@ const state = {
         orderStatus: 'all',
         orderDate: '',
         customerSearch: '',
+        customerOrdersFilter: 'all',
         customerSegment: 'all',
         auditSearch: '',
         auditAction: 'all',
@@ -2229,7 +2229,7 @@ function populateSubcategoryModal(categoryId, subcategoryId = null) {
     }
 
     const imageInput = form.querySelector('#subcategoryImage');
-    const targetImage = extras?.image ?? subcategory?.image ?? '';
+    const targetImage = resolveImageSource(extras?.image) || resolveImageSource(subcategory?.image) || '';
     if (imageInput) {
         imageInput.value = '';
         imageInput.dataset.originalImage = targetImage;
@@ -2314,9 +2314,19 @@ async function handleProductFormSubmit(event) {
             // بناء بيانات المنتج
             const payload = buildProductPayload(form);
 
-            // الحصول على ملفات الصور
-            const imageInput = form.querySelector('#productImage');
-            const imageFiles = imageInput?.files ? Array.from(imageInput.files) : [];
+            // Get new image files from form state (which stores actual File objects)
+            let newImageFiles = [];
+            if (form.__productImageState && form.__productImageState.newImages) {
+                newImageFiles = form.__productImageState.newImages;
+            }
+            
+            // Get existing images that were not removed
+            let existingImages = [];
+            try {
+                existingImages = JSON.parse(form.dataset.existingProductImages || '[]');
+            } catch (e) {
+                existingImages = [];
+            }
 
             try {
                 // طباعة البيانات للتشخيص
@@ -2324,7 +2334,7 @@ async function handleProductFormSubmit(event) {
                 showToast('info', 'جاري الحفظ', 'جاري حفظ المنتج، يرجى الانتظار...', 2000);
 
                 if (mode === 'edit' && id) {
-                    await updateProduct(id, payload, imageFiles);
+                    await updateProduct(id, payload, newImageFiles, existingImages);
 
                     if (discountNeedsUpdate) {
                         const numericDiscount = normalizedCurrentDiscount === '' ? null : Number(normalizedCurrentDiscount);
@@ -2334,7 +2344,7 @@ async function handleProductFormSubmit(event) {
                     form.dataset.originalPriceAfterDiscount = normalizedCurrentDiscount;
                     showToast('success', 'تم التحديث', 'تم تحديث المنتج بنجاح');
                 } else {
-                    await createProduct(payload, imageFiles);
+                    await createProduct(payload, newImageFiles);
                     showToast('success', 'تمت الإضافة', 'تمت إضافة المنتج بنجاح');
                     form.reset(); // إعادة تعيين النموذج بعد الإضافة
                     form.dataset.originalPriceAfterDiscount = '';
@@ -2447,6 +2457,27 @@ function resolveAssetUrl(path = '') {
         console.warn('Failed to resolve asset url:', path, error);
         return trimmed;
     }
+}
+
+function resolveImageSource(value) {
+    if (!value) return '';
+    if (typeof value === 'string') {
+        return resolveAssetUrl(value);
+    }
+
+    if (typeof value === 'object') {
+        const candidate = value.secure_url
+            || value.url
+            || value.src
+            || value.path
+            || value.href
+            || value.preview;
+        if (candidate) {
+            return resolveAssetUrl(candidate);
+        }
+    }
+
+    return '';
 }
 
 function extractCategoryImage(rawCategory = {}) {
@@ -2626,6 +2657,11 @@ function normalizeProduct(rawProduct = {}, index = 0) {
     }
 
     const description = rawProduct.description || rawProduct.summary || rawProduct.shortDescription || '';
+    const specs = rawProduct.specs
+        || rawProduct.details
+        || rawProduct.specifications
+        || rawProduct.features
+        || '';
     const image = extractProductImage(rawProduct);
     const sold = rawProduct.sold ?? rawProduct.sales ?? 0;
     const rating = rawProduct.rating?.average ?? rawProduct.ratingAverage ?? rawProduct.averageRating ?? rawProduct.rating ?? 0;
@@ -2654,6 +2690,7 @@ function normalizeProduct(rawProduct = {}, index = 0) {
         image,
         images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
         description,
+        specs,
         brand: rawProduct.brand?.name || rawProduct.brand || '',
         brandId,
         brandName,
@@ -2670,7 +2707,10 @@ function syncProductExtras(products = []) {
     state.productExtras = products.reduce((acc, product) => {
         acc[product.id] = {
             image: product.image,
-            description: product.description
+            description: product.description,
+            specs: product.specs,
+            images: Array.isArray(product.images) ? product.images : [],
+            brandName: product.brandName || product.brand || ''
         };
         return acc;
     }, {});
@@ -3686,7 +3726,10 @@ async function fetchProducts() {
                 return {
                     ...product,
                     image: extras?.image || product.image,
-                    description: extras?.description || product.description
+                    description: extras?.description || product.description,
+                    specs: extras?.specs || product.specs,
+                    images: Array.isArray(extras?.images) && extras.images.length ? extras.images : product.images,
+                    brandName: extras?.brandName || product.brandName || product.brand
                 };
             });
 
@@ -3869,7 +3912,7 @@ async function createProduct(payload, imageFiles = []) {
 }
 
 // دالة تحديث المنتج
-async function updateProduct(productId, payload, imageFiles = []) {
+async function updateProduct(productId, payload, imageFiles = [], existingImages = []) {
 
     if (!productId) {
         throw new Error('معرف المنتج غير صالح');
@@ -3884,11 +3927,22 @@ async function updateProduct(productId, payload, imageFiles = []) {
             }
         });
 
+        // Add new image files
         if (imageFiles && imageFiles.length > 0) {
             imageFiles.forEach((file, index) => {
                 if (file instanceof File) {
                     formData.append('images', file);
+                }
+            });
+        }
 
+        // Add existing images that should be kept
+        if (existingImages && existingImages.length > 0) {
+            // Send existing image URLs to backend
+            // The backend should handle keeping these images
+            existingImages.forEach((imageUrl, index) => {
+                if (imageUrl && typeof imageUrl === 'string') {
+                    formData.append(`existingImages[${index}]`, imageUrl);
                 }
             });
         }
@@ -3911,7 +3965,10 @@ async function updateProduct(productId, payload, imageFiles = []) {
         if (updatedProduct) {
             upsertProductExtras(productId, {
                 image: updatedProduct.images?.[0] || updatedProduct.image || '',
-                description: updatedProduct.description || ''
+                description: updatedProduct.description || '',
+                specs: updatedProduct.specs || updatedProduct.details || '',
+                images: Array.isArray(updatedProduct.images) ? updatedProduct.images : [],
+                brandName: updatedProduct.brand?.name || updatedProduct.brandName || updatedProduct.brand || ''
             });
         }
 
@@ -4023,14 +4080,37 @@ function viewProductDetails(productId) {
                         <button type="button" class="close-btn" aria-label="إغلاق">&times;</button>
                     </div>
                     <div class="product-details-body">
-                        ${product.image ? `
-                            <div class="product-details-image">
-                                <img src="${product.image}" alt="${product.name}">
-                            </div>
-                        ` : ''}
+                        ${(() => {
+                            const galleryImages = Array.isArray(product.images)
+                                ? product.images.map(resolveImageSource).filter(Boolean)
+                                : [];
+                            if (galleryImages.length) {
+                                return `
+                                <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
+                                    ${galleryImages.map((img, index) => `
+                                        <div class="product-details-image" style="flex:0 0 auto;">
+                                            <img src="${img}" alt="${product.name} - صورة ${index + 1}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                            }
+                            const fallbackImage = resolveImageSource(product.image);
+                            return fallbackImage ? `
+                                <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
+                                    <div class="product-details-image" style="flex:0 0 auto;">
+                                        <img src="${fallbackImage}" alt="${product.name}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                                    </div>
+                                </div>
+                            ` : '';
+                        })()}
                         <div class="product-details-info">
                             <h3 class="product-details-title">${product.name}</h3>
                             ${product.description ? `<p class="product-details-description">${product.description}</p>` : ''}
+                            ${product.specs ? `<div class="product-details-specs" style="background:rgba(0,0,0,0.04);padding:16px;border-radius:10px;">
+                                <strong style="display:block;margin-bottom:8px;color:var(--text-main);">المواصفات</strong>
+                                <p style="margin:0;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;">${product.specs}</p>
+                            </div>` : ''}
                             <div class="product-details-stats">
                                 ${priceCardMarkup}
                                 ${stockMarkup}
@@ -4071,6 +4151,35 @@ function viewProductDetails(productId) {
             setTimeout(() => modal.remove(), 300);
         }
     });
+}
+
+async function deleteProductImage(productId, publicId) {
+    if (!productId || !publicId) {
+        throw new Error('معرف المنتج أو معرف الصورة غير صالح');
+    }
+
+    try {
+        const response = handleUnauthorized(await authorizedFetch(`${ADMIN_API_BASE_URL}/products/delete-image/${encodeURIComponent(productId)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                public_id: publicId
+            })
+        }));
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            const message = errorBody?.message || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting product image:', error);
+        throw error;
+    }
 }
 
 async function deleteProduct(productId, { productName } = {}) {
@@ -4662,17 +4771,53 @@ function updateBrandImagePreview(image) {
     preview.innerHTML = `<img src="${image}" alt="Brand Preview">`;
 }
 
-function updateProductImagePreview(image) {
+function updateProductImagePreview(images = []) {
     const preview = document.getElementById('productImagePreview');
     if (!preview) return;
 
-    if (image) {
-        preview.innerHTML = `<img src="${image}" alt="صورة المنتج">`;
-        preview.classList.add('has-image');
-    } else {
+    // Ensure images is an array
+    const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
+    const resolvedImages = imageArray.map(resolveImageSource);
+    const hasImages = resolvedImages.some(Boolean);
+
+    if (!hasImages) {
         preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
         preview.classList.remove('has-image');
+        return;
     }
+
+    preview.classList.add('has-image');
+    preview.innerHTML = `
+        <div class="image-preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+            ${resolvedImages.map((img, idx) => {
+                if (!img) return '';
+                return `
+                <div class="image-preview-item" data-image-index="${idx}" style="position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 1; background: #f5f5f5;">
+                    <img src="${img}" alt="صورة المنتج ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <button type="button" class="image-remove-btn" data-image-index="${idx}" style="position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    // Attach remove button handlers
+    preview.querySelectorAll('.image-remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeProductImage(parseInt(btn.dataset.imageIndex));
+        });
+        // Hover effect
+        btn.addEventListener('mouseenter', () => {
+            btn.style.background = 'rgba(192, 57, 43, 1)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.background = 'rgba(231, 76, 60, 0.9)';
+        });
+    });
 }
 
 async function handleCategoryImageChange(event) {
@@ -4743,25 +4888,134 @@ async function handleProductImageChange(event) {
     const input = event.target;
     if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
 
-    const file = input.files?.[0] || null;
+    const newFiles = input.files ? Array.from(input.files) : [];
+    if (!newFiles.length) return;
 
-    if (!file) {
-        input.dataset.previewImage = '';
-        updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
-        return;
-    }
-
+    const form = input.closest('form');
+    if (!form) return;
 
     try {
-        const dataUrl = await readFileAsDataUrl(file);
-        input.dataset.previewImage = dataUrl;
-        updateProductImagePreview(dataUrl);
-    } catch (error) {
-        console.error('❌ Failed to preview product image:', error);
-        showToast('error', 'صورة المنتج', 'تعذر معاينة ملف الصورة المحدد');
+        // Initialize product image storage in form if needed
+        if (!form.__productImageState) {
+            form.__productImageState = {
+                newImages: [], // Store actual File objects here
+                newImageDataUrls: [] // Store data URLs for preview
+            };
+        }
+
+        // Get existing images
+        let existingImages = [];
+        let existingImagesJson = form.dataset.existingProductImages || '[]';
+        try {
+            existingImages = JSON.parse(existingImagesJson);
+        } catch (e) {
+            existingImages = [];
+        }
+
+        // Convert new files to data URLs and store File objects
+        for (const file of newFiles) {
+            try {
+                const dataUrl = await readFileAsDataUrl(file);
+                form.__productImageState.newImages.push(file);
+                form.__productImageState.newImageDataUrls.push(dataUrl);
+            } catch (error) {
+                console.error('Failed to read file:', error);
+                showToast('error', 'صورة المنتج', `تعذر معالجة الملف: ${file.name}`);
+            }
+        }
+
+        // Clear the file input to allow re-selection
         input.value = '';
-        updateProductImagePreview(input.dataset.originalImage || input.form?.dataset.productImageOriginal || '');
+
+        // Update preview with all images (existing + new)
+        const allImages = [
+            ...existingImages,
+            ...form.__productImageState.newImageDataUrls
+        ];
+        updateProductImagePreview(allImages);
+
+    } catch (error) {
+        console.error('Error processing product images:', error);
+        showToast('error', 'صورة المنتج', 'تعذر معالجة الصور المحددة');
+        input.value = '';
     }
+}
+
+async function removeProductImage(imageIndex) {
+    const form = document.getElementById('addProductModal')?.querySelector('form');
+    if (!form) return;
+
+    // Initialize state if needed
+    if (!form.__productImageState) {
+        form.__productImageState = {
+            newImages: [],
+            newImageDataUrls: []
+        };
+    }
+
+    let existingImages = [];
+    let removedExistingImages = [];
+
+    try {
+        existingImages = JSON.parse(form.dataset.existingProductImages || '[]');
+        removedExistingImages = JSON.parse(form.dataset.removedProductImages || '[]');
+    } catch (e) {
+        existingImages = [];
+        removedExistingImages = [];
+    }
+
+    const totalExistingCount = existingImages.length;
+
+    if (imageIndex < totalExistingCount) {
+        // Removing an existing image from database
+        const removedImage = existingImages[imageIndex];
+        
+        // Get product ID for API call
+        const productId = form.querySelector('[name="id"]')?.value;
+        
+        if (productId) {
+            try {
+                // Extract public_id and make immediate API call
+                let publicId = '';
+                if (typeof removedImage === 'string') {
+                    const matches = removedImage.match(/\/([^\/]+)\.[^.]+$/);
+                    publicId = matches ? `action-sports/Product/${matches[1]}` : removedImage;
+                } else if (removedImage.public_id) {
+                    publicId = removedImage.public_id;
+                } else if (removedImage.url) {
+                    const matches = removedImage.url.match(/\/([^\/]+)\.[^.]+$/);
+                    publicId = matches ? `action-sports/Product/${matches[1]}` : removedImage.url;
+                }
+
+                if (publicId) {
+                    await deleteProductImage(productId, publicId);
+                    showToast('success', 'حذف الصورة', 'تم حذف الصورة بنجاح');
+                }
+            } catch (error) {
+                showToast('error', 'حذف الصورة', error.message || 'فشل حذف الصورة');
+                return; // Don't remove from UI if API call fails
+            }
+        }
+        
+        removedExistingImages.push(removedImage);
+        existingImages.splice(imageIndex, 1);
+        form.dataset.removedProductImages = JSON.stringify(removedExistingImages);
+        form.dataset.existingProductImages = JSON.stringify(existingImages);
+    } else {
+        // Removing a newly selected image
+        const newImageIndex = imageIndex - totalExistingCount;
+        if (newImageIndex >= 0 && newImageIndex < form.__productImageState.newImages.length) {
+            form.__productImageState.newImages.splice(newImageIndex, 1);
+            form.__productImageState.newImageDataUrls.splice(newImageIndex, 1);
+        }
+    }
+
+    // Update preview
+    const allImages = [
+        ...existingImages,
+        ...form.__productImageState.newImageDataUrls
+    ];
+    updateProductImagePreview(allImages);
 }
 
 // ===== Form Handlers =====
@@ -5180,7 +5434,8 @@ async function populateProductModal(productId = null) {
 
     if (productId) {
         // وضع التعديل: تعبئة البيانات الحالية للمنتج
-        const product = state.products.find(p => p.id === productId);
+        const baseProduct = state.products.find(p => p.id === productId);
+        const product = mergeProductWithExtras(baseProduct);
         if (!product) {
             console.error('المنتج غير موجود:', productId);
             return;
@@ -5197,6 +5452,11 @@ async function populateProductModal(productId = null) {
         setFieldValue(form, 'description', truncateText(product.description, getDescriptionMaxLength(descriptionField)));
         if (descriptionField) {
             updateDescriptionCounter(descriptionField);
+        }
+        const specsField = form.querySelector('[name="specs"]');
+        setFieldValue(form, 'specs', truncateText(product.specs || '', getDescriptionMaxLength(specsField)));
+        if (specsField) {
+            updateDescriptionCounter(specsField);
         }
         setFieldValue(form, 'price', product.price);
         setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
@@ -5235,16 +5495,40 @@ async function populateProductModal(productId = null) {
         }
 
         // تحديث معاينة الصورة إذا وجدت
-        const productImageSource = product.images?.[0] || '';
-        updateProductImagePreview(productImageSource);
-        form.dataset.productImageOriginal = productImageSource;
+        const productImagesRaw = product.images && Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []);
+        form.dataset.existingProductImages = JSON.stringify(productImagesRaw);
+        form.dataset.removedProductImages = JSON.stringify([]);
+        form.__productImageState = {
+            newImages: [],
+            newImageDataUrls: []
+        };
+        updateProductImagePreview(productImagesRaw);
+        const firstImage = productImagesRaw.find(img => resolveImageSource(img));
+        form.dataset.productImageOriginal = firstImage ? resolveImageSource(firstImage) : '';
     } else {
         // وضع الإضافة: إعداد النموذج فارغاً
         title.textContent = 'إضافة منتج جديد';
         delete form.dataset.entityId;
         setFieldValue(form, 'id', '');
+        form.dataset.existingProductImages = JSON.stringify([]);
+        form.dataset.removedProductImages = JSON.stringify([]);
         form.dataset.productImageOriginal = '';
-        updateProductImagePreview('');
+        form.__productImageState = {
+            newImages: [],
+            newImageDataUrls: []
+        };
+        updateProductImagePreview([]);
+
+        const descriptionField = form.querySelector('[name="description"]');
+        if (descriptionField) {
+            setFieldValue(form, 'description', '');
+            updateDescriptionCounter(descriptionField);
+        }
+        const specsField = form.querySelector('[name="specs"]');
+        if (specsField) {
+            setFieldValue(form, 'specs', '');
+            updateDescriptionCounter(specsField);
+        }
 
         // تعطيل حقل الفئة الفرعية حتى يتم اختيار فئة رئيسية
         const subcategorySelect = document.getElementById('productSubcategory');
@@ -6078,17 +6362,7 @@ function exportOrders() {
 }
 
 function exportCustomers() {
-    if (Array.isArray(state.customers) && state.customers.length > 0 && Array.isArray(state.orders)) {
-        updateCustomersOrdersInfo();
-    }
-
-    let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
-
-    if ((!customers || customers.length === 0) && state.orders?.length) {
-        createCustomersFromOrders();
-        updateCustomersOrdersInfo();
-        customers = Array.isArray(state.customers) ? state.customers.slice() : [];
-    }
+    const customers = getCustomersForDisplay();
 
     if (!customers.length) {
         showToast('info', 'تصدير العملاء', 'لا توجد بيانات عملاء متاحة للتقرير حالياً.');
@@ -6931,6 +7205,36 @@ function renderBanners() {
 /**
  * عرض قائمة العملاء
  */
+function getCustomersForDisplay() {
+    const ordersFilter = state.filters?.customerOrdersFilter || 'all';
+    const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
+
+    let customers = Array.isArray(state.customers) ? [...state.customers] : [];
+
+    if (ordersFilter === 'withOrders') {
+        customers = customers.filter(customer => (Number(customer.ordersCount) || 0) > 0);
+    }
+
+    if (searchTerm) {
+        customers = customers.filter(customer => {
+            const name = (customer.name || '').toLowerCase();
+            const phone = (customer.phone || '').toLowerCase();
+            return name.includes(searchTerm) || phone.includes(searchTerm);
+        });
+    }
+
+    customers.sort((a, b) => {
+        const timeA = Number(a.lastOrderTimestamp) || 0;
+        const timeB = Number(b.lastOrderTimestamp) || 0;
+        return timeB - timeA;
+    });
+
+    return customers;
+}
+
+/**
+ * عرض قائمة العملاء
+ */
 function renderCustomers() {
     const body = document.getElementById('customersTableBody');
     if (!body) {
@@ -6964,28 +7268,21 @@ function renderCustomers() {
         return;
     }
 
-    let customers = (state.customers || []).filter(customer => (Number(customer.ordersCount) || 0) > 0);
+    const ordersFilter = state.filters?.customerOrdersFilter || 'all';
+    const searchTerm = state.filters?.customerSearch || '';
 
-    // تطبيق البحث بالاسم أو رقم الهاتف
-    const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
-    if (searchTerm) {
-        customers = customers.filter(customer => {
-            const name = (customer.name || '').toLowerCase();
-            const phone = (customer.phone || '').toLowerCase();
-            return name.includes(searchTerm) || phone.includes(searchTerm);
-        });
-    }
-
-    customers.sort((a, b) => {
-        const timeA = Number(a.lastOrderTimestamp) || 0;
-        const timeB = Number(b.lastOrderTimestamp) || 0;
-        return timeB - timeA;
-    });
+    const customers = getCustomersForDisplay();
 
     if (!customers.length) {
-        const message = searchTerm
-            ? `لا توجد نتائج للبحث عن "${state.filters.customerSearch}"`
-            : 'لا يوجد عملاء حالياً';
+        const normalizedSearch = searchTerm.trim();
+        let message;
+        if (normalizedSearch) {
+            message = `لا توجد نتائج للبحث عن "${state.filters.customerSearch}"`;
+        } else if (ordersFilter === 'withOrders') {
+            message = 'لا يوجد عملاء لديهم طلبات حالياً';
+        } else {
+            message = 'لا يوجد عملاء حالياً';
+        }
 
         body.innerHTML = `
                 <tr>
@@ -7448,6 +7745,11 @@ function hydrateFilters() {
         });
     }
 
+    const customerOrdersFilter = document.getElementById('customerOrdersFilter');
+    if (customerOrdersFilter) {
+        customerOrdersFilter.value = state.filters.customerOrdersFilter || 'all';
+    }
+
     const orderStatusFilter = document.getElementById('orderStatusFilter');
     if (orderStatusFilter) {
         const statusOptions = [`<option value="all">كل الحالات</option>`, ...getOrderStatusOptions().map(option => `
@@ -7503,6 +7805,36 @@ function setupProductFilters() {
             state.filters.productStatus = event.target.value;
             renderProducts();
         });
+    }
+}
+
+function setupCustomerFilters() {
+    const filtersBar = document.querySelector('#customers .filters-bar');
+    if (!filtersBar) return;
+
+    let ordersFilterSelect = document.getElementById('customerOrdersFilter');
+    if (!ordersFilterSelect) {
+        ordersFilterSelect = document.createElement('select');
+        ordersFilterSelect.id = 'customerOrdersFilter';
+        ordersFilterSelect.className = 'filter-select';
+        ordersFilterSelect.innerHTML = `
+                <option value="all">كل العملاء </option>
+                <option value="withOrders">عملاء لديهم طلبات فقط</option>
+            `;
+        filtersBar.appendChild(ordersFilterSelect);
+    }
+
+    ordersFilterSelect.value = state.filters.customerOrdersFilter || 'all';
+
+    if (!ordersFilterSelect.dataset.bound) {
+        ordersFilterSelect.addEventListener('change', (event) => {
+            state.filters.customerOrdersFilter = event.target.value;
+            renderCustomers();
+            if (state.currentSection === 'overview') {
+                updateOverviewStats();
+            }
+        });
+        ordersFilterSelect.dataset.bound = 'true';
     }
 }
 
@@ -10555,6 +10887,7 @@ function createCustomersFromOrders() {
             role: 'user',
             ordersCount: 0,
             lastOrder: '-',
+            lastOrderTimestamp: null,
             isFromOrders: true // علامة للتمييز
         };
 
@@ -10735,6 +11068,7 @@ async function fetchCustomers(silent = false) {
 
             // إيجاد آخر طلب
             let lastOrder = '-';
+            let lastOrderTimestamp = null;
             if (customerOrders.length > 0) {
                 // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
                 const sortedOrders = customerOrders.sort((a, b) => {
@@ -10747,6 +11081,7 @@ async function fetchCustomers(silent = false) {
                 const latestOrder = sortedOrders[0];
                 const orderDate = getOrderDate(latestOrder);
                 if (orderDate) {
+                    lastOrderTimestamp = orderDate.getTime();
                     lastOrder = orderDate.toLocaleDateString('ar-EG');
                 }
             }
@@ -10757,7 +11092,8 @@ async function fetchCustomers(silent = false) {
             return {
                 ...customer,
                 ordersCount,
-                lastOrder
+                lastOrder,
+                lastOrderTimestamp
             };
         });
 
@@ -10774,7 +11110,8 @@ async function fetchCustomers(silent = false) {
         state.customersError = null;
 
         if (!silent) {
-            showToast('success', 'تحميل العملاء', `تم تحميل ${state.customers.length} عميل بنجاح`);
+            const filteredCustomers = getCustomersForDisplay();
+            showToast('success', 'تحميل العملاء', `تم تحميل ${filteredCustomers.length} عميل بنجاح`);
         }
     } catch (error) {
         console.error('❌ Failed to fetch customers:', error);
@@ -11285,6 +11622,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderCustomers();
             });
         }
+
+        setupCustomerFilters();
 
         // إعداد فلاتر التحليلات ونطاق التاريخ
         const analyticsTimeFilter = document.getElementById('analyticsTimeFilter');
