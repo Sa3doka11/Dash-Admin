@@ -2250,14 +2250,6 @@ function populateSubcategoryModal(categoryId, subcategoryId = null) {
         submitBtn.textContent = subcategory ? 'حفظ التعديلات' : 'حفظ الفئة الفرعية';
     }
 
-
-
-
-
-// test
-
-
-
     if (subcategory) {
         const snapshot = {
             name: resolvedName,
