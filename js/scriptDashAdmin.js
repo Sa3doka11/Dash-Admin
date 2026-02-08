@@ -15,6 +15,93 @@
 // ===== 0. دوال التحميل (Loader) =====
 // ========================================
 
+/**
+ * Safely escape HTML entities (fallback for when DOMPurify is unavailable)
+ * @param {string} text - Text to escape
+ * @returns {string} - Escaped text safe for HTML context
+ */
+function escapeHtmlEntities(text) {
+    if (typeof text !== 'string') return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;',
+    };
+    return text.replace(/[&<>"'\/]/g, (char) => map[char]);
+}
+
+/**
+ * Safely set innerHTML with DOMPurify sanitization
+ * ⚠️ CRITICAL: ADD_ATTR preserves data-* attributes for interactivity
+ */
+function safeSetInnerHTML(element, html) {
+    if (!element) return;
+
+    if (typeof DOMPurify !== 'undefined') {
+        element.innerHTML = DOMPurify.sanitize(html, {
+            // Allowed HTML tags (structural + UI elements)
+            ALLOWED_TAGS: [
+                'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'img', 'a', 'button', 'i', 'strong', 'em', 'br', 'hr',
+                'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+                'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+                'time', 'article', 'section', 'header', 'footer', 'nav', 'aside',
+                'label', 'input', 'select', 'option', 'textarea', 'form',
+                'small', 'figure', 'figcaption', 'canvas', 'svg', 'path',
+                'use', 'symbol', 'defs', 'g', 'circle', 'rect', 'line',
+            ],
+            // Standard allowed attributes
+            ALLOWED_ATTR: [
+                'class', 'id', 'src', 'alt', 'href', 'title', 'style',
+                'type', 'value', 'placeholder', 'name', 'for',
+                'disabled', 'checked', 'readonly', 'selected', 'required',
+                'min', 'max', 'step', 'rows', 'cols', 'maxlength',
+                'aria-*', 'role', 'datetime', 'tabindex',
+                'width', 'height', 'viewBox', 'fill', 'stroke', 'd',
+                'xmlns', 'xlink:href',
+            ],
+            // ⚠️ CRITICAL: Custom data-* attributes used by dashboard
+            ADD_ATTR: [
+                'target',
+                // Entity IDs
+                'data-id', 'data-order-id', 'data-product-id', 'data-category-id',
+                'data-subcategory-id', 'data-brand-id', 'data-banner-id',
+                'data-customer-id', 'data-message-id', 'data-payment-id',
+                // Modal controls
+                'data-open-modal', 'data-modal-mode', 'data-entity', 'data-close-modal',
+                'data-modal-title', 'data-modal-edit-title',
+                // Action triggers
+                'data-action', 'data-toggle', 'data-target',
+                'data-bs-toggle', 'data-bs-target',
+                // Image handling
+                'data-image-index', 'data-original-image', 'data-preview-image',
+                // Misc dashboard attributes
+                'data-tab', 'data-section', 'data-counter', 'data-zone-id'
+            ],
+            // Forbidden XSS vectors
+            FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'onfocus', 'onblur']
+        });
+    } else {
+        // Defensive fallback: safely escape HTML
+        console.warn('⚠️ DOMPurify not loaded - using HTML escaping fallback');
+        element.textContent = html;
+    }
+}
+
+/**
+ * Global reusable function for safe HTML rendering
+ * Sanitizes HTML through DOMPurify to prevent XSS attacks
+ * @param {HTMLElement} element - Target DOM element
+ * @param {string} html - HTML content to render
+ */
+function safeHTML(element, html) {
+    safeSetInnerHTML(element, html);
+}
+
+
 class DashboardLoader {
     constructor() {
         this.loaderScreen = document.getElementById('loadingScreen');
@@ -152,6 +239,31 @@ const PAYMENT_ID_BY_STATUS_FIELD = Object.fromEntries(
 const DESCRIPTION_MAX_LENGTH = 700;
 
 let cachedAdminId = null;
+
+// ========================================
+// ===== 1.b. REQUEST DEDUPLICATION =====
+// ========================================
+
+/**
+ * Prevents duplicate mutation calls (delete, update) from firing
+ * Useful when old zombie listeners accidentally fire alongside new ones
+ * or when users rapidly click action buttons
+ */
+const pendingMutations = new Map();
+
+async function debouncedMutation(key, mutationFn) {
+    if (pendingMutations.has(key)) {
+        console.warn(`⚠️ Duplicate mutation blocked: ${key}`);
+        return pendingMutations.get(key);
+    }
+
+    const promise = mutationFn().finally(() => {
+        pendingMutations.delete(key);
+    });
+
+    pendingMutations.set(key, promise);
+    return promise;
+}
 
 // ========================================
 // ===== 1.a. دوال مساعدة للعملاء والعناوين =====
@@ -1261,17 +1373,17 @@ function renderMessagesList(filterValue = '') {
     state.filters.messagesSearch = filter;
 
     if (state.messagesLoading) {
-        list.innerHTML = `
+        safeHTML(list, `
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>جاري تحميل الرسائل...</p>
                     </div>
-                `;
+                `);
         return;
     }
 
     if (state.messagesError) {
-        list.innerHTML = `
+        safeHTML(list, `
                     <div class="empty-state">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>تعذر تحميل الرسائل</h3>
@@ -1280,7 +1392,7 @@ function renderMessagesList(filterValue = '') {
                             <i class="fas fa-sync-alt"></i> إعادة المحاولة
                         </button>
                     </div>
-                `;
+                `);
         return;
     }
 
@@ -1297,11 +1409,11 @@ function renderMessagesList(filterValue = '') {
         ].some(field => String(field || '').toLowerCase().includes(filter.toLowerCase())));
 
     if (!filteredMessages.length) {
-        list.innerHTML = '<p class="empty-state">لا توجد رسائل مطابقة.</p>';
+        safeHTML(list, '<p class="empty-state">لا توجد رسائل مطابقة.</p>');
         return;
     }
 
-    list.innerHTML = filteredMessages.map(msg => createMessageItemMarkup(msg)).join('');
+    safeHTML(list, filteredMessages.map(msg => createMessageItemMarkup(msg)).join(''));
 }
 
 function createMessageItemMarkup(message) {
@@ -1521,7 +1633,7 @@ function renderBrands() {
 
     emptyState.style.display = 'none';
 
-    list.innerHTML = filteredBrands.map(brand => {
+    safeHTML(list, filteredBrands.map(brand => {
         const brandId = brand._id || brand.id;
         const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || 'img/placeholder.png';
         const description = brand.description || '';
@@ -1545,7 +1657,7 @@ function renderBrands() {
                     </div>
                 </div>
                 `;
-    }).join('');
+    }).join(''));
 
     // ربط أحداث الأزرار
     list.querySelectorAll('.edit-brand').forEach(btn => {
@@ -1636,7 +1748,7 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
         return;
     }
 
-    list.innerHTML = filteredSubcategories.map(subcategory => {
+    safeHTML(list, filteredSubcategories.map(subcategory => {
         const parentCategoryId = subcategory.categoryId || selectedCategoryId;
         const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
         const image = subcategory.image || extras.image;
@@ -1658,7 +1770,7 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
                         </div>
                     </div>
                 `;
-    }).join('');
+    }).join(''));
 }
 
 // ========================================
@@ -1749,18 +1861,18 @@ let refreshSubscribers = [];
 
 function authorizedFetch(url, options = {}) {
     const baseOptions = { ...options, credentials: 'include' };
-    
+
     return fetch(url, baseOptions)
         .then(async (response) => {
             // If response is 401, try to refresh the token
             if (response.status === 401 && window.adminAuth) {
                 if (!isRefreshing) {
                     isRefreshing = true;
-                    
+
                     try {
                         // Attempt to refresh the token
                         await window.adminAuth.refreshToken();
-                        
+
                         // Retry the original request with new token
                         return fetch(url, baseOptions);
                     } catch (refreshError) {
@@ -1785,7 +1897,7 @@ function authorizedFetch(url, options = {}) {
                     });
                 }
             }
-            
+
             return response;
         })
         .catch(error => {
@@ -2083,7 +2195,42 @@ const state = {
     shippingZones: [],
     shippingZonesLoading: false,
     shippingZonesError: null,
-    selectedShippingZoneId: ''
+    selectedShippingZoneId: '',
+    // ===== LAZY LOADING FLAGS =====
+    // Tracks which sections have been loaded to prevent duplicate loading
+    sectionLoaded: {
+        overview: false,
+        products: false,
+        categories: false,
+        subcategories: false,
+        brands: false,
+        orders: false,
+        customers: false,
+        cms: false,
+        payments: false,
+        analytics: false,
+        settings: false,
+        users: false,
+        collections: false,
+        promotions: false
+    },
+    // Tracks if section data is currently being loaded
+    sectionLoading: {
+        overview: false,
+        products: false,
+        categories: false,
+        subcategories: false,
+        brands: false,
+        orders: false,
+        customers: false,
+        cms: false,
+        payments: false,
+        analytics: false,
+        settings: false,
+        users: false,
+        collections: false,
+        promotions: false
+    }
 };
 
 // ========================================
@@ -2327,7 +2474,7 @@ async function handleProductFormSubmit(event) {
             if (form.__productImageState && form.__productImageState.newImages) {
                 newImageFiles = form.__productImageState.newImages;
             }
-            
+
             // Get existing images that were not removed
             let existingImages = [];
             try {
@@ -4090,11 +4237,11 @@ function viewProductDetails(productId) {
                     </div>
                     <div class="product-details-body">
                         ${(() => {
-                            const galleryImages = Array.isArray(product.images)
-                                ? product.images.map(resolveImageSource).filter(Boolean)
-                                : [];
-                            if (galleryImages.length) {
-                                return `
+            const galleryImages = Array.isArray(product.images)
+                ? product.images.map(resolveImageSource).filter(Boolean)
+                : [];
+            if (galleryImages.length) {
+                return `
                                 <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
                                     ${galleryImages.map((img, index) => `
                                         <div class="product-details-image" style="flex:0 0 auto;">
@@ -4103,16 +4250,16 @@ function viewProductDetails(productId) {
                                     `).join('')}
                                 </div>
                             `;
-                            }
-                            const fallbackImage = resolveImageSource(product.image);
-                            return fallbackImage ? `
+            }
+            const fallbackImage = resolveImageSource(product.image);
+            return fallbackImage ? `
                                 <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
                                     <div class="product-details-image" style="flex:0 0 auto;">
                                         <img src="${fallbackImage}" alt="${product.name}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
                                     </div>
                                 </div>
                             ` : '';
-                        })()}
+        })()}
                         <div class="product-details-info">
                             <h3 class="product-details-title">${product.name}</h3>
                             ${product.description ? `<p class="product-details-description">${product.description}</p>` : ''}
@@ -4199,27 +4346,25 @@ async function deleteProduct(productId, { productName } = {}) {
         ? `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`
         : 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.';
 
-    if (!confirm(confirmationMessage)) {
-        return;
-    }
-
-    try {
-        const response = handleUnauthorized(await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
-            method: 'DELETE'
-        }));
+    confirmPopup('تأكيد حذف المنتج', confirmationMessage, async () => {
+        try {
+            const response = handleUnauthorized(await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
+                method: 'DELETE'
+            }));
 
 
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({}));
-            const message = errorBody?.message || `HTTP ${response.status}`;
-            throw new Error(message);
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({}));
+                const message = errorBody?.message || `HTTP ${response.status}`;
+                throw new Error(message);
+            }
+
+            await fetchProducts();
+            showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
+        } catch (error) {
+            showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
         }
-
-        await fetchProducts();
-        showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
-    } catch (error) {
-        showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
-    }
+    }, null, 'حذف', 'إلغاء');
 }
 
 async function createCategory(payload, extras = {}, imageFile = null) {
@@ -4799,8 +4944,8 @@ function updateProductImagePreview(images = []) {
     preview.innerHTML = `
         <div class="image-preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
             ${resolvedImages.map((img, idx) => {
-                if (!img) return '';
-                return `
+        if (!img) return '';
+        return `
                 <div class="image-preview-item" data-image-index="${idx}" style="position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 1; background: #f5f5f5;">
                     <img src="${img}" alt="صورة المنتج ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
                     <button type="button" class="image-remove-btn" data-image-index="${idx}" style="position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s;">
@@ -4808,7 +4953,7 @@ function updateProductImagePreview(images = []) {
                     </button>
                 </div>
                 `;
-            }).join('')}
+    }).join('')}
         </div>
     `;
 
@@ -4978,10 +5123,10 @@ async function removeProductImage(imageIndex) {
     if (imageIndex < totalExistingCount) {
         // Removing an existing image from database
         const removedImage = existingImages[imageIndex];
-        
+
         // Get product ID for API call
         const productId = form.querySelector('[name="id"]')?.value;
-        
+
         if (productId) {
             try {
                 // Extract public_id and make immediate API call
@@ -5005,7 +5150,7 @@ async function removeProductImage(imageIndex) {
                 return; // Don't remove from UI if API call fails
             }
         }
-        
+
         removedExistingImages.push(removedImage);
         existingImages.splice(imageIndex, 1);
         form.dataset.removedProductImages = JSON.stringify(removedExistingImages);
@@ -5253,17 +5398,17 @@ function handleEditBrand(brandId) {
 }
 
 async function handleDeleteBrand(brandId) {
-    if (!confirm('هل أنت متأكد من حذف هذه العلامة التجارية؟')) return;
-
-    try {
-        await deleteBrand(brandId);
-        showToast('success', 'حذف العلامة التجارية', 'تم حذف العلامة التجارية بنجاح');
-        await fetchBrands();
-        renderBrands();
-    } catch (error) {
-        console.error('❌ Delete brand error:', error);
-        showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حذف العلامة التجارية');
-    }
+    confirmPopup('تأكيد حذف العلامة التجارية', 'هل أنت متأكد من حذف هذه العلامة التجارية؟', async () => {
+        try {
+            await deleteBrand(brandId);
+            showToast('success', 'حذف العلامة التجارية', 'تم حذف العلامة التجارية بنجاح');
+            await fetchBrands();
+            renderBrands();
+        } catch (error) {
+            console.error('❌ Delete brand error:', error);
+            showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حذف العلامة التجارية');
+        }
+    }, null, 'حذف', 'إلغاء');
 }
 
 async function handleSubcategoryFormSubmit(event) {
@@ -6848,7 +6993,7 @@ function renderOverview() {
         })
         .slice(0, 5);
 
-    body.innerHTML = sortedTodaysOrders.map((order, index) => {
+    safeHTML(body, sortedTodaysOrders.map((order, index) => {
         const orderDateObj = getOrderDate(order);
         const displayDate = orderDateObj
             ? orderDateObj.toLocaleString('ar-EG', {
@@ -6876,7 +7021,7 @@ function renderOverview() {
                         <button class="action-btn print-order" data-order-id="${order.id}" title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
                     </td>
                 </tr>`;
-    }).join('');
+    }).join(''));
 }
 
 function renderProducts() {
@@ -6908,13 +7053,13 @@ function renderProducts() {
     const source = getProductsSource();
 
     if (!source.length) {
-        grid.innerHTML = `
+        safeHTML(grid, `
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <h3>لا توجد منتجات حالياً</h3>
                     <p>استخدم زر "إضافة منتج جديد" لإنشاء أول منتج.</p>
                 </div>
-            `;
+            `);
         return;
     }
 
@@ -6925,15 +7070,15 @@ function renderProducts() {
 
     const filtered = applyFilters(source, filterFns);
     if (!filtered.length) {
-        grid.innerHTML = `<div class="empty-state">
+        safeHTML(grid, `<div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <h3>لا توجد منتجات مطابقة</h3>
                 <p>حاول تعديل البحث أو الفلاتر</p>
-            </div>`;
+            </div>`);
         return;
     }
 
-    grid.innerHTML = filtered.map(product => `
+    safeHTML(grid, filtered.map(product => `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-thumb">
                     <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
@@ -6951,7 +7096,7 @@ function renderProducts() {
                     <button class="btn-danger" title="حذف المنتج" data-action="delete-product" data-entity-id="${product.id}"><i class="fas fa-trash"></i> حذف</button>
                 </div>
             </div>
-        `).join('');
+        `).join(''));
 }
 
 function renderCategories() {
@@ -6996,7 +7141,7 @@ function renderCategories() {
         return;
     }
 
-    list.innerHTML = filteredCategories.map(category => {
+    safeHTML(list, filteredCategories.map(category => {
         const loadedSubcategories = getSubcategories(category.id);
         const subcategoriesCount = loadedSubcategories.length
             ? loadedSubcategories.length
@@ -7023,7 +7168,7 @@ function renderCategories() {
                     </div>
                 </div>
             `;
-    }).join('');
+    }).join(''));
 }
 
 function renderCollections() {
@@ -7159,24 +7304,24 @@ function renderBanners() {
     if (!grid) return;
 
     if (state.bannersLoading) {
-        grid.innerHTML = `
+        safeHTML(grid, `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل البانرات...</p>
                 </div>
-            `;
+            `);
         return;
     }
 
     if (state.bannersError) {
-        grid.innerHTML = `
+        safeHTML(grid, `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>حدث خطأ أثناء تحميل البانرات</h3>
                     <p>${escapeHtml(state.bannersError)}</p>
                     <button class="btn-primary" data-action="refresh-banners">إعادة المحاولة</button>
                 </div>
-            `;
+            `);
         return;
     }
 
@@ -7193,7 +7338,7 @@ function renderBanners() {
         return;
     }
 
-    grid.innerHTML = banners.map(banner => {
+    safeHTML(grid, banners.map(banner => {
         const bannerId = banner._id || banner.id;
         const imageUrl = banner.image?.secure_url || banner.image?.url || banner.image || 'https://via.placeholder.com/1200x400?text=Banner';
         const description = banner.description ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH)) : '';
@@ -7213,7 +7358,7 @@ function renderBanners() {
                     </div>
                 </div>
             `;
-    }).join('');
+    }).join(''));
 }
 
 
@@ -7251,6 +7396,17 @@ function getCustomersForDisplay() {
 /**
  * عرض قائمة العملاء
  */
+/**
+ * ========================================
+ * renderCustomers() - DOM API Refactored
+ * ========================================
+ * Renders customers table using pure DOM API (DOMPurify-safe)
+ * - No innerHTML usage
+ * - Uses textContent for user data
+ * - Event delegation for action buttons
+ * - DocumentFragment for performance optimization
+ * - Preserves data-id attributes for interactivity
+ */
 function renderCustomers() {
     const body = document.getElementById('customersTableBody');
     if (!body) {
@@ -7258,37 +7414,68 @@ function renderCustomers() {
         return;
     }
 
+    // Clear previous rows
+    body.innerHTML = '';
 
+    // ===== STATE: LOADING =====
     if (state.customersLoading) {
-        body.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #e74c3c;"></i>
-                        <p style="margin-top: 10px;">جاري تحميل العملاء...</p>
-                    </td>
-                </tr>
-            `;
+        const loadingRow = document.createElement('tr');
+        loadingRow.style.cssText = 'text-align: center; padding: 40px;';
+
+        const loadingCell = document.createElement('td');
+        loadingCell.colSpan = '6';
+        loadingCell.style.cssText = 'padding: 40px;';
+
+        const spinner = document.createElement('i');
+        spinner.className = 'fas fa-spinner fa-spin';
+        spinner.style.cssText = 'font-size: 24px; color: #e74c3c; display: block;';
+
+        const loadingText = document.createElement('p');
+        loadingText.style.cssText = 'margin-top: 10px;';
+        loadingText.textContent = 'جاري تحميل العملاء...';
+
+        loadingCell.appendChild(spinner);
+        loadingCell.appendChild(loadingText);
+        loadingRow.appendChild(loadingCell);
+        body.appendChild(loadingRow);
         return;
     }
 
+    // ===== STATE: ERROR =====
     if (state.customersError) {
-        body.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #f39c12;"></i>
-                        <p style="margin-top: 10px; color: #e74c3c;">${state.customersError}</p>
-                        <button class="btn-primary" onclick="fetchCustomers()" style="margin-top: 15px;">إعادة المحاولة</button>
-                    </td>
-                </tr>
-            `;
+        const errorRow = document.createElement('tr');
+        const errorCell = document.createElement('td');
+        errorCell.colSpan = '6';
+        errorCell.style.cssText = 'padding: 40px; text-align: center;';
+
+        const errorIcon = document.createElement('i');
+        errorIcon.className = 'fas fa-exclamation-triangle';
+        errorIcon.style.cssText = 'font-size: 24px; color: #f39c12; display: block;';
+
+        const errorText = document.createElement('p');
+        errorText.style.cssText = 'margin-top: 10px; color: #e74c3c;';
+        errorText.textContent = state.customersError;
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn-primary';
+        retryBtn.style.cssText = 'margin-top: 15px;';
+        retryBtn.textContent = 'إعادة المحاولة';
+        retryBtn.addEventListener('click', fetchCustomers);
+
+        errorCell.appendChild(errorIcon);
+        errorCell.appendChild(errorText);
+        errorCell.appendChild(retryBtn);
+        errorRow.appendChild(errorCell);
+        body.appendChild(errorRow);
         return;
     }
 
+    // ===== FETCH CUSTOMERS =====
     const ordersFilter = state.filters?.customerOrdersFilter || 'all';
     const searchTerm = state.filters?.customerSearch || '';
-
     const customers = getCustomersForDisplay();
 
+    // ===== STATE: EMPTY =====
     if (!customers.length) {
         const normalizedSearch = searchTerm.trim();
         let message;
@@ -7300,40 +7487,145 @@ function renderCustomers() {
             message = 'لا يوجد عملاء حالياً';
         }
 
-        body.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-users" style="font-size: 24px; color: #95a5a6;"></i>
-                        <p style="margin-top: 10px;">${message}</p>
-                    </td>
-                </tr>
-            `;
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = '6';
+        emptyCell.style.cssText = 'padding: 40px; text-align: center;';
+
+        const emptyIcon = document.createElement('i');
+        emptyIcon.className = 'fas fa-users';
+        emptyIcon.style.cssText = 'font-size: 24px; color: #95a5a6; display: block;';
+
+        const emptyText = document.createElement('p');
+        emptyText.style.cssText = 'margin-top: 10px;';
+        emptyText.textContent = message;
+
+        emptyCell.appendChild(emptyIcon);
+        emptyCell.appendChild(emptyText);
+        emptyRow.appendChild(emptyCell);
+        body.appendChild(emptyRow);
         return;
     }
 
+    // ===== RENDER ROWS: USE DOCUMENT FRAGMENT FOR PERFORMANCE =====
+    const fragment = document.createDocumentFragment();
 
+    customers.forEach((customer, index) => {
+        const customerId = customer._id || customer.id;
+        const row = document.createElement('tr');
+        row.dataset.id = customerId; // Preserve data-id for external selection/filtering
 
-    body.innerHTML = customers.map((customer, index) => {
-        const nameWithBadge = customer.name || '-';
+        // Column 1: Index (#)
+        const indexCell = document.createElement('td');
+        indexCell.textContent = String(index + 1);
 
-        return `
-                <tr data-id="${customer._id || customer.id}">
-                    <td>${index + 1}</td>
-                    <td>${nameWithBadge}</td>
-                    <td>${customer.email || '-'}</td>
-                    <td>${customer.phone || '-'}</td>
-                    <td>${customer.lastOrder || '-'}</td>
-                    <td>
-                        <button class="action-btn" onclick="viewCustomerDetails('${customer._id || customer.id}')" title="عرض التفاصيل">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="action-btn" onclick="viewCustomerOrders('${customer._id || customer.id}')" title="عرض الطلبات">
-                            <i class="fas fa-shopping-cart"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-    }).join('');
+        // Column 2: Name
+        const nameCell = document.createElement('td');
+        nameCell.textContent = customer.name || '-';
+
+        // Column 3: Email
+        const emailCell = document.createElement('td');
+        emailCell.textContent = customer.email || '-';
+
+        // Column 4: Phone
+        const phoneCell = document.createElement('td');
+        phoneCell.textContent = customer.phone || '-';
+
+        // Column 5: Last Order
+        const lastOrderCell = document.createElement('td');
+        lastOrderCell.textContent = customer.lastOrder || '-';
+
+        // Column 6: Actions (Eye + Cart icons)
+        const actionsCell = document.createElement('td');
+
+        // Action Button 1: View Details (Eye Icon)
+        const viewDetailsBtn = document.createElement('button');
+        viewDetailsBtn.className = 'action-btn';
+        viewDetailsBtn.title = 'عرض التفاصيل';
+        viewDetailsBtn.dataset.action = 'view-details';
+        viewDetailsBtn.dataset.customerId = customerId;
+
+        const eyeIcon = document.createElement('i');
+        eyeIcon.className = 'fas fa-eye';
+        eyeIcon.setAttribute('aria-hidden', 'true');
+
+        viewDetailsBtn.appendChild(eyeIcon);
+
+        // Action Button 2: View Orders (Cart Icon)
+        const viewOrdersBtn = document.createElement('button');
+        viewOrdersBtn.className = 'action-btn';
+        viewOrdersBtn.title = 'عرض الطلبات';
+        viewOrdersBtn.dataset.action = 'view-orders';
+        viewOrdersBtn.dataset.customerId = customerId;
+
+        const cartIcon = document.createElement('i');
+        cartIcon.className = 'fas fa-shopping-cart';
+        cartIcon.setAttribute('aria-hidden', 'true');
+
+        viewOrdersBtn.appendChild(cartIcon);
+
+        // Append action buttons to actions cell
+        actionsCell.appendChild(viewDetailsBtn);
+        actionsCell.appendChild(viewOrdersBtn);
+
+        // Append all cells to row
+        row.appendChild(indexCell);
+        row.appendChild(nameCell);
+        row.appendChild(emailCell);
+        row.appendChild(phoneCell);
+        row.appendChild(lastOrderCell);
+        row.appendChild(actionsCell);
+
+        // Append row to fragment (not yet in DOM)
+        fragment.appendChild(row);
+    });
+
+    // ===== BATCH DOM INSERTION =====
+    body.appendChild(fragment);
+
+    // ===== EVENT DELEGATION: ATTACH LISTENERS =====
+    attachCustomersTableEventListeners();
+}
+
+/**
+ * Event delegation handler for customer table actions
+ * Attached once to tbody, handles all button clicks
+ * Ensures compatibility with dynamic content and prevents zombie listeners
+ */
+function attachCustomersTableEventListeners() {
+    const body = document.getElementById('customersTableBody');
+    if (!body) return;
+
+    // Remove old listener (if exists) to prevent duplicate handlers
+    const oldListener = body.__customersTableListener;
+    if (oldListener) {
+        body.removeEventListener('click', oldListener);
+    }
+
+    // New event handler
+    const clickHandler = (event) => {
+        const btn = event.target.closest('button[data-action]');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const customerId = btn.dataset.customerId;
+
+        if (!customerId) {
+            console.warn('⚠️ Missing customerId in action button');
+            return;
+        }
+
+        // Execute appropriate action
+        if (action === 'view-details') {
+            viewCustomerDetails(customerId);
+        } else if (action === 'view-orders') {
+            viewCustomerOrders(customerId);
+        }
+    };
+
+    // Attach listener and cache it for removal later
+    body.addEventListener('click', clickHandler);
+    body.__customersTableListener = clickHandler;
 }
 
 function renderTopProducts() {
@@ -7544,7 +7836,7 @@ function renderUsers(users = []) {
     const tableBody = document.getElementById('usersTableBody');
     if (!tableBody) return;
 
-    tableBody.innerHTML = users.map(user => `
+    safeHTML(tableBody, users.map(user => `
             <tr data-id="${user.id}">
                 <td>${user.name}</td>
                 <td>${user.email}</td>
@@ -7556,7 +7848,7 @@ function renderUsers(users = []) {
                     <button class="action-btn" data-action="permissions" data-entity="user" data-entity-id="${user.id}"><i class="fas fa-key"></i></button>
                 </td>
             </tr>
-        `).join('');
+        `).join(''));
 }
 
 // ===== Brand Functions =====
@@ -7951,16 +8243,15 @@ function switchSection(targetSection) {
     if (targetSectionEl) {
         targetSectionEl.classList.add('active');
 
+        // ===== LAZY LOAD SECTION DATA =====
+        // Load section content only when accessed
+        loadSectionData(targetSection).catch(error => {
+            console.error(`❌ Failed to load section ${targetSection}:`, error);
+            showToast('error', 'خطأ', `حدث خطأ عند تحميل قسم ${targetSection}`);
+        });
+
         // تحميل الرسوم البيانية بشكل lazy عند الحاجة
         if (targetSection === 'overview') {
-            // جلب البيانات إذا لم تكن محملة
-            if (!state.customers || state.customers.length === 0) {
-                fetchCustomers(true); // بصمت
-            }
-            if (!state.products || state.products.length === 0) {
-                fetchProducts();
-            }
-
             // تحميل الرسومات
             if (!chartsLoaded.overview) {
                 setTimeout(() => {
@@ -7992,27 +8283,152 @@ function switchSection(targetSection) {
     }
 
     saveCurrentSection(targetSection);
+}
 
-    if (targetSection === 'subcategories' && state.filters.subcategoryCategory) {
-        fetchSubcategories(state.filters.subcategoryCategory, { force: true });
+// ===== LAZY LOADING FUNCTIONS =====
+/**
+ * Centralized lazy loading function for all dashboard sections
+ * Loads section data ONLY when accessed, preventing initial load overhead
+ * Prevents duplicate loading with state flags
+ * 
+ * @param {string} sectionKey - The section to load (overview, products, customers, etc.)
+ * @returns {Promise<void>}
+ */
+async function loadSectionData(sectionKey) {
+    // Skip if already loaded and not refreshing
+    if (state.sectionLoaded[sectionKey]) {
+        return;
     }
 
-    // جلب العملاء عند الانتقال لقسم العملاء
-    if (targetSection === 'customers' && (!state.customers || state.customers.length === 0)) {
-        fetchCustomers();
+    // Skip if currently loading (prevent duplicate requests)
+    if (state.sectionLoading[sectionKey]) {
+        return;
     }
 
-    if (targetSection === 'brands') {
-        if (!Array.isArray(state.brands) || state.brands.length === 0) {
-            fetchBrands()
-                .then(() => renderBrands())
-                .catch(error => console.error('❌ Failed to load brands:', error));
-        } else {
-            renderBrands();
+    // Mark section as loading to prevent concurrent requests
+    state.sectionLoading[sectionKey] = true;
+
+    try {
+        switch (sectionKey) {
+            case 'overview':
+                // Overview requires categories and orders to be loaded
+                if (!state.sectionLoaded.overview) {
+                    if (!state.categories.length) await fetchCategories();
+                    if (!state.orders.length) await fetchOrders();
+                }
+                updateOverviewStats();
+                break;
+
+            case 'products':
+                // Load products if not already loaded
+                if (!state.products.length && !state.productsLoading) {
+                    await fetchProducts();
+                }
+                renderProducts();
+                break;
+
+            case 'categories':
+                // Load categories if not already loaded
+                if (!state.categories.length && !state.categoriesLoading) {
+                    await fetchCategories();
+                }
+                renderCategories();
+                break;
+
+            case 'subcategories':
+                // Load subcategories for the selected category
+                const selectedCategoryId = state.filters?.subcategoryCategory;
+                if (!state.subcategoriesLoading[selectedCategoryId] && !state.subcategories[selectedCategoryId]) {
+                    if (selectedCategoryId && selectedCategoryId !== 'all') {
+                        await fetchSubcategories(selectedCategoryId, { force: true });
+                    } else {
+                        // Load all if no category selected
+                        await fetchSubcategories();
+                    }
+                }
+                renderSubcategories();
+                break;
+
+            case 'brands':
+                // Load brands if not already loaded
+                if (!state.brands.length && !state.brandsLoading) {
+                    await fetchBrands({ force: true });
+                }
+                renderBrands();
+                break;
+
+            case 'orders':
+                // Load orders if not already loaded
+                if (!state.orders.length && !state.ordersLoading) {
+                    await fetchOrders();
+                }
+                renderOrders();
+                break;
+
+            case 'customers':
+                // Load customers if not already loaded
+                if (!state.customers.length && !state.customersLoading) {
+                    await fetchCustomers();
+                }
+                renderCustomers();
+                break;
+
+            case 'cms':
+                // Load messages when CMS section is opened
+                if (!state.messagesLoaded && !state.messagesLoading) {
+                    await fetchMessages({ force: true });
+                }
+                renderMessages();
+                break;
+
+            case 'payments':
+                // Load payment methods
+                await renderPaymentMethods();
+                break;
+
+            case 'analytics':
+                // Load analytics data and charts
+                if (!state.sectionLoaded.analytics) {
+                    // Analytics charts are loaded in switchSection via chartsLoaded flags
+                    renderAnalyticsFilters();
+                }
+                break;
+
+            case 'collections':
+                // Load and render collections
+                renderCollections();
+                break;
+
+            case 'promotions':
+                // Load and render promotions
+                renderPromotions();
+                break;
+
+            case 'settings':
+                // Load settings if hydration function exists
+                if (typeof hydrateSettingsForms === 'function') {
+                    hydrateSettingsForms();
+                }
+                break;
+
+            case 'users':
+                // Users are rendered in renderDashboard
+                // Additional loading can be added here if needed
+                break;
+
+            default:
+                console.warn(`⚠️ Unknown section: ${sectionKey}`);
         }
-    }
 
-    refreshSectionData(targetSection);
+        // Mark section as successfully loaded
+        state.sectionLoaded[sectionKey] = true;
+    } catch (error) {
+        console.error(`❌ Error loading section ${sectionKey}:`, error);
+        // Don't mark as loaded on error - allow retry
+    } finally {
+        // Clear loading flag
+        state.sectionLoading[sectionKey] = false;
+    }
 }
 
 function refreshSectionData(sectionKey) {
@@ -8143,6 +8559,143 @@ function showToast(type, title, message) {
             }
         }, 300);
     }, 3000);
+}
+
+/**
+ * عرض نافذة منبثقة مخصصة
+ * @param {string} title - عنوان النافذة
+ * @param {string} message - محتوى الرسالة
+ * @param {string} type - نوع الرسالة: "success" | "error" | "warning" | "info"
+ */
+function showPopup(title, message, type = 'info') {
+    const modal = document.getElementById('customPopupModal');
+    const headerEl = document.getElementById('popupTitle');
+    const messageEl = document.getElementById('popupMessage');
+    const iconEl = document.getElementById('popupIcon');
+    const footer = document.getElementById('popupFooter');
+    const overlay = document.getElementById('popupOverlay');
+    const closeBtn = document.getElementById('popupCloseBtn');
+
+    if (!modal || !headerEl || !messageEl || !iconEl) return;
+
+    // Remove any existing confirm buttons
+    footer.innerHTML = '';
+
+    // Set content
+    headerEl.textContent = title;
+    messageEl.textContent = message;
+
+    // Set icon based on type
+    const iconMap = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+
+    iconEl.className = `popup-icon ${type}`;
+    iconEl.innerHTML = `<i class="${iconMap[type]}"></i>`;
+
+    // Add dismiss button
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn-secondary popup-btn-dismiss';
+    dismissBtn.textContent = 'حسناً';
+    dismissBtn.addEventListener('click', closePopup);
+    footer.appendChild(dismissBtn);
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Close handlers
+    const closeHandler = () => closePopup();
+    overlay.addEventListener('click', closeHandler);
+    closeBtn.addEventListener('click', closeHandler);
+}
+
+/**
+ * عرض نافذة تأكيد (Confirm Dialog)
+ * @param {string} title - عنوان النافذة
+ * @param {string} message - محتوى الرسالة
+ * @param {function} onConfirm - الدالة المنفذة عند التأكيد
+ * @param {function} onCancel - الدالة المنفذة عند الإلغاء (اختياري)
+ * @param {string} confirmText - نص زر التأكيد (افتراضي: "تأكيد")
+ * @param {string} cancelText - نص زر الإلغاء (افتراضي: "إلغاء")
+ */
+function confirmPopup(title, message, onConfirm, onCancel = null, confirmText = 'تأكيد', cancelText = 'إلغاء') {
+    const modal = document.getElementById('customPopupModal');
+    const headerEl = document.getElementById('popupTitle');
+    const messageEl = document.getElementById('popupMessage');
+    const iconEl = document.getElementById('popupIcon');
+    const footer = document.getElementById('popupFooter');
+    const overlay = document.getElementById('popupOverlay');
+    const closeBtn = document.getElementById('popupCloseBtn');
+
+    if (!modal || !headerEl || !messageEl || !iconEl) return;
+
+    // Remove any existing handlers
+    footer.innerHTML = '';
+
+    // Set content
+    headerEl.textContent = title;
+    messageEl.textContent = message;
+
+    // Set warning icon for confirmations
+    iconEl.className = 'popup-icon warning';
+    iconEl.innerHTML = '<i class="fas fa-question-circle"></i>';
+
+    // Create buttons
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-secondary popup-btn-cancel';
+    cancelBtn.textContent = cancelText;
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'btn-primary popup-btn-confirm';
+    confirmBtn.textContent = confirmText;
+
+    // Handle confirm
+    const handleConfirm = () => {
+        closePopup();
+        if (typeof onConfirm === 'function') {
+            onConfirm();
+        }
+    };
+
+    // Handle cancel
+    const handleCancel = () => {
+        closePopup();
+        if (typeof onCancel === 'function') {
+            onCancel();
+        }
+    };
+
+    cancelBtn.addEventListener('click', handleCancel);
+    confirmBtn.addEventListener('click', handleConfirm);
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(confirmBtn);
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Close handlers
+    const closeHandler = handleCancel;
+    overlay.addEventListener('click', closeHandler);
+    closeBtn.addEventListener('click', closeHandler);
+}
+
+/**
+ * إغلاق النافذة المنبثقة
+ */
+function closePopup() {
+    const modal = document.getElementById('customPopupModal');
+    if (modal) {
+        modal.classList.remove('active');
+        // Remove event listeners by clearing and resetting footer
+        const footer = document.getElementById('popupFooter');
+        if (footer) {
+            footer.innerHTML = '';
+        }
+    }
 }
 
 // ===== Charts =====
@@ -8671,11 +9224,11 @@ document.addEventListener('click', function (e) {
             || getSubcategoryById(categoryId, subcategoryId)?.name
             || 'هذه الفئة الفرعية';
 
-        if (confirm(`هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`)) {
+        confirmPopup('تأكيد حذف الفئة الفرعية', `هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`, () => {
             deleteSubcategory(categoryId, subcategoryId).catch(() => {
                 // يتم التعامل مع رسائل الخطأ داخل deleteSubcategory بالفعل
             });
-        }
+        }, null, 'حذف', 'إلغاء');
         return;
     }
 
@@ -8847,7 +9400,7 @@ document.addEventListener('click', function (e) {
             return;
         }
 
-        if (confirm('هل أنت متأكد من حذف هذا البانر؟')) {
+        confirmPopup('تأكيد حذف البانر', 'هل أنت متأكد من حذف هذا البانر؟', () => {
             deleteBanner(bannerId)
                 .then(() => {
                     showToast('success', 'حذف البانر', 'تم حذف البانر بنجاح');
@@ -8857,7 +9410,7 @@ document.addEventListener('click', function (e) {
                     console.error('❌ Delete banner error:', error);
                     showToast('error', 'حذف البانر', error?.message || 'حدث خطأ أثناء حذف البانر');
                 });
-        }
+        }, null, 'حذف', 'إلغاء');
         return;
     }
 
@@ -8873,9 +9426,9 @@ document.addEventListener('click', function (e) {
             return;
         }
 
-        if (confirm(`هل أنت متأكد من حذف الفئة "${category.name}"؟`)) {
+        confirmPopup('تأكيد حذف الفئة', `هل أنت متأكد من حذف الفئة "${category.name}"؟`, () => {
             deleteCategory(categoryId);
-        }
+        }, null, 'حذف', 'إلغاء');
         return;
     }
 
@@ -9123,7 +9676,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // تهيئة الفلاتر والبيانات
     hydrateFilters();
-    renderDashboard();
+    // ⭐ LAZY LOADING: Render HTML structure but data loads lazily
+    renderDashboard();  // Sets up empty HTML structure for all sections
     setupProductFilters();
 
     // جلب الفئات مباشرة عند التهيئة (لـ product form)
@@ -9277,20 +9831,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const zone = getShippingZoneById(zoneId);
             const zoneLabel = zone?.zoneName || 'هذه المنطقة';
 
-            const confirmed = window.confirm(`هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`);
-            if (!confirmed) return;
+            confirmPopup('تأكيد حذف منطقة الشحن', `هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`, async () => {
+                shippingZoneDeleteBtn.disabled = true;
+                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
 
-            shippingZoneDeleteBtn.disabled = true;
-            shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
-
-            try {
-                await deleteShippingZone(zoneId);
-            } catch (error) {
-                console.error('❌ Delete shipping zone failed:', error);
-            } finally {
-                shippingZoneDeleteBtn.disabled = false;
-                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
-            }
+                try {
+                    await deleteShippingZone(zoneId);
+                } catch (error) {
+                    console.error('❌ Delete shipping zone failed:', error);
+                } finally {
+                    shippingZoneDeleteBtn.disabled = false;
+                    shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
+                }
+            }, null, 'حذف', 'إلغاء');
         });
     }
 
@@ -11178,30 +11731,27 @@ async function fetchUsers() {
 async function deleteUser(userId) {
     if (!userId) return;
 
-    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
-        return;
-    }
+    confirmPopup('تأكيد حذف المستخدم', 'هل أنت متأكد من حذف هذا المستخدم؟', async () => {
+        try {
+            const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({}));
+                throw new Error(errorBody?.message || `HTTP ${response.status}`);
+            }
 
 
-    try {
-        const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
-            method: 'DELETE'
-        });
+            showToast('success', 'حذف المستخدم', 'تم حذف المستخدم بنجاح');
 
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({}));
-            throw new Error(errorBody?.message || `HTTP ${response.status}`);
+            // إعادة تحميل قائمة المستخدمين
+            await fetchUsers();
+        } catch (error) {
+            console.error('❌ Failed to delete user:', error);
+            showToast('error', 'خطأ في الحذف', error.message || 'حدث خطأ أثناء حذف المستخدم');
         }
-
-
-        showToast('success', 'حذف المستخدم', 'تم حذف المستخدم بنجاح');
-
-        // إعادة تحميل قائمة المستخدمين
-        await fetchUsers();
-    } catch (error) {
-        console.error('❌ Failed to delete user:', error);
-        showToast('error', 'خطأ في الحذف', error.message || 'حدث خطأ أثناء حذف المستخدم');
-    }
+    }, null, 'حذف', 'إلغاء');
 }
 
 /**
@@ -11611,6 +12161,267 @@ document.addEventListener('DOMContentLoaded', async () => {
             categorySelect.addEventListener('change', (e) => {
                 const categoryId = e.target.value;
                 populateSubcategoryOptions(categoryId);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Initialize all delegated event listeners
+        // ═══════════════════════════════════════════════════════════════
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Brands List
+        // ═══════════════════════════════════════════════════════════════
+        const brandsListContainer = document.getElementById('brandsList');
+        if (brandsListContainer) {
+            brandsListContainer.addEventListener('click', (e) => {
+                // ⚠️ MUST use .closest() - user may click the icon inside the button
+                const editBtn = e.target.closest('.edit-brand');
+                if (editBtn) {
+                    const brandId = editBtn.dataset.brandId;
+                    if (brandId) handleEditBrand(brandId);
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.delete-brand');
+                if (deleteBtn) {
+                    const brandId = deleteBtn.dataset.brandId;
+                    if (brandId) handleDeleteBrand(brandId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Product Image Preview
+        // ═══════════════════════════════════════════════════════════════
+        const productImagePreview = document.getElementById('productImagePreview');
+        if (productImagePreview) {
+            productImagePreview.addEventListener('click', (e) => {
+                // ⚠️ MUST use .closest() - button contains <i> icon
+                const removeBtn = e.target.closest('.image-remove-btn');
+                if (removeBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const imageIndex = parseInt(removeBtn.dataset.imageIndex, 10);
+                    if (!isNaN(imageIndex)) {
+                        removeProductImage(imageIndex);
+                    }
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Products Grid
+        // ═══════════════════════════════════════════════════════════════
+        const productsGrid = document.getElementById('productsGrid');
+        if (productsGrid) {
+            productsGrid.addEventListener('click', (e) => {
+                // Find the product card first
+                const productCard = e.target.closest('.product-card');
+                if (!productCard) return;
+
+                const productId = productCard.dataset.productId;
+                if (!productId) return;
+
+                // ⚠️ MUST use .closest() for all button checks
+                const editBtn = e.target.closest('[data-action="edit"]');
+                if (editBtn) {
+                    populateProductModal(productId);
+                    openModal('addProductModal');
+                    return;
+                }
+
+                const viewBtn = e.target.closest('[data-action="view"]');
+                if (viewBtn) {
+                    viewProductDetails(productId);
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('[data-action="delete"]');
+                if (deleteBtn) {
+                    handleDeleteProduct(productId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Orders Table
+        // ═══════════════════════════════════════════════════════════════
+        const ordersTableBody = document.getElementById('ordersTableBody');
+        if (ordersTableBody) {
+            // Click delegation for buttons
+            ordersTableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+
+                const orderId = row.dataset.orderId;
+                if (!orderId) return;
+
+                // ⚠️ MUST use .closest()
+                const viewBtn = e.target.closest('[data-action="view-order"]');
+                if (viewBtn) {
+                    viewOrderDetails(orderId);
+                    return;
+                }
+
+                const printBtn = e.target.closest('[data-action="print-order"]');
+                if (printBtn) {
+                    printOrder(orderId);
+                    return;
+                }
+            });
+
+            // Change delegation for status dropdown
+            ordersTableBody.addEventListener('change', (e) => {
+                const statusSelect = e.target.closest('.order-status-select');
+                if (statusSelect) {
+                    const row = statusSelect.closest('tr');
+                    const orderId = row?.dataset.orderId;
+                    const newStatus = statusSelect.value;
+                    if (orderId && newStatus) {
+                        updateOrderStatus(orderId, newStatus);
+                    }
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Categories List
+        // ═══════════════════════════════════════════════════════════════
+        const categoriesList = document.getElementById('categoriesList');
+        if (categoriesList) {
+            categoriesList.addEventListener('click', (e) => {
+                const categoryCard = e.target.closest('.category-card');
+                if (!categoryCard) return;
+
+                const categoryId = categoryCard.dataset.categoryId;
+                if (!categoryId) return;
+
+                // ⚠️ MUST use .closest()
+                const editBtn = e.target.closest('.edit-category');
+                if (editBtn) {
+                    populateCategoryModal(categoryId);
+                    openModal('categoryModal');
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.delete-category');
+                if (deleteBtn) {
+                    handleDeleteCategory(categoryId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Subcategories List
+        // ═══════════════════════════════════════════════════════════════
+        const subcategoriesList = document.getElementById('subcategoriesList');
+        if (subcategoriesList) {
+            subcategoriesList.addEventListener('click', (e) => {
+                const subcategoryCard = e.target.closest('.subcategory-card');
+                if (!subcategoryCard) return;
+
+                const subcategoryId = subcategoryCard.dataset.subcategoryId;
+                const categoryId = subcategoryCard.dataset.categoryId;
+                if (!subcategoryId) return;
+
+                // ⚠️ MUST use .closest()
+                const editBtn = e.target.closest('.edit-subcategory');
+                if (editBtn) {
+                    populateSubcategoryModal(categoryId, subcategoryId);
+                    openModal('subcategoryModal');
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.delete-subcategory');
+                if (deleteBtn) {
+                    handleDeleteSubcategory(categoryId, subcategoryId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Banners Grid
+        // ═══════════════════════════════════════════════════════════════
+        const bannersGrid = document.getElementById('bannersGrid');
+        if (bannersGrid) {
+            bannersGrid.addEventListener('click', (e) => {
+                const bannerCard = e.target.closest('.banner-card');
+                if (!bannerCard) return;
+
+                const bannerId = bannerCard.dataset.bannerId;
+                if (!bannerId) return;
+
+                // ⚠️ MUST use .closest()
+                const editBtn = e.target.closest('.edit-banner');
+                if (editBtn) {
+                    populateBannerModal(bannerId);
+                    openModal('bannerModal');
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.delete-banner');
+                if (deleteBtn) {
+                    handleDeleteBanner(bannerId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Customers Table
+        // ═══════════════════════════════════════════════════════════════
+        const customersTableBody = document.getElementById('customersTableBody');
+        if (customersTableBody) {
+            customersTableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+
+                const customerId = row.dataset.customerId;
+                if (!customerId) return;
+
+                // ⚠️ MUST use .closest()
+                const viewBtn = e.target.closest('[data-action="view-customer"]');
+                if (viewBtn) {
+                    openCustomerProfileModal(customerId);
+                    return;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT DELEGATION: Messages List (if exists)
+        // ═══════════════════════════════════════════════════════════════
+        const messagesList = document.getElementById('messagesList');
+        if (messagesList) {
+            messagesList.addEventListener('click', (e) => {
+                const messageItem = e.target.closest('.message-item');
+                if (!messageItem) return;
+
+                const messageId = messageItem.dataset.messageId;
+                if (!messageId) return;
+
+                // ⚠️ MUST use .closest()
+                const viewBtn = e.target.closest('.view-message');
+                if (viewBtn) {
+                    viewMessage(messageId);
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.delete-message');
+                if (deleteBtn) {
+                    handleDeleteMessage(messageId);
+                    return;
+                }
+
+                const replyBtn = e.target.closest('.reply-message');
+                if (replyBtn) {
+                    handleReplyMessage(messageId);
+                    return;
+                }
             });
         }
 

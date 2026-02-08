@@ -1,13 +1,21 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.actionsports4u.com https://*.cloudinary.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com;">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Dash-Admin </title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+
     <link rel="stylesheet" href="css/dashAdmin.css">
 </head>
+
 <body>
     <!-- Loading Screen / Loader -->
     <div id="loadingScreen" class="loading-screen">
@@ -17,18 +25,18 @@
             </div>
             <h1 class="loader-title">Action Sports</h1>
             <p class="loader-subtitle">لوحة التحكم الإدارية</p>
-            
+
             <div class="loader-animation">
                 <div class="spinner"></div>
             </div>
-            
+
             <div class="loader-progress-container">
                 <div class="loader-progress-bar">
                     <div class="loader-progress-fill" id="loaderProgressFill"></div>
                 </div>
                 <p class="loader-progress-text" id="loaderProgressText">جاري التحميل... 0%</p>
             </div>
-            
+
             <div class="loader-steps">
                 <p class="loader-step" id="step-1">⏳ جاري تحميل البيانات...</p>
                 <p class="loader-step" id="step-2">⏳ جاري تحضير الواجهة...</p>
@@ -36,7 +44,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Header -->
     <header class="header">
         <div class="header-content">
@@ -225,8 +233,10 @@
                                     <td></td>
                                     <td></td>
                                     <td>
-                                        <button class="action-btn view-order" data-order-id="ORD-1042" title="عرض التفاصيل"><i class="fas fa-eye"></i></button>
-                                        <button class="action-btn print-order" data-order-id="ORD-1042" title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
+                                        <button class="action-btn view-order" data-order-id="ORD-1042"
+                                            title="عرض التفاصيل"><i class="fas fa-eye"></i></button>
+                                        <button class="action-btn print-order" data-order-id="ORD-1042"
+                                            title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -251,7 +261,8 @@
                         </div>
                         <div class="form-group">
                             <label>ملاحظات أو تعليمات</label>
-                            <textarea name="note" class="form-input" rows="3" placeholder="أدخل أي تعليمات إضافية"></textarea>
+                            <textarea name="note" class="form-input" rows="3"
+                                placeholder="أدخل أي تعليمات إضافية"></textarea>
                         </div>
                         <div class="form-group">
                             <label>حالة التفعيل</label>
@@ -276,7 +287,8 @@
                         <h2 data-modal-title data-modal-edit-title="تعديل الفئة الفرعية">إضافة فئة فرعية جديدة</h2>
                         <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
                     </div>
-                    <form id="subcategoryForm" data-entity="subcategory" class="modal-form" enctype="multipart/form-data">
+                    <form id="subcategoryForm" data-entity="subcategory" class="modal-form"
+                        enctype="multipart/form-data">
                         <input type="hidden" name="id">
                         <input type="hidden" name="originalCategoryId">
                         <div class="modal-body">
@@ -288,11 +300,13 @@
                             </div>
                             <div class="form-group">
                                 <label for="subcategoryName">اسم الفئة الفرعية *</label>
-                                <input id="subcategoryName" name="name" type="text" class="form-input" placeholder="مثال: أجهزة الكارديو" required>
+                                <input id="subcategoryName" name="name" type="text" class="form-input"
+                                    placeholder="مثال: أجهزة الكارديو" required>
                             </div>
                             <div class="form-group">
                                 <label for="subcategoryImage">صورة الفئة الفرعية</label>
-                                <input id="subcategoryImage" name="image" type="file" class="form-input" accept="image/*">
+                                <input id="subcategoryImage" name="image" type="file" class="form-input"
+                                    accept="image/*">
                                 <div id="subcategoryImagePreview" class="image-preview">
                                     <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
                                 </div>
@@ -310,7 +324,8 @@
             <section class="content-section" id="products">
                 <div class="section-header">
                     <h1>إدارة المنتجات</h1>
-                    <button class="btn-primary" id="addProductBtn" data-open-modal="addProductModal" data-modal-mode="create" data-entity="product">
+                    <button class="btn-primary" id="addProductBtn" data-open-modal="addProductModal"
+                        data-modal-mode="create" data-entity="product">
                         <i class="fas fa-plus"></i> إضافة منتج جديد
                     </button>
                 </div>
@@ -338,25 +353,30 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="productName">اسم المنتج *</label>
-                                <input id="productName" name="name" type="text" class="form-input" placeholder="مثال: واقي القدم" required>
+                                <input id="productName" name="name" type="text" class="form-input"
+                                    placeholder="مثال: واقي القدم" required>
                             </div>
                             <div class="form-group">
                                 <label for="productPrice">السعر *</label>
-                                <input id="productPrice" name="price" type="number" min="0" step="0.01" class="form-input" placeholder="مثال: 400" required>
+                                <input id="productPrice" name="price" type="number" min="0" step="0.01"
+                                    class="form-input" placeholder="مثال: 400" required>
                             </div>
                             <div class="form-group">
                                 <label for="productDiscountedPrice">السعر بعد الخصم</label>
-                                <input id="productDiscountedPrice" name="priceAfterDiscount" type="number" min="0" step="0.01" class="form-input" placeholder="مثال: 350">
+                                <input id="productDiscountedPrice" name="priceAfterDiscount" type="number" min="0"
+                                    step="0.01" class="form-input" placeholder="مثال: 350">
                                 <small class="input-hint">اترك الحقل فارغًا إذا لم يكن هناك خصم</small>
                             </div>
                             <div class="form-group">
                                 <label for="productInstallationPrice">سعر خدمة التركيب</label>
-                                <input id="productInstallationPrice" name="installationPrice" type="number" min="0" step="0.01" class="form-input" placeholder="مثال: 150">
+                                <input id="productInstallationPrice" name="installationPrice" type="number" min="0"
+                                    step="0.01" class="form-input" placeholder="مثال: 150">
                                 <small class="input-hint">اترك الحقل فارغًا إذا لم تكن الخدمة متاحة</small>
                             </div>
                             <div class="form-group">
                                 <label for="productQuantity">الكمية *</label>
-                                <input id="productQuantity" name="quantity" type="number" min="0" class="form-input" placeholder="مثال: 25" required>
+                                <input id="productQuantity" name="quantity" type="number" min="0" class="form-input"
+                                    placeholder="مثال: 25" required>
                             </div>
                             <div class="form-group">
                                 <label for="productCategory">الفئة *</label>
@@ -376,7 +396,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="productImage">صور المنتج</label>
-                                <input id="productImage" name="images" type="file" class="form-input" accept="image/*" multiple>
+                                <input id="productImage" name="images" type="file" class="form-input" accept="image/*"
+                                    multiple>
                                 <div id="productImagePreview" class="image-preview">
                                     <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
                                 </div>
@@ -384,13 +405,18 @@
                             <div class="form-group full-width">
                                 <label for="productDescription">وصف مختصر</label>
                                 <small class="input-hint">الحد الأقصى 75 حرف</small>
-                                <textarea id="productDescription" name="description" class="form-input js-description-input" rows="3" maxlength="75" data-counter="productDescriptionCounter" placeholder="يمكنك كتابة وصف للمنتج"></textarea>
+                                <textarea id="productDescription" name="description"
+                                    class="form-input js-description-input" rows="3" maxlength="75"
+                                    data-counter="productDescriptionCounter"
+                                    placeholder="يمكنك كتابة وصف للمنتج"></textarea>
                                 <div class="char-counter" id="productDescriptionCounter" aria-live="polite">0 / 75</div>
                             </div>
                             <div class="form-group full-width">
                                 <label for="productSpecs">المواصفات</label>
                                 <small class="input-hint">الحد الأقصى 7000 حرف</small>
-                                <textarea id="productSpecs" name="specs" class="form-input js-description-input" rows="4" maxlength="7000" data-counter="productSpecsCounter" placeholder="أدخل مواصفات المنتج والتفاصيل التقنية"></textarea>
+                                <textarea id="productSpecs" name="specs" class="form-input js-description-input"
+                                    rows="4" maxlength="7000" data-counter="productSpecsCounter"
+                                    placeholder="أدخل مواصفات المنتج والتفاصيل التقنية"></textarea>
                                 <div class="char-counter" id="productSpecsCounter" aria-live="polite">0 / 7000</div>
                             </div>
                         </div>
@@ -406,13 +432,15 @@
             <section class="content-section" id="categories">
                 <div class="section-header">
                     <h1>إدارة الفئات</h1>
-                    <button class="btn-primary" id="addCategoryBtn" data-open-modal="categoryModal" data-modal-mode="create" data-entity="category">
+                    <button class="btn-primary" id="addCategoryBtn" data-open-modal="categoryModal"
+                        data-modal-mode="create" data-entity="category">
                         <i class="fas fa-plus"></i> إضافة فئة جديدة
                     </button>
                 </div>
 
                 <div class="filters-bar">
-                    <input type="text" id="categorySearch" class="search-input" placeholder="ابحث في الفئات..." aria-label="البحث في الفئات">
+                    <input type="text" id="categorySearch" class="search-input" placeholder="ابحث في الفئات..."
+                        aria-label="البحث في الفئات">
                 </div>
 
                 <div class="categories-list" id="categoriesList"></div>
@@ -422,7 +450,8 @@
             <section class="content-section" id="subcategories">
                 <div class="section-header">
                     <h1>إدارة الفئات الفرعية</h1>
-                    <button class="btn-primary" id="addSubcategoryBtn" data-open-modal="subcategoryModal" data-modal-mode="create" data-entity="subcategory">
+                    <button class="btn-primary" id="addSubcategoryBtn" data-open-modal="subcategoryModal"
+                        data-modal-mode="create" data-entity="subcategory">
                         <i class="fas fa-plus"></i> إضافة فئة فرعية جديدة
                     </button>
                 </div>
@@ -431,7 +460,8 @@
                     <select id="subcategoryCategoryFilter" class="filter-select" aria-label="اختيار الفئة الرئيسية">
                         <option value="">اختر الفئة الرئيسية</option>
                     </select>
-                    <input type="text" id="subcategorySearch" class="search-input" placeholder="ابحث في الفئات الفرعية..." aria-label="البحث في الفئات الفرعية">
+                    <input type="text" id="subcategorySearch" class="search-input"
+                        placeholder="ابحث في الفئات الفرعية..." aria-label="البحث في الفئات الفرعية">
                 </div>
 
                 <div id="subcategoriesContent">
@@ -447,13 +477,15 @@
             <section class="content-section" id="brands">
                 <div class="section-header">
                     <h1>إدارة العلامات التجارية</h1>
-                    <button class="btn-primary" id="addBrandBtn" data-open-modal="brandModal" data-modal-mode="create" data-entity="brand">
+                    <button class="btn-primary" id="addBrandBtn" data-open-modal="brandModal" data-modal-mode="create"
+                        data-entity="brand">
                         <i class="fas fa-plus"></i> إضافة علامة تجارية جديدة
                     </button>
                 </div>
 
                 <div class="filters-bar">
-                    <input type="text" id="brandSearch" placeholder="البحث في العلامات التجارية..." class="search-input">
+                    <input type="text" id="brandSearch" placeholder="البحث في العلامات التجارية..."
+                        class="search-input">
                 </div>
 
                 <div id="brandsContent">
@@ -475,13 +507,15 @@
                 </div>
 
                 <div class="filters-bar">
-                    <input id="orderSearchInput" type="text" placeholder="البحث في الطلبات..." class="search-input" autocomplete="off">
+                    <input id="orderSearchInput" type="text" placeholder="البحث في الطلبات..." class="search-input"
+                        autocomplete="off">
                     <select id="orderStatusFilter" class="filter-select" aria-label="فلترة الطلبات حسب الحالة">
                         <option value="all">كل الحالات</option>
                         <option value="new">طلبات جديدة</option>
                         <option value="delivered">طلبات تم توصيلها</option>
                     </select>
-                    <input id="orderDateFilter" type="date" class="filter-select" aria-label="فلترة الطلبات حسب التاريخ">
+                    <input id="orderDateFilter" type="date" class="filter-select"
+                        aria-label="فلترة الطلبات حسب التاريخ">
                 </div>
 
                 <div class="table-responsive">
@@ -514,7 +548,8 @@
                 </div>
 
                 <div class="filters-bar">
-                    <input type="text" id="customerSearchInput" placeholder="البحث بالاسم أو رقم الهاتف..." class="search-input">
+                    <input type="text" id="customerSearchInput" placeholder="البحث بالاسم أو رقم الهاتف..."
+                        class="search-input">
                 </div>
 
                 <div class="table-responsive">
@@ -545,7 +580,8 @@
                 </div>
 
                 <div class="tab-content active" id="banners">
-                    <button class="btn-primary mb-3" id="addBannerBtn" data-open-modal="bannerModal" data-modal-mode="create" data-entity="banner">
+                    <button class="btn-primary mb-3" id="addBannerBtn" data-open-modal="bannerModal"
+                        data-modal-mode="create" data-entity="banner">
                         <i class="fas fa-plus"></i> إضافة بانر جديد
                     </button>
                     <div class="banners-grid" id="bannersGrid"></div>
@@ -664,7 +700,7 @@
 
             <!-- Settings Section -->
             <section class="content-section" id="settings">
-               
+
                 <div class="settings-container">
                     <div class="settings-card">
                         <h3><i class="fas fa-user-shield"></i> تغيير كلمة المرور</h3>
@@ -672,25 +708,34 @@
                             <div class="form-group">
                                 <label for="currentPassword">كلمة المرور الحالية</label>
                                 <div class="input-with-icon">
-                                    <input type="password" id="currentPassword" name="currentPassword" class="form-input" placeholder="أدخل كلمة المرور الحالية" required minlength="6">
-                                    <button type="button" class="toggle-password" data-target="currentPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                    <input type="password" id="currentPassword" name="currentPassword"
+                                        class="form-input" placeholder="أدخل كلمة المرور الحالية" required
+                                        minlength="6">
+                                    <button type="button" class="toggle-password" data-target="currentPassword"
+                                        aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="newPassword">كلمة المرور الجديدة</label>
                                 <div class="input-with-icon">
-                                    <input type="password" id="newPassword" name="newPassword" class="form-input" placeholder="أدخل كلمة المرور الجديدة" required minlength="8">
-                                    <button type="button" class="toggle-password" data-target="newPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                    <input type="password" id="newPassword" name="newPassword" class="form-input"
+                                        placeholder="أدخل كلمة المرور الجديدة" required minlength="8">
+                                    <button type="button" class="toggle-password" data-target="newPassword"
+                                        aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="confirmPassword">تأكيد كلمة المرور الجديدة</label>
                                 <div class="input-with-icon">
-                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="أعد إدخال كلمة المرور الجديدة" required minlength="8">
-                                    <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        class="form-input" placeholder="أعد إدخال كلمة المرور الجديدة" required
+                                        minlength="8">
+                                    <button type="button" class="toggle-password" data-target="confirmPassword"
+                                        aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-primary"><i class="fas fa-key"></i> تحديث كلمة المرور</button>
+                            <button type="submit" class="btn-primary"><i class="fas fa-key"></i> تحديث كلمة
+                                المرور</button>
                         </form>
                     </div>
 
@@ -710,7 +755,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="shippingZoneRate">تكلفة الشحن (ر.س)</label>
-                                <input id="shippingZoneRate" name="shippingRate" type="number" class="form-input" min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
+                                <input id="shippingZoneRate" name="shippingRate" type="number" class="form-input"
+                                    min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
                             </div>
                             <div class="form-group">
                                 <label class="checkbox-label" for="shippingZoneInstallation">
@@ -733,15 +779,18 @@
                             <form id="shippingZoneCreateForm" data-entity="shipping-zone-create">
                                 <div class="form-group">
                                     <label for="newShippingZoneNameAr">اسم المنطقة (بالعربية)</label>
-                                    <input id="newShippingZoneNameAr" name="nameAr" type="text" class="form-input" placeholder="مثال: منطقة الرياض" required>
+                                    <input id="newShippingZoneNameAr" name="nameAr" type="text" class="form-input"
+                                        placeholder="مثال: منطقة الرياض" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="newShippingZoneNameEn">اسم المنطقة (بالإنجليزية)</label>
-                                    <input id="newShippingZoneNameEn" name="nameEn" type="text" class="form-input" placeholder="مثال: Riyadh Region" required>
+                                    <input id="newShippingZoneNameEn" name="nameEn" type="text" class="form-input"
+                                        placeholder="مثال: Riyadh Region" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="newShippingZoneRate">تكلفة الشحن (ر.س)</label>
-                                    <input id="newShippingZoneRate" name="shippingRate" type="number" class="form-input" min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
+                                    <input id="newShippingZoneRate" name="shippingRate" type="number" class="form-input"
+                                        min="0" step="0.01" placeholder="أدخل تكلفة الشحن" required>
                                 </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn-primary" id="shippingZoneCreateSubmit">
@@ -758,27 +807,35 @@
                     <div class="settings-card">
                         <h3><i class="fas fa-user-plus"></i> إنشاء حساب مدير جديد</h3>
                         <form id="createAdminForm" class="settings-form">
-                            <p class="form-helper-text">املأ البيانات التالية لإنشاء مدير جديد يتمتع بنفس صلاحيات لوحة التحكم.</p>
+                            <p class="form-helper-text">املأ البيانات التالية لإنشاء مدير جديد يتمتع بنفس صلاحيات لوحة
+                                التحكم.</p>
                             <div class="form-group">
                                 <label for="adminName">اسم المدير</label>
-                                <input type="text" id="adminName" name="name" class="form-input" placeholder="مثال: أحمد علي" required>
+                                <input type="text" id="adminName" name="name" class="form-input"
+                                    placeholder="مثال: أحمد علي" required>
                             </div>
                             <div class="form-group">
                                 <label for="adminCreateEmail">البريد الإلكتروني</label>
-                                <input type="email" id="adminCreateEmail" name="email" class="form-input" placeholder="example@email.com" required>
+                                <input type="email" id="adminCreateEmail" name="email" class="form-input"
+                                    placeholder="example@email.com" required>
                             </div>
                             <div class="form-group">
                                 <label for="adminCreatePassword">كلمة المرور</label>
                                 <div class="input-with-icon">
-                                    <input type="password" id="adminCreatePassword" name="password" class="form-input" placeholder="أدخل كلمة مرور لا تقل عن 8 أحرف" required minlength="8">
-                                    <button type="button" class="toggle-password" data-target="adminCreatePassword" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                    <input type="password" id="adminCreatePassword" name="password" class="form-input"
+                                        placeholder="أدخل كلمة مرور لا تقل عن 8 أحرف" required minlength="8">
+                                    <button type="button" class="toggle-password" data-target="adminCreatePassword"
+                                        aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="adminCreatePasswordConfirm">تأكيد كلمة المرور</label>
                                 <div class="input-with-icon">
-                                    <input type="password" id="adminCreatePasswordConfirm" name="passwordConfirm" class="form-input" placeholder="أعد إدخال كلمة المرور" required minlength="8">
-                                    <button type="button" class="toggle-password" data-target="adminCreatePasswordConfirm" aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
+                                    <input type="password" id="adminCreatePasswordConfirm" name="passwordConfirm"
+                                        class="form-input" placeholder="أعد إدخال كلمة المرور" required minlength="8">
+                                    <button type="button" class="toggle-password"
+                                        data-target="adminCreatePasswordConfirm"
+                                        aria-label="إظهار أو إخفاء كلمة المرور"><i class="fas fa-eye"></i></button>
                                 </div>
                             </div>
                             <button type="submit" class="btn-primary"><i class="fas fa-save"></i> إنشاء الحساب</button>
@@ -817,7 +874,8 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="couponCode">كود القسيمة *</label>
-                                <input id="couponCode" name="code" type="text" class="form-input" placeholder="مثال: SAVE20" required>
+                                <input id="couponCode" name="code" type="text" class="form-input"
+                                    placeholder="مثال: SAVE20" required>
                             </div>
                             <div class="form-group">
                                 <label for="couponType">نوع الخصم *</label>
@@ -829,15 +887,18 @@
                             </div>
                             <div class="form-group">
                                 <label for="couponValue">القيمة *</label>
-                                <input id="couponValue" name="value" type="number" min="0" step="0.01" class="form-input" placeholder="مثال: 20" required>
+                                <input id="couponValue" name="value" type="number" min="0" step="0.01"
+                                    class="form-input" placeholder="مثال: 20" required>
                             </div>
                             <div class="form-group">
                                 <label for="couponMinSpend">الحد الأدنى للإنفاق</label>
-                                <input id="couponMinSpend" name="minSpend" type="number" min="0" step="0.01" class="form-input" placeholder="مثال: 300">
+                                <input id="couponMinSpend" name="minSpend" type="number" min="0" step="0.01"
+                                    class="form-input" placeholder="مثال: 300">
                             </div>
                             <div class="form-group">
                                 <label for="couponLimit">حد الاستخدام</label>
-                                <input id="couponLimit" name="limit" type="number" min="1" class="form-input" placeholder="مثال: 100">
+                                <input id="couponLimit" name="limit" type="number" min="1" class="form-input"
+                                    placeholder="مثال: 100">
                             </div>
                             <div class="form-group">
                                 <label for="couponStatus">الحالة</label>
@@ -872,11 +933,13 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="categoryName">اسم الفئة *</label>
-                                <input id="categoryName" name="name" type="text" class="form-input" placeholder="مثال: أجهزة الكارديو" required>
+                                <input id="categoryName" name="name" type="text" class="form-input"
+                                    placeholder="مثال: أجهزة الكارديو" required>
                             </div>
                             <div class="form-group">
                                 <label for="categoryImage">صورة الفئة *</label>
-                                <input id="categoryImage" name="image" type="file" class="form-input" accept="image/*" required>
+                                <input id="categoryImage" name="image" type="file" class="form-input" accept="image/*"
+                                    required>
                                 <div id="categoryImagePreview" class="image-preview">
                                     <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
                                 </div>
@@ -884,8 +947,12 @@
                             <div class="form-group full-width">
                                 <label for="categoryDescription">وصف الفئة</label>
                                 <small class="input-hint">الحد الأقصى 50 حرف</small>
-                                <textarea id="categoryDescription" name="description" class="form-input js-description-input" rows="3" maxlength="50" data-counter="categoryDescriptionCounter" placeholder="اكتب وصفاً مختصراً للفئة"></textarea>
-                                <div class="char-counter" id="categoryDescriptionCounter" aria-live="polite">0 / 50</div>
+                                <textarea id="categoryDescription" name="description"
+                                    class="form-input js-description-input" rows="3" maxlength="50"
+                                    data-counter="categoryDescriptionCounter"
+                                    placeholder="اكتب وصفاً مختصراً للفئة"></textarea>
+                                <div class="char-counter" id="categoryDescriptionCounter" aria-live="polite">0 / 50
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -901,7 +968,8 @@
                 <div class="modal-overlay" data-close-modal></div>
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 data-modal-title data-modal-edit-title="تعديل العلامة التجارية">إضافة علامة تجارية جديدة</h2>
+                        <h2 data-modal-title data-modal-edit-title="تعديل العلامة التجارية">إضافة علامة تجارية جديدة
+                        </h2>
                         <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
                     </div>
                     <form id="brandForm" data-entity="brand" class="modal-form">
@@ -909,17 +977,22 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="brandName">اسم العلامة التجارية *</label>
-                                <input id="brandName" name="name" type="text" class="form-input" placeholder="مثال: نايك، أديداس" required>
+                                <input id="brandName" name="name" type="text" class="form-input"
+                                    placeholder="مثال: نايك، أديداس" required>
                             </div>
                             <div class="form-group full-width">
                                 <label for="brandDescription">وصف العلامة التجارية *</label>
                                 <small class="input-hint">الحد الأقصى 700 حرف</small>
-                                <textarea id="brandDescription" name="description" class="form-input js-description-input" rows="3" maxlength="700" data-counter="brandDescriptionCounter" placeholder="اكتب وصفاً مختصراً للعلامة التجارية" required></textarea>
+                                <textarea id="brandDescription" name="description"
+                                    class="form-input js-description-input" rows="3" maxlength="700"
+                                    data-counter="brandDescriptionCounter"
+                                    placeholder="اكتب وصفاً مختصراً للعلامة التجارية" required></textarea>
                                 <div class="char-counter" id="brandDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                             <div class="form-group">
                                 <label for="brandImage">صورة العلامة التجارية *</label>
-                                <input id="brandImage" name="image" type="file" class="form-input" accept="image/*" required>
+                                <input id="brandImage" name="image" type="file" class="form-input" accept="image/*"
+                                    required>
                                 <div id="brandImagePreview" class="image-preview">
                                     <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
                                 </div>
@@ -963,12 +1036,15 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="bannerTitle">عنوان البانر *</label>
-                                <input id="bannerTitle" name="title" type="text" class="form-input" placeholder="مثال: عرض الصيف" required>
+                                <input id="bannerTitle" name="title" type="text" class="form-input"
+                                    placeholder="مثال: عرض الصيف" required>
                             </div>
                             <div class="form-group">
                                 <label for="bannerDescription">وصف البانر *</label>
                                 <small class="input-hint">الحد الأقصى 700 حرف</small>
-                                <textarea id="bannerDescription" name="description" class="form-input" rows="3" maxlength="700" data-counter="bannerDescriptionCounter" placeholder="اشرح الحملة التسويقية" required></textarea>
+                                <textarea id="bannerDescription" name="description" class="form-input" rows="3"
+                                    maxlength="700" data-counter="bannerDescriptionCounter"
+                                    placeholder="اشرح الحملة التسويقية" required></textarea>
                                 <div class="char-counter" id="bannerDescriptionCounter" aria-live="polite">0 / 700</div>
                             </div>
                             <div class="form-group full-width">
@@ -976,7 +1052,8 @@
                                 <div class="image-upload-area" data-upload-target="bannerImage">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <p>اسحب الصورة هنا أو انقر للرفع</p>
-                                    <input id="bannerImage" name="image" type="file" accept="image/*" style="display: none;">
+                                    <input id="bannerImage" name="image" type="file" accept="image/*"
+                                        style="display: none;">
                                     <div id="bannerImagePreview" class="image-preview">
                                         <span class="image-preview__placeholder">لم يتم اختيار صورة</span>
                                     </div>
@@ -991,247 +1068,279 @@
                 </div>
             </div>
 
-    <!-- Feature Modal -->
-    <div class="modal" id="featureModal">
-        <div class="modal-overlay" data-close-modal></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 data-modal-title data-modal-edit-title="تعديل الميزة">إضافة ميزة جديدة</h2>
-                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
-            </div>
-            <form id="featureForm" data-entity="feature" class="modal-form">
-                <input type="hidden" name="id">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="featureIcon">أيقونة (Font Awesome) *</label>
-                        <input id="featureIcon" name="icon" type="text" class="form-input" placeholder="مثال: fas fa-shipping-fast" required>
+            <!-- Feature Modal -->
+            <div class="modal" id="featureModal">
+                <div class="modal-overlay" data-close-modal></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 data-modal-title data-modal-edit-title="تعديل الميزة">إضافة ميزة جديدة</h2>
+                        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
                     </div>
-                    <div class="form-group">
-                        <label for="featureTitle">عنوان الميزة *</label>
-                        <input id="featureTitle" name="title" type="text" class="form-input" placeholder="مثال: شحن سريع" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="featureDescription">وصف مختصر *</label>
-                        <small class="input-hint">الحد الأقصى 700 حرف</small>
-                        <textarea id="featureDescription" name="description" class="form-input" rows="3" maxlength="700" data-counter="featureDescriptionCounter" placeholder="وضح تفاصيل الميزة" required></textarea>
-                        <div class="char-counter" id="featureDescriptionCounter" aria-live="polite">0 / 700</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="featureStatus">الحالة</label>
-                        <select id="featureStatus" name="status" class="form-input">
-                            <option value="active">نشط</option>
-                            <option value="inactive">غير نشط</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
-                    <button class="btn-primary" type="submit">حفظ الميزة</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- User Modal -->
-    <div class="modal" id="userModal">
-        <div class="modal-overlay" data-close-modal></div>
-        <div class="modal-content large-modal">
-            <div class="modal-header">
-                <h2 data-modal-title data-modal-edit-title="تعديل المستخدم">إضافة مستخدم جديد</h2>
-                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
-            </div>
-            <form id="userForm" data-entity="user" class="modal-form">
-                <input type="hidden" name="id">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="userName">الاسم الكامل *</label>
-                            <input id="userName" name="name" type="text" class="form-input" placeholder="أدخل اسم المستخدم" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="userEmail">البريد الإلكتروني *</label>
-                            <input id="userEmail" name="email" type="email" class="form-input" placeholder="user@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="userRole">الدور</label>
-                            <select id="userRole" name="role" class="form-input">
-                                <option value="admin">مدير</option>
-                                <option value="editor">محرر</option>
-                                <option value="support">دعم</option>
-                                <option value="viewer">مشاهد</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="userStatus">الحالة</label>
-                            <select id="userStatus" name="status" class="form-input">
-                                <option value="active">نشط</option>
-                                <option value="inactive">غير نشط</option>
-                                <option value="suspended">موقوف</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="userPassword">كلمة المرور المؤقتة *</label>
-                            <input id="userPassword" name="password" type="password" class="form-input" placeholder="حدد كلمة مرور" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="userPhone">رقم الهاتف</label>
-                            <input id="userPhone" name="phone" type="tel" class="form-input" placeholder="01012345678">
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="userNotes">ملاحظات داخلية</label>
-                            <textarea id="userNotes" name="notes" class="form-input" rows="3" placeholder="معلومات إضافية"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
-                    <button class="btn-primary" type="submit">حفظ المستخدم</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Order Details Modal -->
-    <div class="modal" id="orderDetailsModal">
-        <div class="modal-overlay" data-close-modal></div>
-        <div class="modal-content large-modal">
-            <div class="modal-header">
-                <h2 data-modal-title>تفاصيل الطلب</h2>
-                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="order-details-grid">
-                    <div class="order-section">
-                        <h3>معلومات العميل</h3>
-                        <p><strong>الاسم:</strong> <span id="orderCustomerName">-</span></p>
-                        <p><strong>البريد:</strong> <span id="orderCustomerEmail">-</span></p>
-                        <p><strong>الهاتف:</strong> <span id="orderCustomerPhone">-</span></p>
-                    </div>
-                    <div class="order-section">
-                        <h3>عنوان الشحن</h3>
-                        <p id="orderShippingAddressLine">-</p>
-                        <p id="orderShippingAddressCity">-</p>
-                        <p id="orderShippingAddressCountry">-</p>
-                    </div>
-                    <div class="order-section full-width">
-                        <h3>المنتجات</h3>
-                        <table class="order-items-table">
-                            <thead>
-                                <tr>
-                                    <th>المنتج</th>
-                                    <th>الكمية</th>
-                                    <th>السعر</th>
-                                    <th>الإجمالي</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderItemsBody"></tbody>
-                        </table>
-                    </div>
-                    <div class="order-section">
-                        <h3>ملخص الطلب</h3>
-                        <div class="order-summary">
-                            <div class="summary-row">
-                                <span>المجموع الفرعي:</span>
-                                <span id="orderSubtotal">-</span>
+                    <form id="featureForm" data-entity="feature" class="modal-form">
+                        <input type="hidden" name="id">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="featureIcon">أيقونة (Font Awesome) *</label>
+                                <input id="featureIcon" name="icon" type="text" class="form-input"
+                                    placeholder="مثال: fas fa-shipping-fast" required>
                             </div>
-                            <div class="summary-row">
-                                <span>الشحن:</span>
-                                <span id="orderShipping">-</span>
+                            <div class="form-group">
+                                <label for="featureTitle">عنوان الميزة *</label>
+                                <input id="featureTitle" name="title" type="text" class="form-input"
+                                    placeholder="مثال: شحن سريع" required>
                             </div>
-                            <div class="summary-row">
-                                <span>الخصم:</span>
-                                <span id="orderDiscount">-</span>
+                            <div class="form-group">
+                                <label for="featureDescription">وصف مختصر *</label>
+                                <small class="input-hint">الحد الأقصى 700 حرف</small>
+                                <textarea id="featureDescription" name="description" class="form-input" rows="3"
+                                    maxlength="700" data-counter="featureDescriptionCounter"
+                                    placeholder="وضح تفاصيل الميزة" required></textarea>
+                                <div class="char-counter" id="featureDescriptionCounter" aria-live="polite">0 / 700
+                                </div>
                             </div>
-                            <div class="summary-row total">
-                                <span>الإجمالي:</span>
-                                <span id="orderTotal">-</span>
+                            <div class="form-group">
+                                <label for="featureStatus">الحالة</label>
+                                <select id="featureStatus" name="status" class="form-input">
+                                    <option value="active">نشط</option>
+                                    <option value="inactive">غير نشط</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="order-section">
-                        <h3>حالة الطلب</h3>
-                        <select class="form-input" name="status" id="orderStatusSelect">
-                            <option value="new">جديد</option>
-                            <option value="processing">قيد المعالجة</option>
-                            <option value="shipped">تم الشحن</option>
-                            <option value="completed">مكتمل</option>
-                            <option value="cancelled">ملغي</option>
-                        </select>
-                        <div class="form-group mt-2">
-                            <label for="orderNotes">ملاحظات</label>
-                            <textarea class="form-input" rows="3" name="notes" id="orderNotes" placeholder="أضف ملاحظات داخلية"></textarea>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
+                            <button class="btn-primary" type="submit">حفظ الميزة</button>
                         </div>
-                    </div>طرق الدفع
-
+                    </form>
                 </div>
             </div>
-            <div class="modal-footer"></div>
-        </div>
-    </div>
 
-    <!-- Image Cropper Modal -->
-    <div class="modal" id="imageCropperModal" aria-hidden="true">
-        <div class="modal-overlay" data-close-modal></div>
-        <div class="modal-content cropper-modal">
-            <div class="modal-header">
-                <h2 data-modal-title id="cropperModalTitle">قص صورة المنتج</h2>
-                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body cropper-body">
-                <p class="cropper-instructions">اسحب الصورة لضبط موضعها واستخدم شريط التكبير لضبط الحجم.</p>
-                <p class="cropper-progress" id="cropperProgress"></p>
-                <div class="cropper-frame">
-                    <img id="cropperImage" alt="معاينة القص" />
-                </div>
-                <div class="cropper-controls">
-                    <label for="cropperZoom">التكبير</label>
-                    <input type="range" id="cropperZoom" min="1" max="3" step="0.01" value="1">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" type="button" id="cropperCancel">إلغاء</button>
-                <button class="btn-primary" type="button" id="cropperConfirm">حفظ القص</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Admin Auth Modal -->
-    <div class="modal" id="authModal">
-        <div class="modal-overlay" data-close-modal></div>
-        <div class="modal-content auth-modal">
-            <div class="modal-header">
-                <h2>تسجيل دخول المدير</h2>
-                <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
-            </div>
-            <form id="authForm" class="modal-form" autocomplete="off">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="adminEmail">البريد الإلكتروني</label>
-                        <input id="adminEmail" name="email" type="email" class="form-input" placeholder="admin@example.com" required>
+            <!-- User Modal -->
+            <div class="modal" id="userModal">
+                <div class="modal-overlay" data-close-modal></div>
+                <div class="modal-content large-modal">
+                    <div class="modal-header">
+                        <h2 data-modal-title data-modal-edit-title="تعديل المستخدم">إضافة مستخدم جديد</h2>
+                        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
                     </div>
-                    <div class="form-group">
-                        <label for="adminPassword">كلمة المرور</label>
-                        <input id="adminPassword" name="password" type="password" class="form-input" placeholder="أدخل كلمة المرور" required>
-                    </div>
-                    <div class="form-group remember-row">
-                        <label class="checkbox-label"><input type="checkbox" id="rememberMe"> تذكرني</label>
-                    </div>
-                    <div id="authError" class="auth-error" role="alert" aria-live="polite" style="display:none"></div>
+                    <form id="userForm" data-entity="user" class="modal-form">
+                        <input type="hidden" name="id">
+                        <div class="modal-body">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="userName">الاسم الكامل *</label>
+                                    <input id="userName" name="name" type="text" class="form-input"
+                                        placeholder="أدخل اسم المستخدم" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userEmail">البريد الإلكتروني *</label>
+                                    <input id="userEmail" name="email" type="email" class="form-input"
+                                        placeholder="user@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userRole">الدور</label>
+                                    <select id="userRole" name="role" class="form-input">
+                                        <option value="admin">مدير</option>
+                                        <option value="editor">محرر</option>
+                                        <option value="support">دعم</option>
+                                        <option value="viewer">مشاهد</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userStatus">الحالة</label>
+                                    <select id="userStatus" name="status" class="form-input">
+                                        <option value="active">نشط</option>
+                                        <option value="inactive">غير نشط</option>
+                                        <option value="suspended">موقوف</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userPassword">كلمة المرور المؤقتة *</label>
+                                    <input id="userPassword" name="password" type="password" class="form-input"
+                                        placeholder="حدد كلمة مرور" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userPhone">رقم الهاتف</label>
+                                    <input id="userPhone" name="phone" type="tel" class="form-input"
+                                        placeholder="01012345678">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="userNotes">ملاحظات داخلية</label>
+                                    <textarea id="userNotes" name="notes" class="form-input" rows="3"
+                                        placeholder="معلومات إضافية"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
+                            <button class="btn-primary" type="submit">حفظ المستخدم</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
-                    <button class="btn-primary" type="submit">تسجيل الدخول</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/index-auth.js"></script>
-    <script src="js/scriptDashAdmin.js"></script>
+            <!-- Order Details Modal -->
+            <div class="modal" id="orderDetailsModal">
+                <div class="modal-overlay" data-close-modal></div>
+                <div class="modal-content large-modal">
+                    <div class="modal-header">
+                        <h2 data-modal-title>تفاصيل الطلب</h2>
+                        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="order-details-grid">
+                            <div class="order-section">
+                                <h3>معلومات العميل</h3>
+                                <p><strong>الاسم:</strong> <span id="orderCustomerName">-</span></p>
+                                <p><strong>البريد:</strong> <span id="orderCustomerEmail">-</span></p>
+                                <p><strong>الهاتف:</strong> <span id="orderCustomerPhone">-</span></p>
+                            </div>
+                            <div class="order-section">
+                                <h3>عنوان الشحن</h3>
+                                <p id="orderShippingAddressLine">-</p>
+                                <p id="orderShippingAddressCity">-</p>
+                                <p id="orderShippingAddressCountry">-</p>
+                            </div>
+                            <div class="order-section full-width">
+                                <h3>المنتجات</h3>
+                                <table class="order-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th>المنتج</th>
+                                            <th>الكمية</th>
+                                            <th>السعر</th>
+                                            <th>الإجمالي</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderItemsBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="order-section">
+                                <h3>ملخص الطلب</h3>
+                                <div class="order-summary">
+                                    <div class="summary-row">
+                                        <span>المجموع الفرعي:</span>
+                                        <span id="orderSubtotal">-</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>الشحن:</span>
+                                        <span id="orderShipping">-</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>الخصم:</span>
+                                        <span id="orderDiscount">-</span>
+                                    </div>
+                                    <div class="summary-row total">
+                                        <span>الإجمالي:</span>
+                                        <span id="orderTotal">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="order-section">
+                                <h3>حالة الطلب</h3>
+                                <select class="form-input" name="status" id="orderStatusSelect">
+                                    <option value="new">جديد</option>
+                                    <option value="processing">قيد المعالجة</option>
+                                    <option value="shipped">تم الشحن</option>
+                                    <option value="completed">مكتمل</option>
+                                    <option value="cancelled">ملغي</option>
+                                </select>
+                                <div class="form-group mt-2">
+                                    <label for="orderNotes">ملاحظات</label>
+                                    <textarea class="form-input" rows="3" name="notes" id="orderNotes"
+                                        placeholder="أضف ملاحظات داخلية"></textarea>
+                                </div>
+                            </div>طرق الدفع
+
+                        </div>
+                    </div>
+                    <div class="modal-footer"></div>
+                </div>
+            </div>
+
+            <!-- Image Cropper Modal -->
+            <div class="modal" id="imageCropperModal" aria-hidden="true">
+                <div class="modal-overlay" data-close-modal></div>
+                <div class="modal-content cropper-modal">
+                    <div class="modal-header">
+                        <h2 data-modal-title id="cropperModalTitle">قص صورة المنتج</h2>
+                        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body cropper-body">
+                        <p class="cropper-instructions">اسحب الصورة لضبط موضعها واستخدم شريط التكبير لضبط الحجم.</p>
+                        <p class="cropper-progress" id="cropperProgress"></p>
+                        <div class="cropper-frame">
+                            <img id="cropperImage" alt="معاينة القص" />
+                        </div>
+                        <div class="cropper-controls">
+                            <label for="cropperZoom">التكبير</label>
+                            <input type="range" id="cropperZoom" min="1" max="3" step="0.01" value="1">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" type="button" id="cropperCancel">إلغاء</button>
+                        <button class="btn-primary" type="button" id="cropperConfirm">حفظ القص</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast Notification -->
+            <div class="toast-container" id="toastContainer"></div>
+
+            <!-- Admin Auth Modal -->
+            <div class="modal" id="authModal">
+                <div class="modal-overlay" data-close-modal></div>
+                <div class="modal-content auth-modal">
+                    <div class="modal-header">
+                        <h2>تسجيل دخول المدير</h2>
+                        <button class="modal-close" data-close-modal><i class="fas fa-times"></i></button>
+                    </div>
+                    <form id="authForm" class="modal-form" autocomplete="off">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="adminEmail">البريد الإلكتروني</label>
+                                <input id="adminEmail" name="email" type="email" class="form-input"
+                                    placeholder="admin@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="adminPassword">كلمة المرور</label>
+                                <input id="adminPassword" name="password" type="password" class="form-input"
+                                    placeholder="أدخل كلمة المرور" required>
+                            </div>
+                            <div class="form-group remember-row">
+                                <label class="checkbox-label"><input type="checkbox" id="rememberMe"> تذكرني</label>
+                            </div>
+                            <div id="authError" class="auth-error" role="alert" aria-live="polite" style="display:none">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" type="button" data-close-modal>إلغاء</button>
+                            <button class="btn-primary" type="submit">تسجيل الدخول</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Custom Popup Modal -->
+            <div class="popup-modal" id="customPopupModal">
+                <div class="popup-overlay" id="popupOverlay"></div>
+                <div class="popup-content" id="popupContent">
+                    <button class="popup-close" id="popupCloseBtn" aria-label="إغلاق">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="popup-icon" id="popupIcon"></div>
+                    <h2 class="popup-title" id="popupTitle"></h2>
+                    <p class="popup-message" id="popupMessage"></p>
+                    <div class="popup-footer" id="popupFooter">
+                        <button class="btn-secondary popup-btn-dismiss" id="popupDismissBtn">حسناً</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scripts -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+                crossorigin="anonymous"></script>
+            <script src="js/index-auth.js"></script>
+            <script src="js/scriptDashAdmin.js"></script>
 </body>
+
 </html>
