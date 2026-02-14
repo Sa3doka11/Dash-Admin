@@ -6882,13 +6882,7 @@ function updateOverviewStats() {
     const customers = state.customers || [];
     const now = new Date();
 
-    // 1. الطلبات اليومية (طلبات تاريخ اليوم فقط)
-    const dailyOrdersCount = orders.filter(order => {
-        const orderDate = getOrderDate(order);
-        return isSameDay(orderDate, now);
-    }).length;
-
-    // 2. إجمالي الإيرادات لهذا الشهر (استثناء الملغاة)
+    // 1. إجمالي الإيرادات لهذا الشهر (استثناء الملغاة)
     const monthlyRevenue = orders
         .filter(order => order.status !== 'cancelled')
         .filter(order => {
@@ -6897,7 +6891,7 @@ function updateOverviewStats() {
         })
         .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-    // 3. العملاء الجدد (المضافون اليوم وفق تواريخ الإنشاء)
+    // 2. العملاء الجدد (المضافون اليوم وفق تواريخ الإنشاء)
     const dailyNewCustomers = customers.filter(customer => {
         const createdAt = getCustomerCreatedDate(customer);
         if (createdAt) {
@@ -6922,23 +6916,29 @@ function updateOverviewStats() {
         return isSameDay(latestOrderDate, now);
     }).length;
 
-    // 4. المنتجات منخفضة المخزون (٥ أو أقل)
+    // 3. المنتجات منخفضة المخزون (٥ أو أقل)
     const lowStockProducts = products.filter(product => {
         const stockValue = product.stock ?? product.quantity ?? product.count ?? 0;
         return Number.isFinite(stockValue) && stockValue <= 5;
     });
 
     // تحديث العناصر في HTML باستخدام IDs
-    const ordersEl = document.getElementById('dailyOrdersCount');
     const revenueEl = document.getElementById('monthlyRevenue');
     const customersEl = document.getElementById('newCustomersCount');
     const lowStockEl = document.getElementById('lowStockCount');
+    const todayOrdersEl = document.getElementById('todayOrdersCount');
     const lowStockCard = document.getElementById('lowStockCard');
 
-    if (ordersEl) ordersEl.textContent = formatNumber(dailyOrdersCount);
     if (revenueEl) revenueEl.textContent = formatCurrency(monthlyRevenue);
     if (customersEl) customersEl.textContent = formatNumber(dailyNewCustomers);
     if (lowStockEl) lowStockEl.textContent = lowStockProducts.length;
+    if (todayOrdersEl) {
+        const todayOrdersCount = orders.filter(order => {
+            const orderDate = getOrderDate(order);
+            return isSameDay(orderDate, now);
+        }).length;
+        todayOrdersEl.textContent = formatNumber(todayOrdersCount);
+    }
 
     if (lowStockCard) {
         if (lowStockProducts.length === 0) {
@@ -6955,74 +6955,58 @@ function updateOverviewStats() {
         }
     }
 
+    renderTodayOrders();
 }
 
-function renderOverview() {
-    // تحديث الإحصائيات
-    updateOverviewStats();
-
-    // تحديث جدول أحدث الطلبات
-    const body = document.getElementById('overviewOrdersBody');
+function renderTodayOrders() {
+    const body = document.getElementById('todayOrdersTableBody');
     if (!body) return;
 
+    const orders = Array.isArray(state.orders) ? state.orders : [];
     const today = new Date();
-    const todaysOrders = (state.orders || []).filter(order => {
+
+    const todayOrders = orders.filter(order => {
         const orderDate = getOrderDate(order);
         return isSameDay(orderDate, today);
     });
 
-    if (todaysOrders.length === 0) {
+    if (!todayOrders.length) {
         body.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">
-                            لا توجد طلبات مسجلة اليوم
-                        </td>
-                    </tr>
-                `;
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 24px; color: #7a7a7a;">
+                        لا توجد طلبات اليوم حتى الآن.
+                    </td>
+                </tr>
+            `;
         return;
     }
 
-    const sortedTodaysOrders = todaysOrders
-        .slice()
-        .sort((a, b) => {
-            const dateA = getOrderDate(a);
-            const dateB = getOrderDate(b);
-            if (!dateA) return 1;
-            if (!dateB) return -1;
-            return dateB - dateA;
-        })
-        .slice(0, 5);
-
-    safeHTML(body, sortedTodaysOrders.map((order, index) => {
-        const orderDateObj = getOrderDate(order);
-        const displayDate = orderDateObj
-            ? orderDateObj.toLocaleString('ar-EG', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-            : (order.date || '-');
-
-        const customerName = order.customer || order.user?.name || '-';
-        const statusBadge = getStatusBadge(order.status);
+    const rows = todayOrders.map((order, index) => {
+        const orderIdLiteral = JSON.stringify(order?.id ?? '');
 
         return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
-                    <td>${customerName}</td>
-                    <td>${statusBadge}</td>
-                    <td>${formatCurrency(order.total)}</td>
-                    <td>${displayDate}</td>
+                    <td>${order.customer}</td>
+                    <td><strong>${formatCurrency(order.total)}</strong></td>
+                    <td>${getStatusBadge(order.status)}</td>
+                    <td>${order.date}</td>
                     <td>
-                        <button class="action-btn view-order" data-order-id="${order.id}" title="عرض التفاصيل"><i class="fas fa-eye"></i></button>
-                        <button class="action-btn print-order" data-order-id="${order.id}" title="طباعة الفاتورة"><i class="fas fa-print"></i></button>
+                        <button class="action-btn" onclick='viewOrderDetails(${orderIdLiteral})' title="عرض التفاصيل">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn" onclick='printOrder(${orderIdLiteral})' title="طباعة">
+                            <i class="fas fa-print"></i>
+                        </button>
                     </td>
-                </tr>`;
-    }).join(''));
+                </tr>
+            `;
+    }).join('');
+
+    body.innerHTML = rows;
 }
+
 
 function renderProducts() {
     const grid = document.getElementById('productsGrid');
@@ -7811,12 +7795,12 @@ async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
         }
 
         renderOrders();
-        renderOverview();
+        updateOverviewStats();
         if (state.customers?.length) {
             updateCustomersOrdersInfo();
         }
 
-        showToast('success', 'تحديث حالة الطلب', `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`);
+        showToast('success', 'تحديث حالة الطلب', `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`);;
     } catch (error) {
         console.error('❌ Failed to change order status:', error);
         showToast('error', 'تحديث حالة الطلب', error.message || 'حدث خطأ أثناء تحديث حالة الطلب.');
@@ -8147,7 +8131,7 @@ function setupCustomerFilters() {
 }
 
 function renderDashboard() {
-    renderOverview();
+    updateOverviewStats();
     renderProducts();
     renderCategories();
     renderSubcategories();
@@ -10583,7 +10567,7 @@ async function fetchOrders(options = {}) {
             state.ordersLoading = false;
         }
         renderOrders();
-        renderOverview();
+        updateOverviewStats();
 
         // تحديث معلومات الطلبات للعملاء الموجودين
         if (state.customers && state.customers.length > 0) {
@@ -10622,7 +10606,7 @@ async function updateOrderDeliveryStatus(orderId) {
 
         // إعادة عرض الطلبات
         renderOrders();
-        renderOverview();
+        updateOverviewStats();
 
         // تحديث بيانات العملاء
         if (state.customers && state.customers.length > 0) {
