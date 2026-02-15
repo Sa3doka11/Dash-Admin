@@ -2,7 +2,7 @@
  * ========================================
  * لوحة التحكم الإدارية - Action Sports
  * ========================================
- * 
+ *
  * هذا الملف يحتوي على جميع وظائف لوحة التحكم الإدارية
  * بما في ذلك:
  * - إدارة المنتجات والفئات والطلبات
@@ -21,14 +21,14 @@
  * @returns {string} - Escaped text safe for HTML context
  */
 function escapeHtmlEntities(text) {
-    if (typeof text !== 'string') return '';
+    if (typeof text !== "string") return "";
     const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;',
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#x27;",
+        "/": "&#x2F;",
     };
     return text.replace(/[&<>"'\/]/g, (char) => map[char]);
 }
@@ -40,53 +40,155 @@ function escapeHtmlEntities(text) {
 function safeSetInnerHTML(element, html) {
     if (!element) return;
 
-    if (typeof DOMPurify !== 'undefined') {
+    if (typeof DOMPurify !== "undefined") {
         element.innerHTML = DOMPurify.sanitize(html, {
             // Allowed HTML tags (structural + UI elements)
             ALLOWED_TAGS: [
-                'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                'img', 'a', 'button', 'i', 'strong', 'em', 'br', 'hr',
-                'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
-                'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-                'time', 'article', 'section', 'header', 'footer', 'nav', 'aside',
-                'label', 'input', 'select', 'option', 'textarea', 'form',
-                'small', 'figure', 'figcaption', 'canvas', 'svg', 'path',
-                'use', 'symbol', 'defs', 'g', 'circle', 'rect', 'line',
+                "div",
+                "span",
+                "p",
+                "h1",
+                "h2",
+                "h3",
+                "h4",
+                "h5",
+                "h6",
+                "img",
+                "a",
+                "button",
+                "i",
+                "strong",
+                "em",
+                "br",
+                "hr",
+                "table",
+                "thead",
+                "tbody",
+                "tfoot",
+                "tr",
+                "th",
+                "td",
+                "ul",
+                "ol",
+                "li",
+                "dl",
+                "dt",
+                "dd",
+                "time",
+                "article",
+                "section",
+                "header",
+                "footer",
+                "nav",
+                "aside",
+                "label",
+                "input",
+                "select",
+                "option",
+                "textarea",
+                "form",
+                "small",
+                "figure",
+                "figcaption",
+                "canvas",
+                "svg",
+                "path",
+                "use",
+                "symbol",
+                "defs",
+                "g",
+                "circle",
+                "rect",
+                "line",
             ],
             // Standard allowed attributes
             ALLOWED_ATTR: [
-                'class', 'id', 'src', 'alt', 'href', 'title', 'style',
-                'type', 'value', 'placeholder', 'name', 'for',
-                'disabled', 'checked', 'readonly', 'selected', 'required',
-                'min', 'max', 'step', 'rows', 'cols', 'maxlength',
-                'aria-*', 'role', 'datetime', 'tabindex',
-                'width', 'height', 'viewBox', 'fill', 'stroke', 'd',
-                'xmlns', 'xlink:href',
+                "class",
+                "id",
+                "src",
+                "alt",
+                "href",
+                "title",
+                "style",
+                "type",
+                "value",
+                "placeholder",
+                "name",
+                "for",
+                "disabled",
+                "checked",
+                "readonly",
+                "selected",
+                "required",
+                "min",
+                "max",
+                "step",
+                "rows",
+                "cols",
+                "maxlength",
+                "aria-*",
+                "role",
+                "datetime",
+                "tabindex",
+                "width",
+                "height",
+                "viewBox",
+                "fill",
+                "stroke",
+                "d",
+                "xmlns",
+                "xlink:href",
             ],
             // ⚠️ CRITICAL: Custom data-* attributes used by dashboard
             ADD_ATTR: [
-                'target',
+                "target",
                 // Entity IDs
-                'data-id', 'data-order-id', 'data-product-id', 'data-category-id',
-                'data-subcategory-id', 'data-brand-id', 'data-banner-id',
-                'data-customer-id', 'data-message-id', 'data-payment-id',
+                "data-id",
+                "data-order-id",
+                "data-product-id",
+                "data-category-id",
+                "data-subcategory-id",
+                "data-brand-id",
+                "data-banner-id",
+                "data-customer-id",
+                "data-message-id",
+                "data-payment-id",
                 // Modal controls
-                'data-open-modal', 'data-modal-mode', 'data-entity', 'data-close-modal',
-                'data-modal-title', 'data-modal-edit-title',
+                "data-open-modal",
+                "data-modal-mode",
+                "data-entity",
+                "data-close-modal",
+                "data-modal-title",
+                "data-modal-edit-title",
                 // Action triggers
-                'data-action', 'data-toggle', 'data-target',
-                'data-bs-toggle', 'data-bs-target',
+                "data-action",
+                "data-toggle",
+                "data-target",
+                "data-bs-toggle",
+                "data-bs-target",
                 // Image handling
-                'data-image-index', 'data-original-image', 'data-preview-image',
+                "data-image-index",
+                "data-original-image",
+                "data-preview-image",
                 // Misc dashboard attributes
-                'data-tab', 'data-section', 'data-counter', 'data-zone-id'
+                "data-tab",
+                "data-section",
+                "data-counter",
+                "data-zone-id",
             ],
             // Forbidden XSS vectors
-            FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'onfocus', 'onblur']
+            FORBID_ATTR: [
+                "onclick",
+                "onload",
+                "onerror",
+                "onmouseover",
+                "onfocus",
+                "onblur",
+            ],
         });
     } else {
         // Defensive fallback: safely escape HTML
-        console.warn('⚠️ DOMPurify not loaded - using HTML escaping fallback');
+        console.warn("⚠️ DOMPurify not loaded - using HTML escaping fallback");
         element.textContent = html;
     }
 }
@@ -101,12 +203,11 @@ function safeHTML(element, html) {
     safeSetInnerHTML(element, html);
 }
 
-
 class DashboardLoader {
     constructor() {
-        this.loaderScreen = document.getElementById('loadingScreen');
-        this.progressFill = document.getElementById('loaderProgressFill');
-        this.progressText = document.getElementById('loaderProgressText');
+        this.loaderScreen = document.getElementById("loadingScreen");
+        this.progressFill = document.getElementById("loaderProgressFill");
+        this.progressText = document.getElementById("loaderProgressText");
         this.currentProgress = 0;
     }
 
@@ -116,7 +217,7 @@ class DashboardLoader {
     setProgress(percentage) {
         this.currentProgress = Math.min(percentage, 100);
         if (this.progressFill) {
-            this.progressFill.style.width = this.currentProgress + '%';
+            this.progressFill.style.width = this.currentProgress + "%";
         }
         if (this.progressText) {
             this.progressText.textContent = `جاري التحميل... ${this.currentProgress}%`;
@@ -126,27 +227,34 @@ class DashboardLoader {
     /**
      * تحديث خطوة التحميل
      */
-    updateStep(stepNumber, status = 'active') {
+    updateStep(stepNumber, status = "active") {
         const stepElement = document.getElementById(`step-${stepNumber}`);
         if (stepElement) {
-            stepElement.classList.remove('active', 'completed');
-            if (status === 'active') {
-                stepElement.classList.add('active');
-                stepElement.textContent = `⏳ جاري تحميل البيانات...`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
-            } else if (status === 'completed') {
-                stepElement.classList.add('completed');
-                stepElement.textContent = `✓ تم ${this.getStepText(stepNumber)}`.replace('جاري تحميل البيانات', this.getStepText(stepNumber));
+            stepElement.classList.remove("active", "completed");
+            if (status === "active") {
+                stepElement.classList.add("active");
+                stepElement.textContent = `⏳ جاري تحميل البيانات...`.replace(
+                    "جاري تحميل البيانات",
+                    this.getStepText(stepNumber),
+                );
+            } else if (status === "completed") {
+                stepElement.classList.add("completed");
+                stepElement.textContent =
+                    `✓ تم ${this.getStepText(stepNumber)}`.replace(
+                        "جاري تحميل البيانات",
+                        this.getStepText(stepNumber),
+                    );
             }
         }
     }
 
     getStepText(stepNumber) {
         const steps = {
-            1: 'تحميل البيانات',
-            2: 'تحضير الواجهة',
-            3: 'تحميل الرسوم البيانية'
+            1: "تحميل البيانات",
+            2: "تحضير الواجهة",
+            3: "تحميل الرسوم البيانية",
         };
-        return steps[stepNumber] || 'تحميل النظام';
+        return steps[stepNumber] || "تحميل النظام";
     }
 
     /**
@@ -156,10 +264,10 @@ class DashboardLoader {
         if (this.loaderScreen) {
             this.setProgress(100);
             // انتظر قليلاً قبل الإخفاء
-            await new Promise(resolve => setTimeout(resolve, 300));
-            this.loaderScreen.classList.add('hidden');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            this.loaderScreen.style.display = 'none';
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            this.loaderScreen.classList.add("hidden");
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            this.loaderScreen.style.display = "none";
         }
     }
 
@@ -168,8 +276,8 @@ class DashboardLoader {
      */
     show() {
         if (this.loaderScreen) {
-            this.loaderScreen.style.display = 'flex';
-            this.loaderScreen.classList.remove('hidden');
+            this.loaderScreen.style.display = "flex";
+            this.loaderScreen.classList.remove("hidden");
             this.currentProgress = 0;
             this.setProgress(0);
         }
@@ -178,24 +286,28 @@ class DashboardLoader {
 
 async function updateProductDiscountPrice(productId, priceAfterDiscount) {
     if (!productId) {
-        throw new Error('معرف المنتج غير صالح لتحديث سعر الخصم');
+        throw new Error("معرف المنتج غير صالح لتحديث سعر الخصم");
     }
 
-    const requestBody = priceAfterDiscount === null
-        ? { priceAfterDiscount: null }
-        : { priceAfterDiscount: Number(priceAfterDiscount) };
+    const requestBody =
+        priceAfterDiscount === null
+            ? { priceAfterDiscount: null }
+            : { priceAfterDiscount: Number(priceAfterDiscount) };
 
-    const response = await authorizedFetch(PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId), {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json'
+    const response = await authorizedFetch(
+        PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT(productId),
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
         },
-        body: JSON.stringify(requestBody)
-    });
+    );
 
     if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        const errorMessage = data.message || 'تعذر تحديث سعر المنتج بعد الخصم';
+        const errorMessage = data.message || "تعذر تحديث سعر المنتج بعد الخصم";
         throw new Error(errorMessage);
     }
 
@@ -209,32 +321,35 @@ const dashboardLoader = new DashboardLoader();
 // ===== 1. إعدادات API =====
 // ========================================
 
-const ADMIN_API_BASE_URL = 'https://api.actionsports4u.com/api';
+const ADMIN_API_BASE_URL = "https://api.actionsports4u.com/api";
 const BRAND_API = `${ADMIN_API_BASE_URL}/brands`;
 const BANNER_API = `${ADMIN_API_BASE_URL}/banners`;
 const SHIPPING_ZONES_ENDPOINT = `${ADMIN_API_BASE_URL}/shipping-zones`;
 const USERS_ENDPOINT = `${ADMIN_API_BASE_URL}/users`;
 const CUSTOMER_ENDPOINT = `${ADMIN_API_BASE_URL}/customers`;
 const CATEGORY_ENDPOINT = `${ADMIN_API_BASE_URL}/categories`;
-const SUBCATEGORY_ENDPOINT = (categoryId) => `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}/subcategories`;
-const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) => `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
+const SUBCATEGORY_ENDPOINT = (categoryId) =>
+    `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}/subcategories`;
+const SUBCATEGORY_DETAIL_ENDPOINT = (categoryId, subcategoryId) =>
+    `${SUBCATEGORY_ENDPOINT(categoryId)}/${encodeURIComponent(subcategoryId)}`;
 const PRODUCT_ENDPOINT = `${ADMIN_API_BASE_URL}/products`;
 const ORDER_ENDPOINT = `${ADMIN_API_BASE_URL}/orders`;
-const PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT = (productId) => `${PRODUCT_ENDPOINT}/price-after-discount/${encodeURIComponent(productId)}`;
+const PRODUCT_PRICE_AFTER_DISCOUNT_ENDPOINT = (productId) =>
+    `${PRODUCT_ENDPOINT}/price-after-discount/${encodeURIComponent(productId)}`;
 const MESSAGE_ENDPOINT = `${ADMIN_API_BASE_URL}/messages`;
 const PAYMENT_TOGGLE_ENDPOINTS = {
     cod: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payOnDelivery`,
     visa: `${ADMIN_API_BASE_URL}/payment-settings/toggle/payWithCard`,
-    installments: `${ADMIN_API_BASE_URL}/payment-settings/toggle/installments`
+    installments: `${ADMIN_API_BASE_URL}/payment-settings/toggle/installments`,
 };
 const PAYMENT_SETTINGS_ENDPOINT = `${ADMIN_API_BASE_URL}/payment-settings`;
 const PAYMENT_STATUS_FIELD_BY_ID = {
-    cod: 'payOnDelivery',
-    visa: 'payWithCard',
-    installments: 'installments'
+    cod: "payOnDelivery",
+    visa: "payWithCard",
+    installments: "installments",
 };
 const PAYMENT_ID_BY_STATUS_FIELD = Object.fromEntries(
-    Object.entries(PAYMENT_STATUS_FIELD_BY_ID).map(([id, field]) => [field, id])
+    Object.entries(PAYMENT_STATUS_FIELD_BY_ID).map(([id, field]) => [field, id]),
 );
 const DESCRIPTION_MAX_LENGTH = 700;
 
@@ -270,12 +385,12 @@ async function debouncedMutation(key, mutationFn) {
 // ========================================
 
 const ADDRESS_TYPE_LABELS = {
-    home: 'المنزل',
-    work: 'العمل',
-    office: 'المكتب',
-    billing: 'عنوان الفواتير',
-    shipping: 'عنوان الشحن',
-    other: 'عنوان آخر'
+    home: "المنزل",
+    work: "العمل",
+    office: "المكتب",
+    billing: "عنوان الفواتير",
+    shipping: "عنوان الشحن",
+    other: "عنوان آخر",
 };
 
 function getAddressTypeLabel(type) {
@@ -285,11 +400,12 @@ function getAddressTypeLabel(type) {
 }
 
 function updateBannerImagePreview(image) {
-    const preview = document.getElementById('bannerImagePreview');
+    const preview = document.getElementById("bannerImagePreview");
     if (!preview) return;
 
     if (!image) {
-        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
         return;
     }
 
@@ -297,56 +413,59 @@ function updateBannerImagePreview(image) {
 }
 
 function prepareBannerCreateForm() {
-    const form = document.getElementById('bannerForm');
+    const form = document.getElementById("bannerForm");
     if (!form) return;
 
     form.reset();
-    form.dataset.mode = 'create';
-    setFieldValue(form, 'id', '');
-    setFieldValue(form, 'title', '');
-    setFieldValue(form, 'description', '');
+    form.dataset.mode = "create";
+    setFieldValue(form, "id", "");
+    setFieldValue(form, "title", "");
+    setFieldValue(form, "description", "");
 
-    const descriptionField = form.querySelector('#bannerDescription');
+    const descriptionField = form.querySelector("#bannerDescription");
     if (descriptionField) {
         updateDescriptionCounter(descriptionField);
     }
 
-    const imageInput = form.querySelector('#bannerImage');
+    const imageInput = form.querySelector("#bannerImage");
     if (imageInput) {
-        imageInput.value = '';
+        imageInput.value = "";
         delete imageInput.dataset.originalImage;
         delete imageInput.dataset.previewImage;
         imageInput.required = true;
     }
 
-    updateBannerImagePreview('');
+    updateBannerImagePreview("");
 }
 
 function populateBannerModal(bannerId) {
-    const form = document.getElementById('bannerForm');
+    const form = document.getElementById("bannerForm");
     if (!form) return;
 
     const source = getBannerSource();
-    const banner = source.find(entry => (entry._id === bannerId || entry.id === bannerId));
+    const banner = source.find(
+        (entry) => entry._id === bannerId || entry.id === bannerId,
+    );
     if (!banner) {
-        showToast('error', 'تعديل البانر', 'تعذر العثور على البانر المحدد');
+        showToast("error", "تعديل البانر", "تعذر العثور على البانر المحدد");
         return;
     }
 
-    form.dataset.mode = 'edit';
-    setFieldValue(form, 'id', banner._id || banner.id || '');
-    setFieldValue(form, 'title', banner.title || '');
-    setFieldValue(form, 'description', banner.description || '');
+    form.dataset.mode = "edit";
+    setFieldValue(form, "id", banner._id || banner.id || "");
+    setFieldValue(form, "title", banner.title || "");
+    setFieldValue(form, "description", banner.description || "");
 
-    const descriptionField = form.querySelector('#bannerDescription');
+    const descriptionField = form.querySelector("#bannerDescription");
     if (descriptionField) {
         updateDescriptionCounter(descriptionField);
     }
 
-    const imageInput = form.querySelector('#bannerImage');
-    const resolvedImage = banner.image || banner.raw?.image || BANNER_IMAGE_PLACEHOLDER;
+    const imageInput = form.querySelector("#bannerImage");
+    const resolvedImage =
+        banner.image || banner.raw?.image || BANNER_IMAGE_PLACEHOLDER;
     if (imageInput) {
-        imageInput.value = '';
+        imageInput.value = "";
         imageInput.dataset.originalImage = resolvedImage;
         delete imageInput.dataset.previewImage;
         imageInput.required = false;
@@ -357,11 +476,12 @@ function populateBannerModal(bannerId) {
 
 async function handleBannerImageChange(event) {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
 
     const file = input.files?.[0];
     if (!file) {
-        const fallback = input.dataset.previewImage || input.dataset.originalImage || '';
+        const fallback =
+            input.dataset.previewImage || input.dataset.originalImage || "";
         updateBannerImagePreview(fallback);
         return;
     }
@@ -371,9 +491,9 @@ async function handleBannerImageChange(event) {
         input.dataset.previewImage = dataUrl;
         updateBannerImagePreview(dataUrl);
     } catch (error) {
-        showToast('error', 'صورة البانر', 'تعذر معاينة ملف الصورة المحدد');
-        input.value = '';
-        const fallback = input.dataset.originalImage || '';
+        showToast("error", "صورة البانر", "تعذر معاينة ملف الصورة المحدد");
+        input.value = "";
+        const fallback = input.dataset.originalImage || "";
         updateBannerImagePreview(fallback);
     }
 }
@@ -381,34 +501,34 @@ async function handleBannerImageChange(event) {
 async function handleBannerFormSubmit(event) {
     event.preventDefault();
     const form = event.target;
-    if (!form || form.dataset.entity !== 'banner') return;
+    if (!form || form.dataset.entity !== "banner") return;
 
     const formData = new FormData(form);
-    const mode = form.dataset.mode || 'create';
-    const id = getFormValue(formData, 'id');
-    const title = getFormValue(formData, 'title');
-    const description = getFormValue(formData, 'description');
-    const imageInput = form.querySelector('#bannerImage');
+    const mode = form.dataset.mode || "create";
+    const id = getFormValue(formData, "id");
+    const title = getFormValue(formData, "title");
+    const description = getFormValue(formData, "description");
+    const imageInput = form.querySelector("#bannerImage");
     const imageFile = imageInput?.files?.[0] || null;
-    const originalImage = imageInput?.dataset.originalImage || '';
+    const originalImage = imageInput?.dataset.originalImage || "";
 
     if (!title) {
-        showToast('error', 'حفظ البانر', 'يرجى إدخال عنوان للبانر');
+        showToast("error", "حفظ البانر", "يرجى إدخال عنوان للبانر");
         return;
     }
 
     if (!description) {
-        showToast('error', 'حفظ البانر', 'يرجى إدخال وصف للبانر');
+        showToast("error", "حفظ البانر", "يرجى إدخال وصف للبانر");
         return;
     }
 
-    if (!imageFile && mode === 'create') {
-        showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+    if (!imageFile && mode === "create") {
+        showToast("error", "حفظ البانر", "يرجى اختيار صورة للبانر");
         return;
     }
 
-    if (!imageFile && mode === 'edit' && !originalImage) {
-        showToast('error', 'حفظ البانر', 'يرجى اختيار صورة للبانر');
+    if (!imageFile && mode === "edit" && !originalImage) {
+        showToast("error", "حفظ البانر", "يرجى اختيار صورة للبانر");
         return;
     }
 
@@ -416,33 +536,34 @@ async function handleBannerFormSubmit(event) {
     const originalButtonText = submitButton?.innerHTML;
     if (submitButton) {
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+        submitButton.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
     }
 
     const payload = { title, description };
 
     try {
-        if (mode === 'edit') {
+        if (mode === "edit") {
             if (!id) {
-                throw new Error('تعذر تحديد البانر الذي ترغب في تعديله');
+                throw new Error("تعذر تحديد البانر الذي ترغب في تعديله");
             }
             await updateBanner(id, payload, imageFile);
-            showToast('success', 'تحديث البانر', 'تم تحديث البانر بنجاح');
+            showToast("success", "تحديث البانر", "تم تحديث البانر بنجاح");
         } else {
             await createBanner(payload, imageFile);
-            showToast('success', 'إضافة البانر', 'تمت إضافة البانر بنجاح');
+            showToast("success", "إضافة البانر", "تمت إضافة البانر بنجاح");
         }
 
-        closeModal('bannerModal');
+        closeModal("bannerModal");
         prepareBannerCreateForm();
         await fetchBanners({ force: true });
     } catch (error) {
-        const message = error?.message || 'حدث خطأ أثناء حفظ البانر';
-        showToast('error', 'خطأ', message);
+        const message = error?.message || "حدث خطأ أثناء حفظ البانر";
+        showToast("error", "خطأ", message);
     } finally {
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.innerHTML = originalButtonText || 'حفظ البانر';
+            submitButton.innerHTML = originalButtonText || "حفظ البانر";
         }
     }
 }
@@ -450,140 +571,163 @@ async function handleBannerFormSubmit(event) {
 function normalizeCustomerAddress(rawAddress = {}, index = 0) {
     if (!rawAddress) return null;
 
-    if (typeof rawAddress === 'string') {
+    if (typeof rawAddress === "string") {
         const trimmed = rawAddress.trim();
         if (!trimmed) return null;
         return {
             id: `address-${index}`,
-            type: 'other',
+            type: "other",
             label: ADDRESS_TYPE_LABELS.other,
             details: trimmed,
-            city: '',
-            region: '',
-            country: '',
-            postalCode: '',
-            phone: '',
-            name: '',
-            raw: rawAddress
+            city: "",
+            region: "",
+            country: "",
+            postalCode: "",
+            phone: "",
+            name: "",
+            raw: rawAddress,
         };
     }
 
     if (Array.isArray(rawAddress)) {
         return rawAddress
-            .map((entry, arrayIndex) => normalizeCustomerAddress(entry, index + arrayIndex))
+            .map((entry, arrayIndex) =>
+                normalizeCustomerAddress(entry, index + arrayIndex),
+            )
             .filter(Boolean);
     }
 
-    if (typeof rawAddress !== 'object') {
+    if (typeof rawAddress !== "object") {
         return null;
     }
 
-    const id = rawAddress._id
-        || rawAddress.id
-        || rawAddress.addressId
-        || rawAddress.slug
-        || rawAddress.reference
-        || `address-${index}`;
+    const id =
+        rawAddress._id ||
+        rawAddress.id ||
+        rawAddress.addressId ||
+        rawAddress.slug ||
+        rawAddress.reference ||
+        `address-${index}`;
 
-    const type = rawAddress.type
-        || rawAddress.addressType
-        || rawAddress.tag
-        || rawAddress.label
-        || rawAddress.kind
-        || 'other';
+    const type =
+        rawAddress.type ||
+        rawAddress.addressType ||
+        rawAddress.tag ||
+        rawAddress.label ||
+        rawAddress.kind ||
+        "other";
 
-    const details = rawAddress.details
-        || rawAddress.detail
-        || rawAddress.street
-        || rawAddress.street1
-        || rawAddress.addressLine1
-        || rawAddress.address1
-        || rawAddress.line1
-        || rawAddress.fullAddress
-        || rawAddress.address
-        || '';
+    const details =
+        rawAddress.details ||
+        rawAddress.detail ||
+        rawAddress.street ||
+        rawAddress.street1 ||
+        rawAddress.addressLine1 ||
+        rawAddress.address1 ||
+        rawAddress.line1 ||
+        rawAddress.fullAddress ||
+        rawAddress.address ||
+        "";
 
-    const city = rawAddress.city
-        || rawAddress.town
-        || rawAddress.cityName
-        || rawAddress.governorate
-        || rawAddress.state
-        || '';
+    const city =
+        rawAddress.city ||
+        rawAddress.town ||
+        rawAddress.cityName ||
+        rawAddress.governorate ||
+        rawAddress.state ||
+        "";
 
-    const baseRegion = rawAddress.region
-        || rawAddress.state
-        || rawAddress.province
-        || rawAddress.area
-        || rawAddress.district
-        || '';
+    const baseRegion =
+        rawAddress.region ||
+        rawAddress.state ||
+        rawAddress.province ||
+        rawAddress.area ||
+        rawAddress.district ||
+        "";
 
-    const postalCode = rawAddress.postalCode
-        || rawAddress.zip
-        || rawAddress.zipCode
-        || rawAddress.postal
-        || '';
+    const postalCode =
+        rawAddress.postalCode ||
+        rawAddress.zip ||
+        rawAddress.zipCode ||
+        rawAddress.postal ||
+        "";
 
-    const country = rawAddress.country
-        || rawAddress.countryName
-        || rawAddress.country_code
-        || '';
+    const country =
+        rawAddress.country ||
+        rawAddress.countryName ||
+        rawAddress.country_code ||
+        "";
 
-    const phone = rawAddress.phone
-        || rawAddress.mobile
-        || rawAddress.phoneNumber
-        || rawAddress.contactPhone
-        || '';
+    const phone =
+        rawAddress.phone ||
+        rawAddress.mobile ||
+        rawAddress.phoneNumber ||
+        rawAddress.contactPhone ||
+        "";
 
-    const name = rawAddress.name
-        || rawAddress.contactName
-        || rawAddress.receiverName
-        || rawAddress.recipient
-        || '';
+    const name =
+        rawAddress.name ||
+        rawAddress.contactName ||
+        rawAddress.receiverName ||
+        rawAddress.recipient ||
+        "";
 
-    const zoneInfo = typeof resolveShippingZone === 'function'
-        ? resolveShippingZone({}, rawAddress)
-        : { zoneName: '', shippingRate: null, zoneId: '' };
+    const zoneInfo =
+        typeof resolveShippingZone === "function"
+            ? resolveShippingZone({}, rawAddress)
+            : { zoneName: "", shippingRate: null, zoneId: "" };
 
-    const zoneIdCandidate = rawAddress.zoneId
-        || rawAddress.shippingZoneId
-        || (typeof rawAddress.shippingZone === 'string' ? rawAddress.shippingZone : '')
-        || (typeof rawAddress.zone === 'string' ? rawAddress.zone : '')
-        || zoneInfo.zoneId;
+    const zoneIdCandidate =
+        rawAddress.zoneId ||
+        rawAddress.shippingZoneId ||
+        (typeof rawAddress.shippingZone === "string"
+            ? rawAddress.shippingZone
+            : "") ||
+        (typeof rawAddress.zone === "string" ? rawAddress.zone : "") ||
+        zoneInfo.zoneId;
 
-    let zoneName = zoneInfo.zoneName
-        || rawAddress.zoneName
-        || rawAddress.shippingZoneName
-        || rawAddress.shippingZone?.name
-        || rawAddress.zone?.name
-        || rawAddress.areaName
-        || '';
+    let zoneName =
+        zoneInfo.zoneName ||
+        rawAddress.zoneName ||
+        rawAddress.shippingZoneName ||
+        rawAddress.shippingZone?.name ||
+        rawAddress.zone?.name ||
+        rawAddress.areaName ||
+        "";
 
-    if (!zoneName && zoneIdCandidate && typeof getShippingZoneById === 'function') {
+    if (
+        !zoneName &&
+        zoneIdCandidate &&
+        typeof getShippingZoneById === "function"
+    ) {
         const matchedZone = getShippingZoneById(zoneIdCandidate);
         if (matchedZone?.zoneName) {
             zoneName = matchedZone.zoneName;
         }
     }
 
-    const rateCandidate = zoneInfo.shippingRate
-        ?? rawAddress.shippingRate
-        ?? rawAddress.rate
-        ?? rawAddress.price
-        ?? rawAddress.cost
-        ?? rawAddress.shippingCost
-        ?? rawAddress.deliveryFee
-        ?? null;
+    const rateCandidate =
+        zoneInfo.shippingRate ??
+        rawAddress.shippingRate ??
+        rawAddress.rate ??
+        rawAddress.price ??
+        rawAddress.cost ??
+        rawAddress.shippingCost ??
+        rawAddress.deliveryFee ??
+        null;
 
     const numericRate = Number(rateCandidate);
-    const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
+    const shippingRate =
+        Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
 
-    const zoneId = zoneIdCandidate
-        || rawAddress.shippingZone?._id
-        || rawAddress.shippingZone?.id
-        || rawAddress.zone?._id
-        || rawAddress.zone?.id
-        || zoneInfo.zoneId
-        || '';
+    const zoneId =
+        zoneIdCandidate ||
+        rawAddress.shippingZone?._id ||
+        rawAddress.shippingZone?.id ||
+        rawAddress.zone?._id ||
+        rawAddress.zone?.id ||
+        zoneInfo.zoneId ||
+        "";
 
     const region = zoneName || baseRegion;
 
@@ -601,7 +745,7 @@ function normalizeCustomerAddress(rawAddress = {}, index = 0) {
         zoneName,
         shippingRate,
         zoneId,
-        raw: rawAddress
+        raw: rawAddress,
     };
 }
 
@@ -612,11 +756,15 @@ function collectCustomerAddresses(customer = {}) {
         if (!normalizedAddress) return false;
 
         const raw = normalizedAddress.raw;
-        if (!raw || typeof raw !== 'object') {
+        if (!raw || typeof raw !== "object") {
             return false;
         }
 
-        if (raw.source === 'api' || raw.fromApi === true || raw.__fromApi === true) {
+        if (
+            raw.source === "api" ||
+            raw.fromApi === true ||
+            raw.__fromApi === true
+        ) {
             return true;
         }
 
@@ -626,14 +774,21 @@ function collectCustomerAddresses(customer = {}) {
             raw.addressId,
             raw.address_id,
             raw.addressID,
-            raw.slug
+            raw.slug,
         ];
 
-        if (identifierCandidates.some(value => typeof value === 'string' ? value.trim() : value)) {
+        if (
+            identifierCandidates.some((value) =>
+                typeof value === "string" ? value.trim() : value,
+            )
+        ) {
             return true;
         }
 
-        if (typeof normalizedAddress.id === 'string' && !normalizedAddress.id.startsWith('address-')) {
+        if (
+            typeof normalizedAddress.id === "string" &&
+            !normalizedAddress.id.startsWith("address-")
+        ) {
             return true;
         }
 
@@ -651,14 +806,14 @@ function collectCustomerAddresses(customer = {}) {
 
         const raw = normalized.raw;
 
-        if (raw && typeof raw === 'object') {
+        if (raw && typeof raw === "object") {
             const hasOrderSignature = Boolean(
-                raw.orderId
-                || raw.order_id
-                || raw.order
-                || raw.orderReference
-                || raw.orderRef
-                || raw.cartId
+                raw.orderId ||
+                raw.order_id ||
+                raw.order ||
+                raw.orderReference ||
+                raw.orderRef ||
+                raw.cartId,
             );
 
             if (hasOrderSignature) {
@@ -666,12 +821,23 @@ function collectCustomerAddresses(customer = {}) {
             }
         }
 
-        const zoneRef = normalized.zoneId || normalized.raw?.zoneId || normalized.raw?.shippingZoneId;
-        if (!normalized.zoneName && zoneRef && typeof getShippingZoneById === 'function') {
+        const zoneRef =
+            normalized.zoneId ||
+            normalized.raw?.zoneId ||
+            normalized.raw?.shippingZoneId;
+        if (
+            !normalized.zoneName &&
+            zoneRef &&
+            typeof getShippingZoneById === "function"
+        ) {
             const zone = getShippingZoneById(zoneRef);
             if (zone?.zoneName) {
                 normalized.zoneName = zone.zoneName;
-                if (!normalized.region || normalized.region === normalized.zoneId || normalized.region === zoneRef) {
+                if (
+                    !normalized.region ||
+                    normalized.region === normalized.zoneId ||
+                    normalized.region === zoneRef
+                ) {
                     normalized.region = zone.zoneName;
                 }
                 if (!normalized.zoneId) {
@@ -680,8 +846,12 @@ function collectCustomerAddresses(customer = {}) {
             }
         }
 
-        if (normalized.region && normalized.zoneId && normalized.region === normalized.zoneId) {
-            normalized.region = normalized.zoneName || '';
+        if (
+            normalized.region &&
+            normalized.zoneId &&
+            normalized.region === normalized.zoneId
+        ) {
+            normalized.region = normalized.zoneName || "";
         }
 
         const signature = JSON.stringify([
@@ -690,14 +860,16 @@ function collectCustomerAddresses(customer = {}) {
             normalized.region,
             normalized.postalCode,
             normalized.country,
-            normalized.phone
+            normalized.phone,
         ]);
 
         if (!isAddressFromApi(normalized)) {
             return;
         }
 
-        const isDuplicate = addresses.some(existing => existing.signature === signature);
+        const isDuplicate = addresses.some(
+            (existing) => existing.signature === signature,
+        );
         if (!isDuplicate) {
             addresses.push({ ...normalized, signature });
         }
@@ -709,39 +881,37 @@ function collectCustomerAddresses(customer = {}) {
         customer.addressesList,
         customer.profile?.addresses,
         customer.data?.addresses,
-        customer.user?.addresses
+        customer.user?.addresses,
     ];
 
-    candidateSources.forEach(source => {
+    candidateSources.forEach((source) => {
         if (!source) return;
         if (Array.isArray(source)) {
-            source.forEach(item => pushAddress(item));
+            source.forEach((item) => pushAddress(item));
         } else {
             pushAddress(source);
         }
     });
 
     if (!addresses.length) {
-        const fallbackDetails = customer.fullAddress
-            || customer.address
-            || customer.location
-            || '';
+        const fallbackDetails =
+            customer.fullAddress || customer.address || customer.location || "";
 
         if (
-            fallbackDetails
-            || customer.city
-            || customer.region
-            || customer.country
-            || customer.postalCode
+            fallbackDetails ||
+            customer.city ||
+            customer.region ||
+            customer.country ||
+            customer.postalCode
         ) {
             pushAddress({
-                type: 'other',
+                type: "other",
                 details: fallbackDetails,
                 city: customer.city,
                 region: customer.region || customer.state,
                 postalCode: customer.postalCode,
                 country: customer.country,
-                phone: customer.phone
+                phone: customer.phone,
             });
         }
     }
@@ -750,14 +920,14 @@ function collectCustomerAddresses(customer = {}) {
 }
 
 function isUserLikeObject(candidate) {
-    if (!candidate || typeof candidate !== 'object') return false;
+    if (!candidate || typeof candidate !== "object") return false;
     return Boolean(
-        candidate.email
-        || candidate.phone
-        || candidate.name
-        || candidate.fullName
-        || candidate.address
-        || candidate.addresses
+        candidate.email ||
+        candidate.phone ||
+        candidate.name ||
+        candidate.fullName ||
+        candidate.address ||
+        candidate.addresses,
     );
 }
 
@@ -776,7 +946,7 @@ function pickFirstUserLikeObject(payload) {
         return payload;
     }
 
-    if (typeof payload !== 'object') {
+    if (typeof payload !== "object") {
         return null;
     }
 
@@ -789,7 +959,7 @@ function pickFirstUserLikeObject(payload) {
         payload.record,
         payload.document,
         payload.entry,
-        payload.payload
+        payload.payload,
     ];
 
     for (const nested of nestedCandidates) {
@@ -825,7 +995,7 @@ function extractSingleUserFromPayload(payload) {
         payload?.record,
         payload?.result,
         payload?.document,
-        payload?.entry
+        payload?.entry,
     ];
 
     for (const candidate of candidateObjects) {
@@ -844,7 +1014,7 @@ function extractSingleUserFromPayload(payload) {
         payload?.documents,
         payload?.items,
         Array.isArray(payload?.data) ? payload.data : null,
-        Array.isArray(payload) ? payload : null
+        Array.isArray(payload) ? payload : null,
     ];
 
     for (const collection of candidateArrays) {
@@ -864,7 +1034,7 @@ async function fetchCustomerProfileFromApi(customerId) {
     const targetId = encodeURIComponent(customerId);
     const endpoints = [
         `${USERS_ENDPOINT}/${targetId}`,
-        `${CUSTOMER_ENDPOINT}/${targetId}`
+        `${CUSTOMER_ENDPOINT}/${targetId}`,
     ];
 
     for (const endpoint of endpoints) {
@@ -876,8 +1046,9 @@ async function fetchCustomerProfileFromApi(customerId) {
             }
 
             if (!response?.ok) {
-                const message = `${response.status} ${response.statusText || ''}`.trim();
-                throw new Error(message || 'تعذر جلب بيانات العميل');
+                const message =
+                    `${response.status} ${response.statusText || ""}`.trim();
+                throw new Error(message || "تعذر جلب بيانات العميل");
             }
 
             const payload = await response.json().catch(() => null);
@@ -887,11 +1058,11 @@ async function fetchCustomerProfileFromApi(customerId) {
                 return {
                     ...extracted,
                     _id: extracted._id || extracted.id || customerId,
-                    id: extracted.id || extracted._id || customerId
+                    id: extracted.id || extracted._id || customerId,
                 };
             }
         } catch (error) {
-            if (error?.message?.includes('401')) {
+            if (error?.message?.includes("401")) {
                 throw error;
             }
         }
@@ -909,16 +1080,21 @@ async function getFreshCustomerData(customerId) {
     if (!Array.isArray(addresses) || !addresses.length) {
         freshProfile.addresses = [];
     } else {
-        freshProfile.addresses = addresses.map(address => ({
+        freshProfile.addresses = addresses.map((address) => ({
             ...address,
-            label: address.label || getAddressTypeLabel(address.type)
+            label: address.label || getAddressTypeLabel(address.type),
         }));
     }
 
     return freshProfile;
 }
 
-function buildCustomerDetailsContent({ customer, loading = false, error = null, customerId }) {
+function buildCustomerDetailsContent({
+    customer,
+    loading = false,
+    error = null,
+    customerId,
+}) {
     if (!customer && loading) {
         return `
                     <div class="customer-details-loading" style="min-width: 320px; min-height: 220px; display: flex; align-items: center; justify-content: center;">
@@ -935,20 +1111,22 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                     <div class="customer-details-error" style="min-width: 320px; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #e74c3c;"></i>
                         <p style="margin-top: 12px;">تعذر العثور على بيانات العميل</p>
-                        ${error ? `<p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(error)}</p>` : ''}
+                        ${error ? `<p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(error)}</p>` : ""}
                     </div>
                 `;
     }
 
-    const normalizedName = escapeHtml(customer.name || customer.fullName || '-');
-    const email = escapeHtml(customer.email || '-');
+    const normalizedName = escapeHtml(customer.name || customer.fullName || "-");
+    const email = escapeHtml(customer.email || "-");
     const segment = customer.segment ? escapeHtml(customer.segment) : null;
     const createdDate = getCustomerCreatedDate?.(customer);
-    const createdDateText = createdDate ? new Date(createdDate).toLocaleDateString('ar-EG') : null;
+    const createdDateText = createdDate
+        ? new Date(createdDate).toLocaleDateString("ar-EG")
+        : null;
 
     const addresses = Array.isArray(customer.addresses) ? customer.addresses : [];
 
-    let addressesContent = '';
+    let addressesContent = "";
 
     if (loading && !addresses.length) {
         addressesContent = `
@@ -958,18 +1136,31 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                     </div>
                 `;
     } else if (addresses.length) {
-        addressesContent = addresses.map((address, index) => {
-            const label = escapeHtml(address.label || getAddressTypeLabel(address.type));
-            const contactName = address.name ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>` : '';
-            const details = address.details ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>` : '';
-            const postalLine = address.postalCode ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>` : '';
-            const countryLine = address.country ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>` : '';
-            const zoneLine = address.zoneName ? `<p style="margin: 6px 0;"><strong>منطقة الشحن:</strong> ${escapeHtml(address.zoneName)}</p>` : '';
-            const phoneLine = address.phone
-                ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
-                : '';
+        addressesContent = addresses
+            .map((address, index) => {
+                const label = escapeHtml(
+                    address.label || getAddressTypeLabel(address.type),
+                );
+                const contactName = address.name
+                    ? `<p style="margin: 6px 0;"><strong>الاسم:</strong> ${escapeHtml(address.name)}</p>`
+                    : "";
+                const details = address.details
+                    ? `<p style="margin: 6px 0;"><strong>التفاصيل:</strong> ${escapeHtml(address.details)}</p>`
+                    : "";
+                const postalLine = address.postalCode
+                    ? `<p style="margin: 6px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(address.postalCode)}</p>`
+                    : "";
+                const countryLine = address.country
+                    ? `<p style="margin: 6px 0;"><strong>الدولة:</strong> ${escapeHtml(address.country)}</p>`
+                    : "";
+                const zoneLine = address.zoneName
+                    ? `<p style="margin: 6px 0;"><strong>منطقة الشحن:</strong> ${escapeHtml(address.zoneName)}</p>`
+                    : "";
+                const phoneLine = address.phone
+                    ? `<p style="margin: 6px 0;"><strong>الهاتف:</strong> <a href="tel:${encodeURIComponent(address.phone)}" style="color: #27ae60; text-decoration: none;">${escapeHtml(address.phone)}</a></p>`
+                    : "";
 
-            return `
+                return `
                         <div class="customer-address-card" style="background: var(--bg-light); color: var(--text-main); padding: 16px; border-radius: 10px; border-right: 4px solid var(--primary); margin-bottom: 12px;">
                             <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #e74c3c;">
                                 <i class="fas fa-map-marker-alt"></i>
@@ -983,25 +1174,28 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                             ${phoneLine}
                         </div>
                     `;
-        }).join('');
+            })
+            .join("");
     } else {
-        addressesContent = '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة لهذا العميل.</p>';
+        addressesContent =
+            '<p style="color: var(--text-muted);">لا توجد عناوين مسجلة لهذا العميل.</p>';
     }
 
     const ordersButton = customerId
         ? `<button class="btn-primary" data-action="view-customer-orders" data-customer-id="${escapeHtml(customerId)}" style="margin-left: 10px;"><i class="fas fa-shopping-cart"></i> عرض طلبات العميل</button>`
-        : '';
+        : "";
 
     const errorBlock = error
         ? `<div class="customer-details-error" style="margin-bottom: 20px; padding: 12px; border-radius: 8px; background: rgba(231, 76, 60, 0.15); color: #c0392b;">
                         <i class="fas fa-exclamation-circle"></i>
                         <span style="margin-right: 8px;">${escapeHtml(error)}</span>
                     </div>`
-        : '';
+        : "";
 
-    const loadingBadge = loading && addresses.length
-        ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
-        : '';
+    const loadingBadge =
+        loading && addresses.length
+            ? `<span style="background: rgba(39, 174, 96, 0.15); color: #27ae60; padding: 4px 8px; border-radius: 999px; font-size: 0.8rem;">جارٍ تحديث العناوين...</span>`
+            : "";
 
     return `
                 <div style="min-width: 320px;">
@@ -1025,7 +1219,7 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
                         </h3>
                         <div>${addressesContent}</div>
                     </div>
-                    ${ordersButton ? `<div style="text-align: center; margin-top: 20px;">${ordersButton}</div>` : ''}
+                    ${ordersButton ? `<div style="text-align: center; margin-top: 20px;">${ordersButton}</div>` : ""}
                 </div>
             `;
 }
@@ -1036,7 +1230,9 @@ function buildCustomerDetailsContent({ customer, loading = false, error = null, 
 
 // التحقق من تحميل وحدة المصادقة (يعتمد على window.adminAuth من js/index-auth.js)
 if (!window.adminAuth) {
-    console.error('⚠️ لم يتم تحميل وحدة المصادقة adminAuth. لن تعمل حماية لوحة التحكم.');
+    console.error(
+        "⚠️ لم يتم تحميل وحدة المصادقة adminAuth. لن تعمل حماية لوحة التحكم.",
+    );
 } else {
     window.adminAuth.requireAuth();
 }
@@ -1047,10 +1243,10 @@ function setPaymentToggleState(toggleElement, enabled) {
     const checked = Boolean(enabled);
     toggleElement.checked = checked;
 
-    const card = toggleElement.closest('.payment-method-card');
+    const card = toggleElement.closest(".payment-method-card");
     if (card) {
         card.dataset.enabled = String(checked);
-        card.classList.toggle('is-enabled', checked);
+        card.classList.toggle("is-enabled", checked);
     }
 }
 
@@ -1059,10 +1255,10 @@ async function handleCreateAdminSubmit(event) {
 
     const form = event.currentTarget;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const nameInput = form.querySelector('#adminName');
-    const emailInput = form.querySelector('#adminCreateEmail');
-    const passwordInput = form.querySelector('#adminCreatePassword');
-    const confirmInput = form.querySelector('#adminCreatePasswordConfirm');
+    const nameInput = form.querySelector("#adminName");
+    const emailInput = form.querySelector("#adminCreateEmail");
+    const passwordInput = form.querySelector("#adminCreatePassword");
+    const confirmInput = form.querySelector("#adminCreatePasswordConfirm");
 
     const name = nameInput?.value?.trim();
     const email = emailInput?.value?.trim();
@@ -1070,24 +1266,28 @@ async function handleCreateAdminSubmit(event) {
     const passwordConfirm = confirmInput?.value?.trim();
 
     if (!name || !email || !password || !passwordConfirm) {
-        showToast('error', 'إنشاء مدير', 'يرجى ملء جميع الحقول المطلوبة.');
+        showToast("error", "إنشاء مدير", "يرجى ملء جميع الحقول المطلوبة.");
         return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showToast('error', 'إنشاء مدير', 'صيغة البريد الإلكتروني غير صحيحة.');
+        showToast("error", "إنشاء مدير", "صيغة البريد الإلكتروني غير صحيحة.");
         emailInput?.focus();
         return;
     }
 
     if (password.length < 8) {
-        showToast('error', 'إنشاء مدير', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+        showToast(
+            "error",
+            "إنشاء مدير",
+            "كلمة المرور يجب أن تكون 8 أحرف على الأقل.",
+        );
         passwordInput?.focus();
         return;
     }
 
     if (password !== passwordConfirm) {
-        showToast('error', 'إنشاء مدير', 'تأكيد كلمة المرور لا يطابق المدخلة.');
+        showToast("error", "إنشاء مدير", "تأكيد كلمة المرور لا يطابق المدخلة.");
         confirmInput?.focus();
         return;
     }
@@ -1095,38 +1295,39 @@ async function handleCreateAdminSubmit(event) {
     const setLoading = (loading) => {
         if (!submitBtn) return;
         submitBtn.disabled = loading;
-        submitBtn.classList.toggle('is-loading', loading);
+        submitBtn.classList.toggle("is-loading", loading);
     };
 
     setLoading(true);
 
     try {
         const response = await authorizedFetch(USERS_ENDPOINT, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json'
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({
                 name,
                 email,
                 password,
                 passwordConfirm,
-                role: 'admin'
-            })
+                role: "admin",
+            }),
         });
 
         if (!response?.ok) {
             const errorBody = await response.json().catch(() => ({}));
-            const message = errorBody?.message || errorBody?.msg || `HTTP ${response?.status}`;
+            const message =
+                errorBody?.message || errorBody?.msg || `HTTP ${response?.status}`;
             throw new Error(message);
         }
 
-        showToast('success', 'إنشاء مدير', 'تم إنشاء حساب المدير الجديد بنجاح.');
+        showToast("success", "إنشاء مدير", "تم إنشاء حساب المدير الجديد بنجاح.");
         form.reset();
     } catch (error) {
-        console.error('Error:', error);
-        const message = error?.message || 'حدث خطأ أثناء إنشاء حساب المدير.';
-        showToast('error', 'إنشاء مدير', message);
+        console.error("Error:", error);
+        const message = error?.message || "حدث خطأ أثناء إنشاء حساب المدير.";
+        showToast("error", "إنشاء مدير", message);
     } finally {
         setLoading(false);
     }
@@ -1134,11 +1335,11 @@ async function handleCreateAdminSubmit(event) {
 
 function getMessageStatusLabel(status) {
     const labels = {
-        new: 'جديدة',
-        pending: 'قيد المراجعة',
-        resolved: 'تمت المعالجة',
-        archived: 'مؤرشفة',
-        read: 'مقروءة'
+        new: "جديدة",
+        pending: "قيد المراجعة",
+        resolved: "تمت المعالجة",
+        archived: "مؤرشفة",
+        read: "مقروءة",
     };
     return labels[status] || status;
 }
@@ -1149,72 +1350,73 @@ const DEFAULT_MESSAGES_LIMIT = 50;
 
 const mockMessages = [
     {
-        id: 'msg-001',
-        name: 'أحمد فؤاد',
-        email: 'ahmed@example.com',
-        phone: '+201001234567',
-        subject: 'استفسار عن الشحن',
-        message: 'مرحباً، هل يتوفر شحن مجاني للطلبات فوق 1000 ريال؟',
+        id: "msg-001",
+        name: "أحمد فؤاد",
+        email: "ahmed@example.com",
+        phone: "+201001234567",
+        subject: "استفسار عن الشحن",
+        message: "مرحباً، هل يتوفر شحن مجاني للطلبات فوق 1000 ريال؟",
         createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        status: 'new',
-        isRead: false
-    }
+        status: "new",
+        isRead: false,
+    },
 ];
 
 function normalizeMessage(rawMessage = {}, index = 0) {
-    if (!rawMessage || typeof rawMessage !== 'object') return null;
+    if (!rawMessage || typeof rawMessage !== "object") return null;
 
     const id = String(
-        rawMessage._id
-        || rawMessage.id
-        || rawMessage.messageId
-        || rawMessage.slug
-        || rawMessage.uid
-        || rawMessage.uuid
-        || rawMessage.reference
-        || `message-${index}`
+        rawMessage._id ||
+        rawMessage.id ||
+        rawMessage.messageId ||
+        rawMessage.slug ||
+        rawMessage.uid ||
+        rawMessage.uuid ||
+        rawMessage.reference ||
+        `message-${index}`,
     );
 
-    const name = rawMessage.name
-        || rawMessage.fullName
-        || rawMessage.sender
-        || rawMessage.senderName
-        || rawMessage.user?.name
-        || 'مستخدم مجهول';
+    const name =
+        rawMessage.name ||
+        rawMessage.fullName ||
+        rawMessage.sender ||
+        rawMessage.senderName ||
+        rawMessage.user?.name ||
+        "مستخدم مجهول";
 
-    const email = rawMessage.email
-        || rawMessage.mail
-        || rawMessage.user?.email
-        || '';
+    const email =
+        rawMessage.email || rawMessage.mail || rawMessage.user?.email || "";
 
-    const phone = rawMessage.phone
-        || rawMessage.mobile
-        || rawMessage.phoneNumber
-        || rawMessage.user?.phone
-        || '';
+    const phone =
+        rawMessage.phone ||
+        rawMessage.mobile ||
+        rawMessage.phoneNumber ||
+        rawMessage.user?.phone ||
+        "";
 
-    const subject = rawMessage.subject
-        || rawMessage.title
-        || rawMessage.topic
-        || 'بدون عنوان';
+    const subject =
+        rawMessage.subject || rawMessage.title || rawMessage.topic || "بدون عنوان";
 
-    const content = rawMessage.message
-        || rawMessage.body
-        || rawMessage.content
-        || rawMessage.details
-        || '';
+    const content =
+        rawMessage.message ||
+        rawMessage.body ||
+        rawMessage.content ||
+        rawMessage.details ||
+        "";
 
-    const createdAt = rawMessage.createdAt
-        || rawMessage.created_at
-        || rawMessage.createdOn
-        || rawMessage.submittedAt
-        || rawMessage.date
-        || null;
+    const createdAt =
+        rawMessage.createdAt ||
+        rawMessage.created_at ||
+        rawMessage.createdOn ||
+        rawMessage.submittedAt ||
+        rawMessage.date ||
+        null;
 
-    const status = rawMessage.status
-        || (rawMessage.isWatched ? 'read' : 'new');
+    const status = rawMessage.status || (rawMessage.isWatched ? "read" : "new");
 
-    const isRead = Boolean(rawMessage.isWatched || rawMessage.read || rawMessage.status === 'read');
+    const isRead = Boolean(
+        rawMessage.isWatched || rawMessage.read || rawMessage.status === "read",
+    );
 
     return {
         id,
@@ -1226,7 +1428,7 @@ function normalizeMessage(rawMessage = {}, index = 0) {
         createdAt,
         status,
         isRead,
-        raw: rawMessage
+        raw: rawMessage,
     };
 }
 
@@ -1241,7 +1443,7 @@ function extractMessagesFromResponse(payload) {
         payload.messages,
         payload.items,
         payload.results,
-        Array.isArray(payload) ? payload : null
+        Array.isArray(payload) ? payload : null,
     ];
 
     for (const candidate of candidateArrays) {
@@ -1264,32 +1466,35 @@ function setMessagesError(error) {
 async function fetchMessages({ force = false, query = {} } = {}) {
     if (state.messagesLoading) return;
 
-    const shouldSkip = !force
-        && state.messagesLoaded
-        && Date.now() - state.messagesLastFetched < MESSAGE_FETCH_TTL;
+    const shouldSkip =
+        !force &&
+        state.messagesLoaded &&
+        Date.now() - state.messagesLastFetched < MESSAGE_FETCH_TTL;
 
     if (shouldSkip) {
-        renderMessagesList(state.filters.messagesSearch || '');
+        renderMessagesList(state.filters.messagesSearch || "");
         return;
     }
 
     setMessagesLoading(true);
     setMessagesError(null);
-    renderMessagesList(state.filters.messagesSearch || '');
+    renderMessagesList(state.filters.messagesSearch || "");
 
     try {
         const params = new URLSearchParams();
-        const limit = Number.isFinite(query.limit) ? query.limit : DEFAULT_MESSAGES_LIMIT;
-        if (limit) params.set('limit', String(limit));
+        const limit = Number.isFinite(query.limit)
+            ? query.limit
+            : DEFAULT_MESSAGES_LIMIT;
+        if (limit) params.set("limit", String(limit));
 
-        if (query.page) params.set('page', String(query.page));
+        if (query.page) params.set("page", String(query.page));
         if (query.isWatched !== undefined && query.isWatched !== null) {
-            params.set('isWatched', String(query.isWatched));
+            params.set("isWatched", String(query.isWatched));
         }
 
-        const searchTerm = (state.filters.messagesSearch || '').trim();
+        const searchTerm = (state.filters.messagesSearch || "").trim();
         if (searchTerm && query.search !== false) {
-            params.set('search', searchTerm);
+            params.set("search", searchTerm);
         }
 
         const url = params.toString()
@@ -1304,8 +1509,8 @@ async function fetchMessages({ force = false, query = {} } = {}) {
         }
 
         if (!response.ok) {
-            const message = `${response.status} ${response.statusText || ''}`.trim();
-            throw new Error(message || 'فشل جلب الرسائل');
+            const message = `${response.status} ${response.statusText || ""}`.trim();
+            throw new Error(message || "فشل جلب الرسائل");
         }
 
         const payload = await response.json().catch(() => null);
@@ -1315,7 +1520,11 @@ async function fetchMessages({ force = false, query = {} } = {}) {
             .map((entry, index) => normalizeMessage(entry, index))
             .filter(Boolean);
 
-        if (!normalizedMessages.length && !state.messagesLoaded && mockMessages.length) {
+        if (
+            !normalizedMessages.length &&
+            !state.messagesLoaded &&
+            mockMessages.length
+        ) {
             state.messagesLoaded = true;
             state.messagesLastFetched = Date.now();
         }
@@ -1325,18 +1534,22 @@ async function fetchMessages({ force = false, query = {} } = {}) {
         state.messagesLoaded = true;
         state.messagesLastFetched = Date.now();
 
-        renderMessagesList(state.filters.messagesSearch || '');
+        renderMessagesList(state.filters.messagesSearch || "");
         updateMessagesBadge();
     } catch (error) {
-        setMessagesError(error?.message || 'تعذر تحميل الرسائل.');
+        setMessagesError(error?.message || "تعذر تحميل الرسائل.");
 
-        if (!state.messagesLoaded && !state.messages.length && mockMessages.length) {
+        if (
+            !state.messagesLoaded &&
+            !state.messages.length &&
+            mockMessages.length
+        ) {
             state.messages = normalizeMessages(mockMessages);
             recalculateUnreadMessages();
         }
     } finally {
         setMessagesLoading(false);
-        renderMessagesList(state.filters.messagesSearch || '');
+        renderMessagesList(state.filters.messagesSearch || "");
         updateMessagesBadge();
     }
 }
@@ -1346,44 +1559,52 @@ function initMessagesPanel() {
     state.unreadMessages = 0;
     state.messagesLoaded = false;
     state.messagesLastFetched = 0;
-    renderMessagesList(state.filters.messagesSearch || '');
-    fetchMessages({ force: true }).catch(error => {
-        console.error('Error:', error);
+    renderMessagesList(state.filters.messagesSearch || "");
+    fetchMessages({ force: true }).catch((error) => {
+        console.error("Error:", error);
     });
 }
 
 function updateMessagesBadge() {
-    const badge = document.getElementById('messagesBadge');
+    const badge = document.getElementById("messagesBadge");
     if (!badge) return;
-    badge.textContent = state.unreadMessages > 9 ? '9+' : String(state.unreadMessages || 0);
+    badge.textContent =
+        state.unreadMessages > 9 ? "9+" : String(state.unreadMessages || 0);
     badge.hidden = state.unreadMessages === 0;
 }
 
 function recalculateUnreadMessages() {
-    state.unreadMessages = (Array.isArray(state.messages) ? state.messages : [])
-        .filter(message => !message.isRead)
-        .length;
+    state.unreadMessages = (
+        Array.isArray(state.messages) ? state.messages : []
+    ).filter((message) => !message.isRead).length;
 }
 
-function renderMessagesList(filterValue = '') {
-    const list = document.getElementById('messagesList');
+function renderMessagesList(filterValue = "") {
+    const list = document.getElementById("messagesList");
     if (!list) return;
 
-    const filter = String(filterValue || state.filters.messagesSearch || '').trim();
+    const filter = String(
+        filterValue || state.filters.messagesSearch || "",
+    ).trim();
     state.filters.messagesSearch = filter;
 
     if (state.messagesLoading) {
-        safeHTML(list, `
+        safeHTML(
+            list,
+            `
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>جاري تحميل الرسائل...</p>
                     </div>
-                `);
+                `,
+        );
         return;
     }
 
     if (state.messagesError) {
-        safeHTML(list, `
+        safeHTML(
+            list,
+            `
                     <div class="empty-state">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>تعذر تحميل الرسائل</h3>
@@ -1392,7 +1613,8 @@ function renderMessagesList(filterValue = '') {
                             <i class="fas fa-sync-alt"></i> إعادة المحاولة
                         </button>
                     </div>
-                `);
+                `,
+        );
         return;
     }
 
@@ -1400,48 +1622,54 @@ function renderMessagesList(filterValue = '') {
 
     const filteredMessages = !filter
         ? baseMessages
-        : baseMessages.filter(msg => [
-            msg.name,
-            msg.email,
-            msg.phone,
-            msg.subject,
-            msg.message
-        ].some(field => String(field || '').toLowerCase().includes(filter.toLowerCase())));
+        : baseMessages.filter((msg) =>
+            [msg.name, msg.email, msg.phone, msg.subject, msg.message].some(
+                (field) =>
+                    String(field || "")
+                        .toLowerCase()
+                        .includes(filter.toLowerCase()),
+            ),
+        );
 
     if (!filteredMessages.length) {
         safeHTML(list, '<p class="empty-state">لا توجد رسائل مطابقة.</p>');
         return;
     }
 
-    safeHTML(list, filteredMessages.map(msg => createMessageItemMarkup(msg)).join(''));
+    safeHTML(
+        list,
+        filteredMessages.map((msg) => createMessageItemMarkup(msg)).join(""),
+    );
 }
 
 function createMessageItemMarkup(message) {
     const createdDate = message.createdAt ? new Date(message.createdAt) : null;
-    const relativeTime = createdDate ? formatRelativeTime(createdDate) : 'غير معروف';
+    const relativeTime = createdDate
+        ? formatRelativeTime(createdDate)
+        : "غير معروف";
     const isUnread = !message.isRead;
-    const statusKey = message.status ? String(message.status).toLowerCase() : '';
+    const statusKey = message.status ? String(message.status).toLowerCase() : "";
     const statusBadge = statusKey
         ? `<span class="message-badge message-badge--${escapeHtml(statusKey)}">${escapeHtml(getMessageStatusLabel(statusKey))}</span>`
-        : '';
+        : "";
 
-    const nameMarkup = escapeHtml(message.name || 'مستخدم مجهول');
-    const emailMarkup = escapeHtml(message.email || '-');
-    const subjectMarkup = escapeHtml(message.subject || 'بدون عنوان');
-    const bodyMarkup = escapeHtml(message.message || '').replace(/\n/g, '<br>');
+    const nameMarkup = escapeHtml(message.name || "مستخدم مجهول");
+    const emailMarkup = escapeHtml(message.email || "-");
+    const subjectMarkup = escapeHtml(message.subject || "بدون عنوان");
+    const bodyMarkup = escapeHtml(message.message || "").replace(/\n/g, "<br>");
 
     const markReadButton = isUnread
         ? `<button type="button" data-action="mark-read" data-message-id="${escapeHtml(message.id)}"><i class="fas fa-check"></i> تعيين كمقروء</button>`
         : `<span class="message-status-label"><i class="fas fa-check-circle"></i> مقروءة</span>`;
 
     return `
-                <article class="message-item ${isUnread ? 'unread' : ''}" data-message-id="${escapeHtml(message.id)}" role="listitem">
+                <article class="message-item ${isUnread ? "unread" : ""}" data-message-id="${escapeHtml(message.id)}" role="listitem">
                     <header class="message-item-header">
                         <div>
                             <div class="message-sender">
                                 <i class="fas fa-user-circle"></i>
                                 <span>${nameMarkup}</span>
-                                ${isUnread ? '<span class="message-badge">جديد</span>' : ''}
+                                ${isUnread ? '<span class="message-badge">جديد</span>' : ""}
                             </div>
                             <div class="message-meta">
                                 <span><i class="fas fa-envelope"></i> ${emailMarkup}</span>
@@ -1449,7 +1677,7 @@ function createMessageItemMarkup(message) {
                         </div>
                         <div class="message-meta">
                             ${statusBadge}
-                            <time datetime="${escapeHtml(message.createdAt || '')}" aria-label="وقت الإرسال">${escapeHtml(relativeTime)}</time>
+                            <time datetime="${escapeHtml(message.createdAt || "")}" aria-label="وقت الإرسال">${escapeHtml(relativeTime)}</time>
                         </div>
                     </header>
                     <div>
@@ -1464,29 +1692,30 @@ function createMessageItemMarkup(message) {
 }
 
 function toggleMessagesPanel(forceState = null) {
-    const panel = document.getElementById('messagesPanel');
-    const overlay = document.getElementById('messagesOverlay');
-    const targetState = forceState !== null
-        ? Boolean(forceState)
-        : !panel?.classList.contains('active');
+    const panel = document.getElementById("messagesPanel");
+    const overlay = document.getElementById("messagesOverlay");
+    const targetState =
+        forceState !== null
+            ? Boolean(forceState)
+            : !panel?.classList.contains("active");
 
     if (panel) {
-        panel.classList.toggle('active', targetState);
+        panel.classList.toggle("active", targetState);
     }
     if (overlay) {
         overlay.hidden = !targetState;
-        overlay.style.opacity = targetState ? '1' : '0';
+        overlay.style.opacity = targetState ? "1" : "0";
     }
 
-    document.body.classList.toggle('messages-open', targetState);
+    document.body.classList.toggle("messages-open", targetState);
 
     if (targetState) {
         if (!state.messagesLoaded && !state.messagesLoading) {
-            fetchMessages({ force: true }).catch(error => {
-                console.error('Error:', error);
+            fetchMessages({ force: true }).catch((error) => {
+                console.error("Error:", error);
             });
         } else {
-            renderMessagesList(state.filters.messagesSearch || '');
+            renderMessagesList(state.filters.messagesSearch || "");
         }
     }
 }
@@ -1495,79 +1724,97 @@ async function markMessageWatchState(messageId) {
     if (!messageId) return false;
 
     try {
-        const response = await authorizedFetch(`${MESSAGE_ENDPOINT}/${encodeURIComponent(messageId)}/watch`, {
-            method: 'PATCH'
-        });
+        const response = await authorizedFetch(
+            `${MESSAGE_ENDPOINT}/${encodeURIComponent(messageId)}/watch`,
+            {
+                method: "PATCH",
+            },
+        );
 
         const handled = handleUnauthorized(response);
         if (handled !== response) {
-            throw new Error('تم إنهاء الطلب بسبب انتهاء صلاحية الجلسة.');
+            throw new Error("تم إنهاء الطلب بسبب انتهاء صلاحية الجلسة.");
         }
 
         if (!response.ok) {
-            const message = `${response.status} ${response.statusText || ''}`.trim();
-            throw new Error(message || 'تعذر تحديث حالة الرسالة');
+            const message = `${response.status} ${response.statusText || ""}`.trim();
+            throw new Error(message || "تعذر تحديث حالة الرسالة");
         }
 
         return true;
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
         throw error;
     }
 }
 
 async function markMessagesAsRead() {
-    const unreadMessages = state.messages.filter(msg => !msg.isRead);
+    const unreadMessages = state.messages.filter((msg) => !msg.isRead);
     if (!unreadMessages.length) {
-        showToast('info', 'الرسائل', 'لا توجد رسائل غير مقروءة حالياً.');
+        showToast("info", "الرسائل", "لا توجد رسائل غير مقروءة حالياً.");
         return;
     }
 
     setMessagesLoading(true);
-    renderMessagesList(state.filters.messagesSearch || '');
+    renderMessagesList(state.filters.messagesSearch || "");
 
-    const results = await Promise.allSettled(unreadMessages.map(msg => markMessageWatchState(msg.id)));
+    const results = await Promise.allSettled(
+        unreadMessages.map((msg) => markMessageWatchState(msg.id)),
+    );
 
     const succeededIds = [];
     const failedIds = [];
 
     results.forEach((result, index) => {
         const targetId = unreadMessages[index].id;
-        if (result.status === 'fulfilled' && result.value) {
+        if (result.status === "fulfilled" && result.value) {
             succeededIds.push(targetId);
         } else {
             failedIds.push(targetId);
         }
     });
 
-    state.messages = state.messages.map(msg => succeededIds.includes(msg.id)
-        ? { ...msg, isRead: true, status: msg.status === 'new' ? 'read' : (msg.status || 'read') }
-        : msg
+    state.messages = state.messages.map((msg) =>
+        succeededIds.includes(msg.id)
+            ? {
+                ...msg,
+                isRead: true,
+                status: msg.status === "new" ? "read" : msg.status || "read",
+            }
+            : msg,
     );
 
-    state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
+    state.unreadMessages = state.messages.filter((msg) => !msg.isRead).length;
     setMessagesLoading(false);
-    renderMessagesList(state.filters.messagesSearch || '');
+    renderMessagesList(state.filters.messagesSearch || "");
     updateMessagesBadge();
 
     if (succeededIds.length) {
-        showToast('success', 'الرسائل', `تم تعيين ${succeededIds.length} رسالة كمقروءة.`);
+        showToast(
+            "success",
+            "الرسائل",
+            `تم تعيين ${succeededIds.length} رسالة كمقروءة.`,
+        );
     }
 
     if (failedIds.length) {
-        showToast('warning', 'الرسائل', `تعذر تحديث ${failedIds.length} رسالة. حاول مجدداً لاحقاً.`);
+        showToast(
+            "warning",
+            "الرسائل",
+            `تعذر تحديث ${failedIds.length} رسالة. حاول مجدداً لاحقاً.`,
+        );
     }
 }
 
 async function handleMessageAction(action, messageId) {
-    const index = state.messages.findIndex(msg => msg.id === messageId);
+    const index = state.messages.findIndex((msg) => msg.id === messageId);
     if (index === -1) return;
 
     const message = state.messages[index];
 
-    if (action === 'mark-read') {
+    if (action === "mark-read") {
         if (message.isRead) {
-            showToast('info', 'الرسائل', 'هذه الرسالة مقروءة بالفعل.');
+            showToast("info", "الرسائل", "هذه الرسالة مقروءة بالفعل.");
             return;
         }
 
@@ -1576,18 +1823,22 @@ async function handleMessageAction(action, messageId) {
             state.messages[index] = {
                 ...message,
                 isRead: true,
-                status: message.status === 'new' ? 'read' : (message.status || 'read')
+                status: message.status === "new" ? "read" : message.status || "read",
             };
-            state.unreadMessages = state.messages.filter(msg => !msg.isRead).length;
-            renderMessagesList(state.filters.messagesSearch || '');
+            state.unreadMessages = state.messages.filter((msg) => !msg.isRead).length;
+            renderMessagesList(state.filters.messagesSearch || "");
             updateMessagesBadge();
-            showToast('success', 'الرسائل', 'تم تعيين الرسالة كمقروءة.');
+            showToast("success", "الرسائل", "تم تعيين الرسالة كمقروءة.");
         } catch (error) {
-            showToast('error', 'الرسائل', error?.message || 'تعذر تحديث حالة الرسالة.');
+            showToast(
+                "error",
+                "الرسائل",
+                error?.message || "تعذر تحديث حالة الرسالة.",
+            );
         }
-    } else if (action === 'refresh') {
-        fetchMessages({ force: true }).catch(error => {
-            console.error('Error:', error);
+    } else if (action === "refresh") {
+        fetchMessages({ force: true }).catch((error) => {
+            console.error("Error:", error);
         });
     }
 }
@@ -1600,52 +1851,58 @@ async function handleMessageAction(action, messageId) {
  * عرض العلامات التجارية
  */
 function renderBrands() {
-
-    const list = document.getElementById('brandsList');
-    const emptyState = document.getElementById('brandsEmptyState');
+    const list = document.getElementById("brandsList");
+    const emptyState = document.getElementById("brandsEmptyState");
 
     if (!list) {
-        console.error('Error:', new Error('brandsList element not found'));
+        console.error("Error:", new Error("brandsList element not found"));
         return;
     }
     if (!emptyState) {
-        console.error('Error:', new Error('brandsEmptyState element not found'));
+        console.error("Error:", new Error("brandsEmptyState element not found"));
         return;
     }
 
     // التأكد من أن brands هو array
     if (!Array.isArray(state.brands)) {
-        console.error('Error:', new Error('state.brands is not an array'));
+        console.error("Error:", new Error("state.brands is not an array"));
         state.brands = [];
     }
 
     // تصفية العلامات التجارية بناءً على البحث
-    const searchTerm = state.filters.brandSearch?.toLowerCase() || '';
-    const filteredBrands = state.brands.filter(brand =>
-        brand.name?.toLowerCase().includes(searchTerm)
+    const searchTerm = state.filters.brandSearch?.toLowerCase() || "";
+    const filteredBrands = state.brands.filter((brand) =>
+        brand.name?.toLowerCase().includes(searchTerm),
     );
 
     if (filteredBrands.length === 0) {
-        list.innerHTML = '';
-        emptyState.style.display = 'flex';
+        list.innerHTML = "";
+        emptyState.style.display = "flex";
         return;
     }
 
-    emptyState.style.display = 'none';
+    emptyState.style.display = "none";
 
-    safeHTML(list, filteredBrands.map(brand => {
-        const brandId = brand._id || brand.id;
-        const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || 'img/placeholder.png';
-        const description = brand.description || '';
+    safeHTML(
+        list,
+        filteredBrands
+            .map((brand) => {
+                const brandId = brand._id || brand.id;
+                const imageUrl =
+                    brand.image?.secure_url ||
+                    brand.image?.url ||
+                    brand.image ||
+                    "img/placeholder.png";
+                const description = brand.description || "";
 
-        return `
+                return `
                 <div class="brand-card" data-brand-id="${brandId}">
                     <div class="brand-image">
                         <img src="${imageUrl}" alt="${brand.name}" onerror="this.src='img/placeholder.png'">
                     </div>
                     <div class="brand-info">
-                        <h3>${escapeHtml(brand.name || '')}</h3>
-                        ${description ? `<p class="brand-description">${escapeHtml(description)}</p>` : ''}
+                        <h3>${escapeHtml(brand.name || "")}</h3>
+                        ${description ? `<p class="brand-description">${escapeHtml(description)}</p>` : ""}
                     </div>
                     <div class="brand-actions">
                         <button class="action-btn edit-brand" data-brand-id="${brandId}" title="تعديل">
@@ -1657,15 +1914,17 @@ function renderBrands() {
                     </div>
                 </div>
                 `;
-    }).join(''));
+            })
+            .join(""),
+    );
 
     // ربط أحداث الأزرار
-    list.querySelectorAll('.edit-brand').forEach(btn => {
-        btn.addEventListener('click', () => handleEditBrand(btn.dataset.brandId));
+    list.querySelectorAll(".edit-brand").forEach((btn) => {
+        btn.addEventListener("click", () => handleEditBrand(btn.dataset.brandId));
     });
 
-    list.querySelectorAll('.delete-brand').forEach(btn => {
-        btn.addEventListener('click', () => handleDeleteBrand(btn.dataset.brandId));
+    list.querySelectorAll(".delete-brand").forEach((btn) => {
+        btn.addEventListener("click", () => handleDeleteBrand(btn.dataset.brandId));
     });
 }
 
@@ -1674,31 +1933,33 @@ function renderBrands() {
  * @param {string} categoryId - معرف الفئة الرئيسية
  */
 function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
-    const list = document.getElementById('subcategoriesList');
-    const emptyState = document.getElementById('subcategoriesEmptyState');
+    const list = document.getElementById("subcategoriesList");
+    const emptyState = document.getElementById("subcategoriesEmptyState");
     if (!list || !emptyState) return;
 
-    const selectedCategoryId = categoryId || 'all';
+    const selectedCategoryId = categoryId || "all";
 
     let loading;
     let error;
     let subcategories;
 
-    if (selectedCategoryId === 'all') {
-        const categoryIds = state.categories.map(category => category.id);
-        loading = categoryIds.some(id => state.subcategoriesLoading[id]);
+    if (selectedCategoryId === "all") {
+        const categoryIds = state.categories.map((category) => category.id);
+        loading = categoryIds.some((id) => state.subcategoriesLoading[id]);
         const errors = categoryIds
-            .map(id => getSubcategoryError(id))
+            .map((id) => getSubcategoryError(id))
             .filter(Boolean);
         error = errors.length ? errors[0] : null;
-        subcategories = categoryIds.flatMap(id => {
+        subcategories = categoryIds.flatMap((id) => {
             const items = state.subcategories[id] || [];
-            return items.map(item => ({ ...item, categoryId: id }));
+            return items.map((item) => ({ ...item, categoryId: id }));
         });
     } else {
         loading = !!state.subcategoriesLoading[selectedCategoryId];
         error = getSubcategoryError(selectedCategoryId);
-        subcategories = (state.subcategories[selectedCategoryId] || []).map(item => ({ ...item, categoryId: selectedCategoryId }));
+        subcategories = (state.subcategories[selectedCategoryId] || []).map(
+            (item) => ({ ...item, categoryId: selectedCategoryId }),
+        );
     }
 
     emptyState.hidden = true;
@@ -1726,7 +1987,7 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
     }
 
     const filteredSubcategories = applyFilters(subcategories, [
-        filterBySearch(state.filters.subcategorySearch, ['name', 'description'])
+        filterBySearch(state.filters.subcategorySearch, ["name", "description"]),
     ]);
 
     if (!filteredSubcategories.length) {
@@ -1734,35 +1995,43 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
                     <div class="empty-state">
                         <i class="fas fa-sitemap"></i>
                         <h3>${state.filters.subcategorySearch
-                ? 'لا توجد نتائج مطابقة لبحثك'
-                : selectedCategoryId === 'all'
-                    ? 'لا توجد فئات فرعية حالياً'
-                    : 'لا توجد فئات فرعية لهذه الفئة'}</h3>
+                ? "لا توجد نتائج مطابقة لبحثك"
+                : selectedCategoryId === "all"
+                    ? "لا توجد فئات فرعية حالياً"
+                    : "لا توجد فئات فرعية لهذه الفئة"
+            }</h3>
                         <p>${state.filters.subcategorySearch
-                ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.'
-                : selectedCategoryId === 'all'
+                ? "حاول تعديل كلمات البحث أو إعادة ضبطه."
+                : selectedCategoryId === "all"
                     ? 'استخدم زر "إضافة فئة فرعية جديدة" لإنشاء أول فئة.'
-                    : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'}</p>
+                    : 'يمكنك استخدام زر "إضافة فئة فرعية جديدة" لإضافة فئات لهذه الفئة.'
+            }</p>
                     </div>
                 `;
         return;
     }
 
-    safeHTML(list, filteredSubcategories.map(subcategory => {
-        const parentCategoryId = subcategory.categoryId || selectedCategoryId;
-        const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
-        const image = subcategory.image || extras.image;
-        const description = subcategory.description || extras.description || 'لا يوجد وصف متاح لهذه الفئة الفرعية حالياً.';
-        const parentCategory = getCategoryById(parentCategoryId);
+    safeHTML(
+        list,
+        filteredSubcategories
+            .map((subcategory) => {
+                const parentCategoryId = subcategory.categoryId || selectedCategoryId;
+                const extras = getSubcategoryExtras(parentCategoryId, subcategory.id);
+                const image = subcategory.image || extras.image;
+                const description =
+                    subcategory.description ||
+                    extras.description ||
+                    "لا يوجد وصف متاح لهذه الفئة الفرعية حالياً.";
+                const parentCategory = getCategoryById(parentCategoryId);
 
-        return `
+                return `
                     <div class="subcategory-card" data-category-id="${parentCategoryId}" data-subcategory-id="${subcategory.id}">
-                        <div class="subcategory-thumb ${image ? 'has-image' : ''}">
+                        <div class="subcategory-thumb ${image ? "has-image" : ""}">
                             ${image ? `<img src="${image}" alt="${escapeHtml(subcategory.name)}">` : '<i class="fas fa-sitemap"></i>'}
                         </div>
                         <div class="subcategory-info">
                             <h3>${escapeHtml(subcategory.name)}</h3>
-                            ${parentCategory ? `<p class="subcategory-parent"><i class="fas fa-tags"></i> ${escapeHtml(parentCategory.name)}</p>` : ''}
+                            ${parentCategory ? `<p class="subcategory-parent"><i class="fas fa-tags"></i> ${escapeHtml(parentCategory.name)}</p>` : ""}
                         </div>
                         <div class="subcategory-actions">
                             <button class="btn-danger btn-sm" data-action="delete-subcategory" data-entity-id="${subcategory.id}" data-category-id="${parentCategoryId}" data-entity-name="${escapeHtml(subcategory.name)}" title="حذف"><i class="fas fa-trash"></i></button>
@@ -1770,7 +2039,9 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
                         </div>
                     </div>
                 `;
-    }).join(''));
+            })
+            .join(""),
+    );
 }
 
 // ========================================
@@ -1784,25 +2055,40 @@ function renderSubcategories(categoryId = state.filters.subcategoryCategory) {
  * @param {string} fallbackCategoryId - معرف الفئة الاحتياطي
  * @returns {Object|null} - الفئة الفرعية المطبعة
  */
-function normalizeSubcategory(rawSubcategory = {}, index = 0, fallbackCategoryId = '') {
-    if (!rawSubcategory || typeof rawSubcategory !== 'object') return null;
+function normalizeSubcategory(
+    rawSubcategory = {},
+    index = 0,
+    fallbackCategoryId = "",
+) {
+    if (!rawSubcategory || typeof rawSubcategory !== "object") return null;
 
-    const id = rawSubcategory._id || rawSubcategory.id || rawSubcategory.slug || `subcategory-${index}`;
-    const name = rawSubcategory.name || rawSubcategory.title || 'فئة فرعية بدون اسم';
+    const id =
+        rawSubcategory._id ||
+        rawSubcategory.id ||
+        rawSubcategory.slug ||
+        `subcategory-${index}`;
+    const name =
+        rawSubcategory.name || rawSubcategory.title || "فئة فرعية بدون اسم";
     const slug = rawSubcategory.slug || slugify(name);
-    const description = rawSubcategory.description || rawSubcategory.summary || rawSubcategory.details || '';
-    const status = rawSubcategory.status || 'active';
+    const description =
+        rawSubcategory.description ||
+        rawSubcategory.summary ||
+        rawSubcategory.details ||
+        "";
+    const status = rawSubcategory.status || "active";
 
-    const categoryField = rawSubcategory.category
-        ?? rawSubcategory.categoryId
-        ?? rawSubcategory.parent
-        ?? fallbackCategoryId;
+    const categoryField =
+        rawSubcategory.category ??
+        rawSubcategory.categoryId ??
+        rawSubcategory.parent ??
+        fallbackCategoryId;
 
-    let categoryId = '';
-    if (typeof categoryField === 'string') {
+    let categoryId = "";
+    if (typeof categoryField === "string") {
         categoryId = categoryField;
-    } else if (categoryField && typeof categoryField === 'object') {
-        categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
+    } else if (categoryField && typeof categoryField === "object") {
+        categoryId =
+            categoryField._id || categoryField.id || categoryField.slug || categoryId;
     }
 
     return {
@@ -1813,7 +2099,7 @@ function normalizeSubcategory(rawSubcategory = {}, index = 0, fallbackCategoryId
         status,
         image: extractCategoryImage(rawSubcategory),
         categoryId,
-        raw: rawSubcategory
+        raw: rawSubcategory,
     };
 }
 
@@ -1833,25 +2119,32 @@ let shippingZonesFetchPromise = null;
  * @returns {Promise} - وعد بالاستجابة
  */
 function decodeJwtPayload(token) {
-    if (!token || typeof token !== 'string') return null;
+    if (!token || typeof token !== "string") return null;
 
     try {
-        const parts = token.split('.');
+        const parts = token.split(".");
         if (parts.length < 2) return null;
 
-        let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
         while (payload.length % 4 !== 0) {
-            payload += '=';
+            payload += "=";
         }
 
         const decoded = atob(payload);
         try {
-            return JSON.parse(decodeURIComponent(decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            return JSON.parse(
+                decodeURIComponent(
+                    decoded
+                        .split("")
+                        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join(""),
+                ),
+            );
         } catch (_) {
             return JSON.parse(decoded);
         }
     } catch (error) {
-        console.warn('⚠️ Failed to decode JWT token:', error);
+        console.warn("⚠️ Failed to decode JWT token:", error);
         return null;
     }
 }
@@ -1860,7 +2153,7 @@ let isRefreshing = false;
 let refreshSubscribers = [];
 
 function authorizedFetch(url, options = {}) {
-    const baseOptions = { ...options, credentials: 'include' };
+    const baseOptions = { ...options, credentials: "include" };
 
     return fetch(url, baseOptions)
         .then(async (response) => {
@@ -1877,22 +2170,20 @@ function authorizedFetch(url, options = {}) {
                         return fetch(url, baseOptions);
                     } catch (refreshError) {
                         // Refresh failed, logout and redirect to login
-                        console.error('Token refresh failed:', refreshError);
+                        console.error("Token refresh failed:", refreshError);
                         window.adminAuth.logout();
                         return Promise.reject(refreshError);
                     } finally {
                         isRefreshing = false;
                         // Notify all waiting requests
-                        refreshSubscribers.forEach(callback => callback());
+                        refreshSubscribers.forEach((callback) => callback());
                         refreshSubscribers = [];
                     }
                 } else {
                     // If already refreshing, wait for it to complete
                     return new Promise((resolve, reject) => {
                         refreshSubscribers.push(() => {
-                            fetch(url, baseOptions)
-                                .then(resolve)
-                                .catch(reject);
+                            fetch(url, baseOptions).then(resolve).catch(reject);
                         });
                     });
                 }
@@ -1900,9 +2191,9 @@ function authorizedFetch(url, options = {}) {
 
             return response;
         })
-        .catch(error => {
+        .catch((error) => {
             // Handle network errors
-            console.error('Network error in authorizedFetch:', error);
+            console.error("Network error in authorizedFetch:", error);
             throw error;
         });
 }
@@ -1913,7 +2204,7 @@ function authorizedFetch(url, options = {}) {
  * @returns {Response} - نفس الاستجابة
  */
 function extractIdFromObject(entity) {
-    if (!entity || typeof entity !== 'object') return null;
+    if (!entity || typeof entity !== "object") return null;
 
     const candidates = [
         entity._id,
@@ -1929,18 +2220,18 @@ function extractIdFromObject(entity) {
         entity?.data?.user?._id,
         entity?.data?.user?.id,
         entity?.profile?._id,
-        entity?.profile?.id
+        entity?.profile?.id,
     ];
 
     for (const candidate of candidates) {
         if (!candidate) continue;
-        if (typeof candidate === 'string' && candidate.trim()) {
+        if (typeof candidate === "string" && candidate.trim()) {
             return candidate.trim();
         }
-        if (typeof candidate === 'object' && candidate.$oid) {
+        if (typeof candidate === "object" && candidate.$oid) {
             return String(candidate.$oid);
         }
-        if (typeof candidate === 'number') {
+        if (typeof candidate === "number") {
             return String(candidate);
         }
     }
@@ -1949,7 +2240,7 @@ function extractIdFromObject(entity) {
 }
 
 function setCachedAdminId(value) {
-    if (value && typeof value === 'string' && value.trim()) {
+    if (value && typeof value === "string" && value.trim()) {
         cachedAdminId = value.trim();
     }
 }
@@ -1971,17 +2262,18 @@ async function resolveCurrentAdminId(forceRefresh = false) {
             return cachedAdminId;
         }
     } catch (error) {
-        console.warn('⚠️ Failed to read stored admin user:', error);
+        console.warn("⚠️ Failed to read stored admin user:", error);
     }
 
     const token = auth.getToken?.();
     const payload = decodeJwtPayload(token);
-    const extractedFromPayload = extractIdFromObject(payload) || extractIdFromObject(payload?.user);
+    const extractedFromPayload =
+        extractIdFromObject(payload) || extractIdFromObject(payload?.user);
     if (extractedFromPayload && !forceRefresh) {
         setCachedAdminId(extractedFromPayload);
         return cachedAdminId;
     }
-    if (payload?.sub && typeof payload.sub === 'string' && !forceRefresh) {
+    if (payload?.sub && typeof payload.sub === "string" && !forceRefresh) {
         setCachedAdminId(payload.sub);
         return cachedAdminId;
     }
@@ -1989,7 +2281,7 @@ async function resolveCurrentAdminId(forceRefresh = false) {
     const candidateEndpoints = [
         `${ADMIN_API_BASE_URL}/auth/profile`,
         `${ADMIN_API_BASE_URL}/auth/me`,
-        `${USERS_ENDPOINT}/me`
+        `${USERS_ENDPOINT}/me`,
     ];
 
     for (const endpoint of candidateEndpoints) {
@@ -1997,24 +2289,38 @@ async function resolveCurrentAdminId(forceRefresh = false) {
             const response = await authorizedFetch(endpoint);
             if (!response?.ok) continue;
             const data = await response.json().catch(() => null);
-            const extracted = extractIdFromObject(data) || extractIdFromObject(data?.data) || extractIdFromObject(data?.user);
+            const extracted =
+                extractIdFromObject(data) ||
+                extractIdFromObject(data?.data) ||
+                extractIdFromObject(data?.user);
             if (extracted) {
                 setCachedAdminId(extracted);
                 return cachedAdminId;
             }
         } catch (error) {
-            console.warn(`⚠️ Failed to fetch admin identity from ${endpoint}:`, error);
+            console.warn(
+                `⚠️ Failed to fetch admin identity from ${endpoint}:`,
+                error,
+            );
         }
     }
 
     const email = authUser?.email ? String(authUser.email).toLowerCase() : null;
     if (email) {
         try {
-            const response = await authorizedFetch(`${USERS_ENDPOINT}?email=${encodeURIComponent(email)}`);
+            const response = await authorizedFetch(
+                `${USERS_ENDPOINT}?email=${encodeURIComponent(email)}`,
+            );
             if (response?.ok) {
                 const data = await response.json().catch(() => null);
-                const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-                const matched = list.find(item => String(item.email || '').toLowerCase() === email);
+                const list = Array.isArray(data?.data)
+                    ? data.data
+                    : Array.isArray(data)
+                        ? data
+                        : [];
+                const matched = list.find(
+                    (item) => String(item.email || "").toLowerCase() === email,
+                );
                 const extracted = extractIdFromObject(matched);
                 if (extracted) {
                     setCachedAdminId(extracted);
@@ -2022,17 +2328,19 @@ async function resolveCurrentAdminId(forceRefresh = false) {
                 }
             }
         } catch (error) {
-            console.warn('⚠️ Failed to lookup admin by email:', error);
+            console.warn("⚠️ Failed to lookup admin by email:", error);
         }
     }
 
-    console.warn('⚠️ Unable to determine current admin id. Password change request cannot proceed.');
+    console.warn(
+        "⚠️ Unable to determine current admin id. Password change request cannot proceed.",
+    );
     return null;
 }
 
 function handleUnauthorized(response) {
     if (response?.status === 401 && window.adminAuth) {
-        console.warn('انتهت صلاحية الجلسة، يتم إعادة التوجيه إلى صفحة الدخول.');
+        console.warn("انتهت صلاحية الجلسة، يتم إعادة التوجيه إلى صفحة الدخول.");
         window.adminAuth.logout();
     }
     return response;
@@ -2045,12 +2353,12 @@ function handleUnauthorized(response) {
 // متغيرات الرسوم البيانية
 let chartsLoaded = {
     overview: false,
-    analytics: false
+    analytics: false,
 };
 
 const chartInstances = {
     overview: {},
-    analytics: {}
+    analytics: {},
 };
 
 // ========================================
@@ -2067,57 +2375,117 @@ const mockData = {
             revenue: 0.18,
             avgOrder: 0.05,
             conversionRate: -0.005,
-            returnRate: -0.003
-        }
+            returnRate: -0.003,
+        },
     },
     overviewOrders: [
-        { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', date: '2025-10-25', payment: 'cash' }
+        {
+            id: "ORD-1042",
+            customer: "محمد أحمد",
+            total: 8690,
+            status: "processing",
+            date: "2025-10-25",
+            payment: "cash",
+        },
     ],
     products: [],
     categories: [],
     collections: [
-        { id: 'COL-1', name: 'حملة العودة للنادي', status: 'active', products: 12, schedule: '2025-10-01 — 2025-10-31', image: 'https://via.placeholder.com/400x200?text=Collection' }
+        {
+            id: "COL-1",
+            name: "حملة العودة للنادي",
+            status: "active",
+            products: 12,
+            schedule: "2025-10-01 — 2025-10-31",
+            image: "https://via.placeholder.com/400x200?text=Collection",
+        },
     ],
     promotions: [
-        { id: 'PR-1', title: 'خصم 20% على كل الأجهزة', type: 'percentage', value: '20%', period: '2025-10-20 — 2025-10-31', status: 'active' }
+        {
+            id: "PR-1",
+            title: "خصم 20% على كل الأجهزة",
+            type: "percentage",
+            value: "20%",
+            period: "2025-10-20 — 2025-10-31",
+            status: "active",
+        },
     ],
     banners: [],
     payments: [
-        { id: 'cod', name: 'الدفع عند الاستلام', note: '', enabled: true }
+        { id: "cod", name: "الدفع عند الاستلام", note: "", enabled: true },
     ],
     orders: [
-        { id: 'ORD-1042', customer: 'محمد أحمد', total: 8690, status: 'processing', payment: 'cash', date: '2025-10-25', items: 3 }
+        {
+            id: "ORD-1042",
+            customer: "محمد أحمد",
+            total: 8690,
+            status: "processing",
+            payment: "cash",
+            date: "2025-10-25",
+            items: 3,
+        },
     ],
     customers: [
-        { id: 'CUS-778', name: 'محمد أحمد', email: 'm.ahmed@example.com', segment: 'vip', orders: 12, spend: 98000, status: 'active', lastOrder: '2025-10-25' }
+        {
+            id: "CUS-778",
+            name: "محمد أحمد",
+            email: "m.ahmed@example.com",
+            segment: "vip",
+            orders: 12,
+            spend: 98000,
+            status: "active",
+            lastOrder: "2025-10-25",
+        },
     ],
     analyticsRangeOptions: [
-        { value: '7d', label: 'آخر 7 أيام' },
-        { value: '30d', label: 'آخر 30 يوم' },
-        { value: '90d', label: 'آخر 3 أشهر' },
-        { value: 'ytd', label: 'منذ بداية العام' }
+        { value: "7d", label: "آخر 7 أيام" },
+        { value: "30d", label: "آخر 30 يوم" },
+        { value: "90d", label: "آخر 3 أشهر" },
+        { value: "ytd", label: "منذ بداية العام" },
     ],
     auditLogs: [
-        { id: 1, createdAt: '2025-10-25 14:32:15', user: 'أحمد محمد', action: 'create', message: 'إضافة منتج جديد: "جهاز المشي"', ip: '192.168.1.1' }
+        {
+            id: 1,
+            createdAt: "2025-10-25 14:32:15",
+            user: "أحمد محمد",
+            action: "create",
+            message: 'إضافة منتج جديد: "جهاز المشي"',
+            ip: "192.168.1.1",
+        },
     ],
     users: [
-        { id: 'USR-1', name: 'أحمد محمد', email: 'ahmed@admin.com', role: 'admin', status: 'active', lastActive: '2025-10-25 14:32' }
+        {
+            id: "USR-1",
+            name: "أحمد محمد",
+            email: "ahmed@admin.com",
+            role: "admin",
+            status: "active",
+            lastActive: "2025-10-25 14:32",
+        },
     ],
     orderDetails: {
-        'ORD-1042': {
-            customer: { name: 'محمد أحمد', email: 'm.ahmed@example.com', phone: '01012345678' },
-            shipping: { line: '15 شارع الجامعة', city: 'المنصورة، الدقهلية', country: 'مصر - 35516' },
-            paymentMethod: 'الدفع عند الاستلام',
-            date: '2025-10-25 14:30',
+        "ORD-1042": {
+            customer: {
+                name: "محمد أحمد",
+                email: "m.ahmed@example.com",
+                phone: "01012345678",
+            },
+            shipping: {
+                line: "15 شارع الجامعة",
+                city: "المنصورة، الدقهلية",
+                country: "مصر - 35516",
+            },
+            paymentMethod: "الدفع عند الاستلام",
+            date: "2025-10-25 14:30",
             items: [
-                { name: 'جهاز المشي الكهربائي', quantity: 1, price: 8500 },
-                { name: 'حبل القفز الرياضي', quantity: 2, price: 120 }
+                { name: "جهاز المشي الكهربائي", quantity: 1, price: 8500 },
+                { name: "حبل القفز الرياضي", quantity: 2, price: 120 },
             ],
             summary: { subtotal: 8740, shipping: 50, discount: 100, total: 8690 },
-            status: 'processing',
-            notes: ''
-        }
-    }
+            status: "processing",
+            notes: "",
+        },
+    },
 };
 
 // ========================================
@@ -2127,27 +2495,27 @@ const mockData = {
 const state = {
     // الفلاتر
     filters: {
-        productSearch: '',
-        productCategory: 'all',
-        productStatus: 'all',
-        orderSearch: '',
-        orderStatus: 'all',
-        orderDate: '',
-        customerSearch: '',
-        customerOrdersFilter: 'all',
-        customerSegment: 'all',
-        auditSearch: '',
-        auditAction: 'all',
-        auditDate: '',
-        analyticsRange: '30',
+        productSearch: "",
+        productCategory: "all",
+        productStatus: "all",
+        orderSearch: "",
+        orderStatus: "all",
+        orderDate: "",
+        customerSearch: "",
+        customerOrdersFilter: "all",
+        customerSegment: "all",
+        auditSearch: "",
+        auditAction: "all",
+        auditDate: "",
+        analyticsRange: "30",
         analyticsDays: 30,
         analyticsStart: null,
         analyticsEnd: null,
-        categorySearch: '',
-        subcategoryCategory: 'all',
-        subcategorySearch: '',
-        brandSearch: '',
-        messagesSearch: ''
+        categorySearch: "",
+        subcategoryCategory: "all",
+        subcategorySearch: "",
+        brandSearch: "",
+        messagesSearch: "",
     },
     // الفئات
     categories: [],
@@ -2177,7 +2545,7 @@ const state = {
     bannersLoading: false,
     bannersError: null,
     // القسم الحالي
-    currentSection: 'overview',
+    currentSection: "overview",
     messages: [],
     unreadMessages: 0,
     messagesLoading: false,
@@ -2190,12 +2558,12 @@ const state = {
     ordersPagination: {
         currentPage: 1,
         totalPages: 1,
-        totalOrders: 0
+        totalOrders: 0,
     },
     shippingZones: [],
     shippingZonesLoading: false,
     shippingZonesError: null,
-    selectedShippingZoneId: '',
+    selectedShippingZoneId: "",
     // ===== LAZY LOADING FLAGS =====
     // Tracks which sections have been loaded to prevent duplicate loading
     sectionLoaded: {
@@ -2212,7 +2580,7 @@ const state = {
         settings: false,
         users: false,
         collections: false,
-        promotions: false
+        promotions: false,
     },
     // Tracks if section data is currently being loaded
     sectionLoading: {
@@ -2229,8 +2597,8 @@ const state = {
         settings: false,
         users: false,
         collections: false,
-        promotions: false
-    }
+        promotions: false,
+    },
 };
 
 // ========================================
@@ -2238,48 +2606,48 @@ const state = {
 // ========================================
 
 const STATUS_META = {
-    new: { label: 'جديد', class: 'status-new' },
-    preparing: { label: 'قيد التجهيز', class: 'status-preparing' },
-    in_transit: { label: 'قيد التوصيل', class: 'status-in_transit' },
-    delivered: { label: 'تم التوصيل', class: 'status-delivered' },
+    new: { label: "جديد", class: "status-new" },
+    preparing: { label: "قيد التجهيز", class: "status-preparing" },
+    in_transit: { label: "قيد التوصيل", class: "status-in_transit" },
+    delivered: { label: "تم التوصيل", class: "status-delivered" },
     // cancelled: { label: 'ملغي', class: 'status-cancelled' },
-    processing: { label: 'قيد المعالجة', class: 'status-processing' },
-    shipped: { label: 'تم الشحن', class: 'status-shipped' },
-    completed: { label: 'مكتمل', class: 'status-completed' },
-    active: { label: 'نشط', class: 'status-active' },
-    inactive: { label: 'غير نشط', class: 'status-inactive' },
-    scheduled: { label: 'مجدول', class: 'status-scheduled' },
-    paused: { label: 'متوقف', class: 'status-paused' },
-    low_stock: { label: 'مخزون منخفض', class: 'status-warning' },
-    login: { label: 'تسجيل دخول', class: 'action-login' },
-    create: { label: 'إضافة', class: 'action-create' },
-    update: { label: 'تعديل', class: 'action-update' },
-    delete: { label: 'حذف', class: 'action-delete' }
+    processing: { label: "قيد المعالجة", class: "status-processing" },
+    shipped: { label: "تم الشحن", class: "status-shipped" },
+    completed: { label: "مكتمل", class: "status-completed" },
+    active: { label: "نشط", class: "status-active" },
+    inactive: { label: "غير نشط", class: "status-inactive" },
+    scheduled: { label: "مجدول", class: "status-scheduled" },
+    paused: { label: "متوقف", class: "status-paused" },
+    low_stock: { label: "مخزون منخفض", class: "status-warning" },
+    login: { label: "تسجيل دخول", class: "action-login" },
+    create: { label: "إضافة", class: "action-create" },
+    update: { label: "تعديل", class: "action-update" },
+    delete: { label: "حذف", class: "action-delete" },
 };
 
-const ORDER_STATUS_FLOW = ['new', 'preparing', 'in_transit', 'delivered'];
+const ORDER_STATUS_FLOW = ["new", "preparing", "in_transit", "delivered"];
 
 function normalizeStatusKey(status) {
-    if (status === undefined || status === null) return '';
+    if (status === undefined || status === null) return "";
     const normalized = String(status).trim().toLowerCase();
-    if (!normalized) return '';
+    if (!normalized) return "";
 
-    const collapsed = normalized.replace(/[\s-]+/g, '_');
+    const collapsed = normalized.replace(/[\s-]+/g, "_");
     const aliases = {
-        canceled: 'cancelled',
-        cancelled: 'cancelled',
-        cancel: 'cancelled',
-        in_preparation: 'preparing',
-        preparation: 'preparing',
-        preparing: 'preparing',
-        pending: 'preparing',
-        processing: 'preparing',
-        in_delivery: 'in_transit',
-        indelivery: 'in_transit',
-        in_transit: 'in_transit',
-        delivery: 'in_transit',
-        shipped: 'in_transit',
-        out_for_delivery: 'in_transit'
+        canceled: "cancelled",
+        cancelled: "cancelled",
+        cancel: "cancelled",
+        in_preparation: "preparing",
+        preparation: "preparing",
+        preparing: "preparing",
+        pending: "preparing",
+        processing: "preparing",
+        in_delivery: "in_transit",
+        indelivery: "in_transit",
+        in_transit: "in_transit",
+        delivery: "in_transit",
+        shipped: "in_transit",
+        out_for_delivery: "in_transit",
     };
 
     if (aliases[collapsed]) {
@@ -2294,9 +2662,9 @@ function normalizeStatusKey(status) {
 }
 
 function getOrderStatusOptions() {
-    return ORDER_STATUS_FLOW.map(statusKey => ({
+    return ORDER_STATUS_FLOW.map((statusKey) => ({
         value: statusKey,
-        label: STATUS_META[statusKey]?.label || statusKey
+        label: STATUS_META[statusKey]?.label || statusKey,
     }));
 }
 
@@ -2305,19 +2673,23 @@ function getOrderStatusOptions() {
 function saveCurrentSection(section) {
     state.currentSection = section;
     try {
-        sessionStorage.setItem('currentSection', section);
+        sessionStorage.setItem("currentSection", section);
     } catch (error) {
-        console.warn('Failed to save current section', error);
+        console.warn("Failed to save current section", error);
     }
 }
 
 function hydrateSubcategoryCategoryOptions() {
     const categories = state.categories;
-    const filterSelect = document.getElementById('subcategoryCategoryFilter');
-    const formSelect = document.getElementById('subcategoryCategory');
+    const filterSelect = document.getElementById("subcategoryCategoryFilter");
+    const formSelect = document.getElementById("subcategoryCategory");
 
-    const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
-    const availableIds = new Set(categories.map(category => category.id));
+    const optionsMarkup = categories
+        .map(
+            (category) => `<option value="${category.id}">${category.name}</option>`,
+        )
+        .join("");
+    const availableIds = new Set(categories.map((category) => category.id));
 
     if (filterSelect) {
         const currentFilter = state.filters.subcategoryCategory;
@@ -2325,9 +2697,9 @@ function hydrateSubcategoryCategoryOptions() {
         if (currentFilter && availableIds.has(currentFilter)) {
             filterSelect.value = currentFilter;
         } else {
-            filterSelect.value = '';
+            filterSelect.value = "";
             if (currentFilter && !availableIds.has(currentFilter)) {
-                state.filters.subcategoryCategory = '';
+                state.filters.subcategoryCategory = "";
             }
         }
     }
@@ -2336,80 +2708,110 @@ function hydrateSubcategoryCategoryOptions() {
         const previousValue = formSelect.value;
         formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
 
-        const preferredValue = previousValue && availableIds.has(previousValue)
-            ? previousValue
-            : (state.filters.subcategoryCategory && availableIds.has(state.filters.subcategoryCategory)
-                ? state.filters.subcategoryCategory
-                : '');
+        const preferredValue =
+            previousValue && availableIds.has(previousValue)
+                ? previousValue
+                : state.filters.subcategoryCategory &&
+                    availableIds.has(state.filters.subcategoryCategory)
+                    ? state.filters.subcategoryCategory
+                    : "";
 
         formSelect.value = preferredValue;
     }
 }
 
 function populateSubcategoryModal(categoryId, subcategoryId = null) {
-    const form = document.getElementById('subcategoryForm');
+    const form = document.getElementById("subcategoryForm");
     if (!form) return;
 
     hydrateSubcategoryCategoryOptions();
 
-    const subcategory = subcategoryId ? getSubcategoryById(categoryId, subcategoryId) : null;
-    const resolvedCategoryId = categoryId
-        || subcategory?.categoryId
-        || state.filters.subcategoryCategory
-        || state.categories[0]?.id
-        || '';
-    const extras = subcategory ? getSubcategoryExtras(subcategory.categoryId || resolvedCategoryId, subcategory.id) : null;
+    const subcategory = subcategoryId
+        ? getSubcategoryById(categoryId, subcategoryId)
+        : null;
+    const resolvedCategoryId =
+        categoryId ||
+        subcategory?.categoryId ||
+        state.filters.subcategoryCategory ||
+        state.categories[0]?.id ||
+        "";
+    const extras = subcategory
+        ? getSubcategoryExtras(
+            subcategory.categoryId || resolvedCategoryId,
+            subcategory.id,
+        )
+        : null;
 
+    form.dataset.mode = subcategory ? "edit" : "create";
 
-
-    form.dataset.mode = subcategory ? 'edit' : 'create';
-
-    setFieldValue(form, 'id', subcategory?.id || '');
-    setFieldValue(form, 'categoryId', resolvedCategoryId);
-    setFieldValue(form, 'originalCategoryId', subcategory?.categoryId || resolvedCategoryId);
-    setFieldValue(form, 'name', subcategory?.name || '');
-    const resolvedName = subcategory?.name || '';
-    const resolvedSlug = subcategory?.slug || (resolvedName ? slugify(resolvedName) : '');
-    setFieldValue(form, 'slug', resolvedSlug);
-    const subcategoryDescriptionField = form.querySelector('[name="description"]');
-    const initialDescription = extras?.description || subcategory?.description || '';
-    setFieldValue(form, 'description', truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)));
+    setFieldValue(form, "id", subcategory?.id || "");
+    setFieldValue(form, "categoryId", resolvedCategoryId);
+    setFieldValue(
+        form,
+        "originalCategoryId",
+        subcategory?.categoryId || resolvedCategoryId,
+    );
+    setFieldValue(form, "name", subcategory?.name || "");
+    const resolvedName = subcategory?.name || "";
+    const resolvedSlug =
+        subcategory?.slug || (resolvedName ? slugify(resolvedName) : "");
+    setFieldValue(form, "slug", resolvedSlug);
+    const subcategoryDescriptionField = form.querySelector(
+        '[name="description"]',
+    );
+    const initialDescription =
+        extras?.description || subcategory?.description || "";
+    setFieldValue(
+        form,
+        "description",
+        truncateText(
+            initialDescription,
+            getDescriptionMaxLength(subcategoryDescriptionField),
+        ),
+    );
     if (subcategoryDescriptionField) {
         updateDescriptionCounter(subcategoryDescriptionField);
     }
 
-    const statusField = form.elements['status'];
+    const statusField = form.elements["status"];
     if (statusField) {
-        statusField.value = subcategory?.status || 'active';
+        statusField.value = subcategory?.status || "active";
     }
 
-    const imageInput = form.querySelector('#subcategoryImage');
-    const targetImage = resolveImageSource(extras?.image) || resolveImageSource(subcategory?.image) || '';
+    const imageInput = form.querySelector("#subcategoryImage");
+    const targetImage =
+        resolveImageSource(extras?.image) ||
+        resolveImageSource(subcategory?.image) ||
+        "";
     if (imageInput) {
-        imageInput.value = '';
+        imageInput.value = "";
         imageInput.dataset.originalImage = targetImage;
-        imageInput.dataset.previewImage = '';
+        imageInput.dataset.previewImage = "";
     }
     updateSubcategoryImagePreview(targetImage);
 
     const submitBtn = form.querySelector('[type="submit"]');
     if (submitBtn) {
-        submitBtn.textContent = subcategory ? 'حفظ التعديلات' : 'حفظ الفئة الفرعية';
+        submitBtn.textContent = subcategory ? "حفظ التعديلات" : "حفظ الفئة الفرعية";
     }
 
     if (subcategory) {
         const snapshot = {
             name: resolvedName,
             slug: resolvedSlug,
-            description: truncateText(initialDescription, getDescriptionMaxLength(subcategoryDescriptionField)) || '',
-            status: subcategory?.status || 'active',
-            categoryId: subcategory?.categoryId || resolvedCategoryId
+            description:
+                truncateText(
+                    initialDescription,
+                    getDescriptionMaxLength(subcategoryDescriptionField),
+                ) || "",
+            status: subcategory?.status || "active",
+            categoryId: subcategory?.categoryId || resolvedCategoryId,
         };
 
         try {
             form.dataset.originalSubcategory = JSON.stringify(snapshot);
         } catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
             delete form.dataset.originalSubcategory;
         }
     } else {
@@ -2419,35 +2821,36 @@ function populateSubcategoryModal(categoryId, subcategoryId = null) {
 
 async function handleProductFormSubmit(event) {
     event.preventDefault();
-    const form = event.target.closest('form');
-    if (!form || form.dataset.entity !== 'product') {
-        console.error('❌ Invalid form element');
+    const form = event.target.closest("form");
+    if (!form || form.dataset.entity !== "product") {
+        console.error("❌ Invalid form element");
         return;
     }
 
     // إظهار مؤشر التحميل
     const submitButton = form.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton?.innerHTML || 'حفظ';
+    const originalButtonText = submitButton?.innerHTML || "حفظ";
     if (submitButton) {
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+        submitButton.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
     }
 
     try {
         // التحقق من الحقول المطلوبة
         const requiredFields = [
-            { name: 'name', message: 'يرجى إدخال اسم المنتج' },
-            { name: 'price', message: 'يرجى إدخال سعر المنتج' },
-            { name: 'brand', message: 'يرجى اختيار علامة تجارية' },
-            { name: 'category', message: 'يرجى اختيار الفئة الرئيسية' },
-            { name: 'description', message: 'يرجى إدخال وصف للمنتج' }
+            { name: "name", message: "يرجى إدخال اسم المنتج" },
+            { name: "price", message: "يرجى إدخال سعر المنتج" },
+            { name: "brand", message: "يرجى اختيار علامة تجارية" },
+            { name: "category", message: "يرجى اختيار الفئة الرئيسية" },
+            { name: "description", message: "يرجى إدخال وصف للمنتج" },
         ];
 
         // التحقق من الحقول المطلوبة
         for (const field of requiredFields) {
             const input = form.querySelector(`[name="${field.name}"]`);
             if (input && !input.value.trim()) {
-                showToast('error', 'خطأ في الإدخال', field.message);
+                showToast("error", "خطأ في الإدخال", field.message);
                 input.focus();
                 if (submitButton) {
                     submitButton.disabled = false;
@@ -2457,13 +2860,17 @@ async function handleProductFormSubmit(event) {
             }
         }
 
-        const mode = form.dataset.mode || 'create';
+        const mode = form.dataset.mode || "create";
         const id = form.querySelector('[name="id"]')?.value;
-        const discountInputValue = form.querySelector('[name="priceAfterDiscount"]')?.value.trim() ?? '';
-        const originalDiscountValue = form.dataset.originalPriceAfterDiscount ?? '';
-        const normalizedCurrentDiscount = discountInputValue || '';
-        const normalizedOriginalDiscount = originalDiscountValue || '';
-        const discountNeedsUpdate = mode === 'edit' && id && normalizedCurrentDiscount !== normalizedOriginalDiscount;
+        const discountInputValue =
+            form.querySelector('[name="priceAfterDiscount"]')?.value.trim() ?? "";
+        const originalDiscountValue = form.dataset.originalPriceAfterDiscount ?? "";
+        const normalizedCurrentDiscount = discountInputValue || "";
+        const normalizedOriginalDiscount = originalDiscountValue || "";
+        const discountNeedsUpdate =
+            mode === "edit" &&
+            id &&
+            normalizedCurrentDiscount !== normalizedOriginalDiscount;
 
         try {
             // بناء بيانات المنتج
@@ -2478,7 +2885,7 @@ async function handleProductFormSubmit(event) {
             // Get existing images that were not removed
             let existingImages = [];
             try {
-                existingImages = JSON.parse(form.dataset.existingProductImages || '[]');
+                existingImages = JSON.parse(form.dataset.existingProductImages || "[]");
             } catch (e) {
                 existingImages = [];
             }
@@ -2486,35 +2893,42 @@ async function handleProductFormSubmit(event) {
             try {
                 // طباعة البيانات للتشخيص
                 // إضافة رسالة تحميل
-                showToast('info', 'جاري الحفظ', 'جاري حفظ المنتج، يرجى الانتظار...', 2000);
+                showToast(
+                    "info",
+                    "جاري الحفظ",
+                    "جاري حفظ المنتج، يرجى الانتظار...",
+                    2000,
+                );
 
-                if (mode === 'edit' && id) {
+                if (mode === "edit" && id) {
                     await updateProduct(id, payload, newImageFiles, existingImages);
 
                     if (discountNeedsUpdate) {
-                        const numericDiscount = normalizedCurrentDiscount === '' ? null : Number(normalizedCurrentDiscount);
+                        const numericDiscount =
+                            normalizedCurrentDiscount === ""
+                                ? null
+                                : Number(normalizedCurrentDiscount);
                         await updateProductDiscountPrice(id, numericDiscount);
                     }
 
                     form.dataset.originalPriceAfterDiscount = normalizedCurrentDiscount;
-                    showToast('success', 'تم التحديث', 'تم تحديث المنتج بنجاح');
+                    showToast("success", "تم التحديث", "تم تحديث المنتج بنجاح");
                 } else {
                     await createProduct(payload, newImageFiles);
-                    showToast('success', 'تمت الإضافة', 'تمت إضافة المنتج بنجاح');
+                    showToast("success", "تمت الإضافة", "تمت إضافة المنتج بنجاح");
                     form.reset(); // إعادة تعيين النموذج بعد الإضافة
-                    form.dataset.originalPriceAfterDiscount = '';
+                    form.dataset.originalPriceAfterDiscount = "";
                 }
 
                 // إغلاق المودال بعد الحفظ
-                closeModal('addProductModal');
+                closeModal("addProductModal");
 
                 // تحديث قائمة المنتجات
                 await fetchProducts();
                 renderProducts();
-
             } catch (error) {
-                console.error('Error:', error);
-                let errorMessage = 'حدث خطأ أثناء محاولة حفظ المنتج';
+                console.error("Error:", error);
+                let errorMessage = "حدث خطأ أثناء محاولة حفظ المنتج";
 
                 if (error.response) {
                     // معالجة أخطاء API
@@ -2524,34 +2938,38 @@ async function handleProductFormSubmit(event) {
                     // معالجة أخطاء التحقق من الصحة
                     if (errorData.errors) {
                         const errorMessages = Object.values(errorData.errors).flat();
-                        errorMessage = errorMessages.join('\n');
+                        errorMessage = errorMessages.join("\n");
                     }
                 } else if (error.request) {
-                    errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
+                    errorMessage =
+                        "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
                 }
 
-                showToast('error', 'خطأ', errorMessage);
+                showToast("error", "خطأ", errorMessage);
             }
         } catch (error) {
-            console.error('Error:', error);
-            let errorMessage = error.message || 'الرجاء التحقق من البيانات المدخلة';
+            console.error("Error:", error);
+            let errorMessage = error.message || "الرجاء التحقق من البيانات المدخلة";
 
             // تحسين رسائل الخطأ
-            if (error.message.includes('brand') || error.message.includes('علامة تجارية')) {
-                errorMessage = 'يجب اختيار علامة تجارية صالحة';
-                const brandSelect = form.querySelector('#productBrand');
+            if (
+                error.message.includes("brand") ||
+                error.message.includes("علامة تجارية")
+            ) {
+                errorMessage = "يجب اختيار علامة تجارية صالحة";
+                const brandSelect = form.querySelector("#productBrand");
                 if (brandSelect) brandSelect.focus();
-            } else if (error.message.includes('category')) {
-                errorMessage = 'يجب اختيار فئة رئيسية صالحة';
-                const categorySelect = form.querySelector('#productCategory');
+            } else if (error.message.includes("category")) {
+                errorMessage = "يجب اختيار فئة رئيسية صالحة";
+                const categorySelect = form.querySelector("#productCategory");
                 if (categorySelect) categorySelect.focus();
-            } else if (error.message.includes('price')) {
-                errorMessage = 'يجب إدخال سعر صحيح';
+            } else if (error.message.includes("price")) {
+                errorMessage = "يجب إدخال سعر صحيح";
                 const priceInput = form.querySelector('[name="price"]');
                 if (priceInput) priceInput.focus();
             }
 
-            showToast('error', 'خطأ في البيانات', errorMessage);
+            showToast("error", "خطأ في البيانات", errorMessage);
             return;
         } finally {
             // إعادة تفعيل زر الحفظ
@@ -2561,14 +2979,14 @@ async function handleProductFormSubmit(event) {
             }
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
 
         // معالجة أخطاء التحقق من صحة البيانات
-        if (error.message.includes('validation failed')) {
-            const errorMessage = error.message.split(':').pop().trim();
-            showToast('error', 'خطأ في التحقق من صحة البيانات', errorMessage);
+        if (error.message.includes("validation failed")) {
+            const errorMessage = error.message.split(":").pop().trim();
+            showToast("error", "خطأ في التحقق من صحة البيانات", errorMessage);
         } else {
-            showToast('error', 'خطأ', 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى');
+            showToast("error", "خطأ", "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى");
         }
     }
 }
@@ -2576,63 +2994,64 @@ async function handleProductFormSubmit(event) {
 // تحميل القسم المحفوظ أو الافتراضي عند بدء التطبيق
 function loadCurrentSection() {
     try {
-        return sessionStorage.getItem('currentSection') || 'overview';
+        return sessionStorage.getItem("currentSection") || "overview";
     } catch (error) {
-        console.error('Error:', error);
-        return 'overview';
+        console.error("Error:", error);
+        return "overview";
     }
 }
 
 // ===== Utility Helpers =====
-function escapeHtml(value = '') {
+function escapeHtml(value = "") {
     return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
-function resolveAssetUrl(path = '') {
-    if (!path || typeof path !== 'string') return '';
+function resolveAssetUrl(path = "") {
+    if (!path || typeof path !== "string") return "";
     const trimmed = path.trim();
 
-    if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:')) {
+    if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:")) {
         return trimmed;
     }
 
     try {
         const base = new URL(ADMIN_API_BASE_URL);
-        const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+        const normalizedPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
         base.pathname = normalizedPath;
-        base.search = '';
-        base.hash = '';
+        base.search = "";
+        base.hash = "";
         return base.toString();
     } catch (error) {
-        console.warn('Failed to resolve asset url:', path, error);
+        console.warn("Failed to resolve asset url:", path, error);
         return trimmed;
     }
 }
 
 function resolveImageSource(value) {
-    if (!value) return '';
-    if (typeof value === 'string') {
+    if (!value) return "";
+    if (typeof value === "string") {
         return resolveAssetUrl(value);
     }
 
-    if (typeof value === 'object') {
-        const candidate = value.secure_url
-            || value.url
-            || value.src
-            || value.path
-            || value.href
-            || value.preview;
+    if (typeof value === "object") {
+        const candidate =
+            value.secure_url ||
+            value.url ||
+            value.src ||
+            value.path ||
+            value.href ||
+            value.preview;
         if (candidate) {
             return resolveAssetUrl(candidate);
         }
     }
 
-    return '';
+    return "";
 }
 
 function extractCategoryImage(rawCategory = {}) {
@@ -2640,7 +3059,7 @@ function extractCategoryImage(rawCategory = {}) {
 
     const addCandidate = (value) => {
         if (!value) return;
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             candidates.push(value);
             return;
         }
@@ -2650,12 +3069,9 @@ function extractCategoryImage(rawCategory = {}) {
             return;
         }
 
-        if (typeof value === 'object') {
-            const candidate = value.secure_url
-                || value.url
-                || value.src
-                || value.path
-                || value.href;
+        if (typeof value === "object") {
+            const candidate =
+                value.secure_url || value.url || value.src || value.path || value.href;
             if (candidate) {
                 candidates.push(candidate);
             }
@@ -2671,21 +3087,26 @@ function extractCategoryImage(rawCategory = {}) {
     }
 
     const resolved = candidates
-        .map(candidate => resolveAssetUrl(candidate))
-        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
+        .map((candidate) => resolveAssetUrl(candidate))
+        .find(
+            (candidate) =>
+                typeof candidate === "string" && candidate.trim().length > 0,
+        );
 
-    return resolved || '';
+    return resolved || "";
 }
 
-const PRODUCT_PLACEHOLDER_IMAGE = 'https://via.placeholder.com/320x200?text=Product';
-const BANNER_IMAGE_PLACEHOLDER = 'https://via.placeholder.com/1200x400?text=Banner';
+const PRODUCT_PLACEHOLDER_IMAGE =
+    "https://via.placeholder.com/320x200?text=Product";
+const BANNER_IMAGE_PLACEHOLDER =
+    "https://via.placeholder.com/1200x400?text=Banner";
 
 function extractProductImage(rawProduct = {}) {
     const candidates = [];
 
     const addCandidate = (value) => {
         if (!value) return;
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             candidates.push(value);
             return;
         }
@@ -2695,13 +3116,14 @@ function extractProductImage(rawProduct = {}) {
             return;
         }
 
-        if (typeof value === 'object') {
-            const candidate = value.secure_url
-                || value.url
-                || value.src
-                || value.path
-                || value.href
-                || value.preview;
+        if (typeof value === "object") {
+            const candidate =
+                value.secure_url ||
+                value.url ||
+                value.src ||
+                value.path ||
+                value.href ||
+                value.preview;
             if (candidate) {
                 candidates.push(candidate);
             }
@@ -2719,112 +3141,148 @@ function extractProductImage(rawProduct = {}) {
     }
 
     const resolved = candidates
-        .map(candidate => resolveAssetUrl(candidate))
-        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0);
+        .map((candidate) => resolveAssetUrl(candidate))
+        .find(
+            (candidate) =>
+                typeof candidate === "string" && candidate.trim().length > 0,
+        );
 
     return resolved || PRODUCT_PLACEHOLDER_IMAGE;
 }
 
-function slugifyProduct(value = '') {
-    return value
-        .toString()
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\u0600-\u06FF]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        || `product-${Date.now()}`;
+function slugifyProduct(value = "") {
+    return (
+        value
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/[^\w\u0600-\u06FF]+/g, "-")
+            .replace(/^-+|-+$/g, "") || `product-${Date.now()}`
+    );
 }
 
 function normalizeProduct(rawProduct = {}, index = 0) {
-    if (!rawProduct || typeof rawProduct !== 'object') return null;
+    if (!rawProduct || typeof rawProduct !== "object") return null;
 
-    const id = rawProduct._id || rawProduct.id || rawProduct.slug || `product-${index}`;
-    const name = rawProduct.name || rawProduct.title || 'منتج بدون اسم';
+    const id =
+        rawProduct._id || rawProduct.id || rawProduct.slug || `product-${index}`;
+    const name = rawProduct.name || rawProduct.title || "منتج بدون اسم";
     const title = rawProduct.name || rawProduct.title || name;
-    const slug = rawProduct.slug || rawProduct.handle || slugifyProduct(title || name);
-    const sku = rawProduct.sku || rawProduct.code || '';
-    const priceSource = rawProduct.price?.current
-        ?? rawProduct.price?.value
-        ?? rawProduct.price?.amount
-        ?? rawProduct.price
-        ?? rawProduct.currentPrice
-        ?? rawProduct.salePrice;
-    const price = Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
+    const slug =
+        rawProduct.slug || rawProduct.handle || slugifyProduct(title || name);
+    const sku = rawProduct.sku || rawProduct.code || "";
+    const priceSource =
+        rawProduct.price?.current ??
+        rawProduct.price?.value ??
+        rawProduct.price?.amount ??
+        rawProduct.price ??
+        rawProduct.currentPrice ??
+        rawProduct.salePrice;
+    const price =
+        Number(priceSource) && Number(priceSource) > 0 ? Number(priceSource) : 0;
 
-    const priceAfterDiscountSource = rawProduct.priceAfterDiscount
-        ?? rawProduct.discountedPrice
-        ?? rawProduct.discountPrice
-        ?? rawProduct.discount_value
-        ?? rawProduct.discount
-        ?? rawProduct.price?.afterDiscount
-        ?? rawProduct.price?.discounted
-        ?? rawProduct.salePriceAfterDiscount
-        ?? null;
+    const priceAfterDiscountSource =
+        rawProduct.priceAfterDiscount ??
+        rawProduct.discountedPrice ??
+        rawProduct.discountPrice ??
+        rawProduct.discount_value ??
+        rawProduct.discount ??
+        rawProduct.price?.afterDiscount ??
+        rawProduct.price?.discounted ??
+        rawProduct.salePriceAfterDiscount ??
+        null;
     const parsedDiscountPrice = Number(priceAfterDiscountSource);
-    const priceAfterDiscount = Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= 0
-        ? parsedDiscountPrice
-        : null;
+    const priceAfterDiscount =
+        Number.isFinite(parsedDiscountPrice) && parsedDiscountPrice >= 0
+            ? parsedDiscountPrice
+            : null;
 
-    const installationPriceSource = rawProduct.installationPrice
-        ?? rawProduct.installation_price
-        ?? rawProduct.installation?.price
-        ?? rawProduct.installation?.value
-        ?? null;
-    const installationPrice = Number.isFinite(Number(installationPriceSource)) && Number(installationPriceSource) >= 0
-        ? Number(installationPriceSource)
-        : null;
+    const installationPriceSource =
+        rawProduct.installationPrice ??
+        rawProduct.installation_price ??
+        rawProduct.installation?.price ??
+        rawProduct.installation?.value ??
+        null;
+    const installationPrice =
+        Number.isFinite(Number(installationPriceSource)) &&
+            Number(installationPriceSource) >= 0
+            ? Number(installationPriceSource)
+            : null;
 
-    const quantitySource = rawProduct.quantity
-        ?? rawProduct.stock
-        ?? rawProduct.availableQuantity
-        ?? rawProduct.inventory
-        ?? 0;
-    const quantity = Number.isFinite(Number(quantitySource)) ? Number(quantitySource) : 0;
+    const quantitySource =
+        rawProduct.quantity ??
+        rawProduct.stock ??
+        rawProduct.availableQuantity ??
+        rawProduct.inventory ??
+        0;
+    const quantity = Number.isFinite(Number(quantitySource))
+        ? Number(quantitySource)
+        : 0;
 
-    const status = rawProduct.status || (quantity > 0 ? 'active' : 'inactive');
+    const status = rawProduct.status || (quantity > 0 ? "active" : "inactive");
 
     const categoryField = rawProduct.category ?? rawProduct.mainCategory;
-    let categoryId = 'uncategorized';
-    let categorySlug = 'uncategorized';
-    let categoryName = 'فئة غير محددة';
+    let categoryId = "uncategorized";
+    let categorySlug = "uncategorized";
+    let categoryName = "فئة غير محددة";
 
-    if (typeof categoryField === 'string') {
+    if (typeof categoryField === "string") {
         categoryId = categoryField;
         categorySlug = categoryField;
-    } else if (categoryField && typeof categoryField === 'object') {
-        categoryId = categoryField._id || categoryField.id || categoryField.slug || categoryId;
+    } else if (categoryField && typeof categoryField === "object") {
+        categoryId =
+            categoryField._id || categoryField.id || categoryField.slug || categoryId;
         categorySlug = categoryField.slug || categoryField._id || categorySlug;
         categoryName = categoryField.name || categoryField.title || categoryName;
     }
 
-    const subCategoryField = rawProduct.subCategory || rawProduct.subcategory || rawProduct.subCategoryId;
-    let subCategoryId = 'all';
-    let subCategorySlug = 'all';
-    let subCategoryName = '';
+    const subCategoryField =
+        rawProduct.subCategory ||
+        rawProduct.subcategory ||
+        rawProduct.subCategoryId;
+    let subCategoryId = "all";
+    let subCategorySlug = "all";
+    let subCategoryName = "";
 
-    if (typeof subCategoryField === 'string') {
+    if (typeof subCategoryField === "string") {
         subCategoryId = subCategoryField;
         subCategorySlug = subCategoryField;
-    } else if (subCategoryField && typeof subCategoryField === 'object') {
-        subCategoryId = subCategoryField._id || subCategoryField.id || subCategoryField.slug || subCategoryId;
-        subCategorySlug = subCategoryField.slug || subCategoryField._id || subCategorySlug;
-        subCategoryName = subCategoryField.name || subCategoryField.title || subCategoryName;
+    } else if (subCategoryField && typeof subCategoryField === "object") {
+        subCategoryId =
+            subCategoryField._id ||
+            subCategoryField.id ||
+            subCategoryField.slug ||
+            subCategoryId;
+        subCategorySlug =
+            subCategoryField.slug || subCategoryField._id || subCategorySlug;
+        subCategoryName =
+            subCategoryField.name || subCategoryField.title || subCategoryName;
     }
 
-    const description = rawProduct.description || rawProduct.summary || rawProduct.shortDescription || '';
-    const specs = rawProduct.specs
-        || rawProduct.details
-        || rawProduct.specifications
-        || rawProduct.features
-        || '';
+    const description =
+        rawProduct.description ||
+        rawProduct.summary ||
+        rawProduct.shortDescription ||
+        "";
+    const specs =
+        rawProduct.specs ||
+        rawProduct.details ||
+        rawProduct.specifications ||
+        rawProduct.features ||
+        "";
     const image = extractProductImage(rawProduct);
     const sold = rawProduct.sold ?? rawProduct.sales ?? 0;
-    const rating = rawProduct.rating?.average ?? rawProduct.ratingAverage ?? rawProduct.averageRating ?? rawProduct.rating ?? 0;
+    const rating =
+        rawProduct.rating?.average ??
+        rawProduct.ratingAverage ??
+        rawProduct.averageRating ??
+        rawProduct.rating ??
+        0;
     const colors = Array.isArray(rawProduct.colors)
-        ? rawProduct.colors.map(color => String(color).trim()).filter(Boolean)
+        ? rawProduct.colors.map((color) => String(color).trim()).filter(Boolean)
         : [];
-    const brandId = rawProduct.brand?._id || rawProduct.brand?.id || '';
-    const brandName = rawProduct.brand?.name || rawProduct.brand || '';
+    const brandId = rawProduct.brand?._id || rawProduct.brand?.id || "";
+    const brandName = rawProduct.brand?.name || rawProduct.brand || "";
 
     return {
         id,
@@ -2846,7 +3304,7 @@ function normalizeProduct(rawProduct = {}, index = 0) {
         images: Array.isArray(rawProduct.images) ? rawProduct.images : [],
         description,
         specs,
-        brand: rawProduct.brand?.name || rawProduct.brand || '',
+        brand: rawProduct.brand?.name || rawProduct.brand || "",
         brandId,
         brandName,
         colors,
@@ -2854,7 +3312,7 @@ function normalizeProduct(rawProduct = {}, index = 0) {
         rating,
         installationPrice,
         raw: rawProduct,
-        priceAfterDiscount
+        priceAfterDiscount,
     };
 }
 
@@ -2865,7 +3323,7 @@ function syncProductExtras(products = []) {
             description: product.description,
             specs: product.specs,
             images: Array.isArray(product.images) ? product.images : [],
-            brandName: product.brandName || product.brand || ''
+            brandName: product.brandName || product.brand || "",
         };
         return acc;
     }, {});
@@ -2875,7 +3333,7 @@ function upsertProductExtras(productId, extras = {}) {
     if (!productId) return;
     state.productExtras[productId] = {
         ...(state.productExtras[productId] || {}),
-        ...extras
+        ...extras,
     };
 }
 
@@ -2894,22 +3352,34 @@ function getBannerSource() {
 }
 
 function normalizeBanner(rawBanner = {}, index = 0) {
-    if (!rawBanner || typeof rawBanner !== 'object') return null;
+    if (!rawBanner || typeof rawBanner !== "object") return null;
 
-    const id = rawBanner._id
-        || rawBanner.id
-        || rawBanner.bannerId
-        || rawBanner.slug
-        || rawBanner.reference
-        || rawBanner.uuid
-        || `banner-${Date.now()}-${index}`;
+    const id =
+        rawBanner._id ||
+        rawBanner.id ||
+        rawBanner.bannerId ||
+        rawBanner.slug ||
+        rawBanner.reference ||
+        rawBanner.uuid ||
+        `banner-${Date.now()}-${index}`;
 
-    const title = rawBanner.title || rawBanner.name || 'بانر بدون عنوان';
-    const description = rawBanner.description || rawBanner.subtitle || rawBanner.details || '';
-    const placement = rawBanner.placement || rawBanner.position || rawBanner.location || 'home_hero';
-    const status = rawBanner.status || rawBanner.state || 'active';
-    const link = rawBanner.link || rawBanner.url || rawBanner.targetUrl || rawBanner.href || '';
-    const order = rawBanner.order ?? rawBanner.sortOrder ?? rawBanner.priority ?? 0;
+    const title = rawBanner.title || rawBanner.name || "بانر بدون عنوان";
+    const description =
+        rawBanner.description || rawBanner.subtitle || rawBanner.details || "";
+    const placement =
+        rawBanner.placement ||
+        rawBanner.position ||
+        rawBanner.location ||
+        "home_hero";
+    const status = rawBanner.status || rawBanner.state || "active";
+    const link =
+        rawBanner.link ||
+        rawBanner.url ||
+        rawBanner.targetUrl ||
+        rawBanner.href ||
+        "";
+    const order =
+        rawBanner.order ?? rawBanner.sortOrder ?? rawBanner.priority ?? 0;
 
     const imageCandidates = [
         rawBanner.image?.secure_url,
@@ -2919,25 +3389,30 @@ function normalizeBanner(rawBanner = {}, index = 0) {
         rawBanner.bannerImage,
         rawBanner.thumbnail,
         rawBanner.cover,
-        rawBanner.mediaUrl
+        rawBanner.mediaUrl,
     ];
 
-    const image = imageCandidates
-        .map(candidate => resolveAssetUrl(candidate))
-        .find(candidate => typeof candidate === 'string' && candidate.trim().length > 0)
-        || BANNER_IMAGE_PLACEHOLDER;
+    const image =
+        imageCandidates
+            .map((candidate) => resolveAssetUrl(candidate))
+            .find(
+                (candidate) =>
+                    typeof candidate === "string" && candidate.trim().length > 0,
+            ) || BANNER_IMAGE_PLACEHOLDER;
 
-    const scheduleStart = rawBanner.schedule?.start
-        || rawBanner.startDate
-        || rawBanner.start_at
-        || rawBanner.validFrom
-        || null;
+    const scheduleStart =
+        rawBanner.schedule?.start ||
+        rawBanner.startDate ||
+        rawBanner.start_at ||
+        rawBanner.validFrom ||
+        null;
 
-    const scheduleEnd = rawBanner.schedule?.end
-        || rawBanner.endDate
-        || rawBanner.end_at
-        || rawBanner.validTo
-        || null;
+    const scheduleEnd =
+        rawBanner.schedule?.end ||
+        rawBanner.endDate ||
+        rawBanner.end_at ||
+        rawBanner.validTo ||
+        null;
 
     return {
         id,
@@ -2950,29 +3425,34 @@ function normalizeBanner(rawBanner = {}, index = 0) {
         order,
         schedule: {
             start: scheduleStart,
-            end: scheduleEnd
+            end: scheduleEnd,
         },
         createdAt: rawBanner.createdAt,
         updatedAt: rawBanner.updatedAt,
-        raw: rawBanner
+        raw: rawBanner,
     };
 }
 
-function slugify(value = '') {
-    return value
-        .toString()
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\u0600-\u06FF]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        || `category-${Date.now()}`;
+function slugify(value = "") {
+    return (
+        value
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/[^\w\u0600-\u06FF]+/g, "-")
+            .replace(/^-+|-+$/g, "") || `category-${Date.now()}`
+    );
 }
 
 function normalizeCategory(rawCategory = {}, index = 0) {
-    if (!rawCategory || typeof rawCategory !== 'object') return null;
+    if (!rawCategory || typeof rawCategory !== "object") return null;
 
-    const id = rawCategory._id || rawCategory.id || rawCategory.slug || `category-${index}`;
-    const name = rawCategory.name || rawCategory.title || 'فئة بدون اسم';
+    const id =
+        rawCategory._id ||
+        rawCategory.id ||
+        rawCategory.slug ||
+        `category-${index}`;
+    const name = rawCategory.name || rawCategory.title || "فئة بدون اسم";
     const slug = rawCategory.slug || slugify(name);
 
     return {
@@ -2980,55 +3460,64 @@ function normalizeCategory(rawCategory = {}, index = 0) {
         name,
         slug,
         image: extractCategoryImage(rawCategory),
-        status: rawCategory.status || 'active',
-        subcategoriesCount: rawCategory.subcategoriesCount
-            ?? rawCategory.subCategoriesCount
-            ?? rawCategory.subCategories?.length
-            ?? rawCategory.subcategories?.length
-            ?? rawCategory.children?.length
-            ?? 0,
-        productsCount: rawCategory.productsCount
-            ?? rawCategory.productsNumber
-            ?? rawCategory.products?.length
-            ?? rawCategory.count
-            ?? 0,
+        status: rawCategory.status || "active",
+        subcategoriesCount:
+            rawCategory.subcategoriesCount ??
+            rawCategory.subCategoriesCount ??
+            rawCategory.subCategories?.length ??
+            rawCategory.subcategories?.length ??
+            rawCategory.children?.length ??
+            0,
+        productsCount:
+            rawCategory.productsCount ??
+            rawCategory.productsNumber ??
+            rawCategory.products?.length ??
+            rawCategory.count ??
+            0,
         createdAt: rawCategory.createdAt,
         updatedAt: rawCategory.updatedAt,
-        description: rawCategory.description || rawCategory.summary || rawCategory.details || ''
+        description:
+            rawCategory.description ||
+            rawCategory.summary ||
+            rawCategory.details ||
+            "",
     };
 }
 
 function normalizeOrderId(orderId) {
-    if (!orderId) return '';
+    if (!orderId) return "";
     return String(orderId).trim();
 }
 
 function getDefaultCategoryExtras() {
     return {
-        image: '',
-        description: ''
+        image: "",
+        description: "",
     };
 }
 
 function upsertCategoryExtras(categoryId, extras = {}) {
     if (!categoryId) return;
 
-    const current = state.categoryExtras[categoryId] || getDefaultCategoryExtras();
+    const current =
+        state.categoryExtras[categoryId] || getDefaultCategoryExtras();
 
     const next = {
-        image: extras.image ?? current.image ?? '',
-        description: extras.description ?? current.description ?? ''
+        image: extras.image ?? current.image ?? "",
+        description: extras.description ?? current.description ?? "",
     };
 
     state.categoryExtras[categoryId] = next;
 
-    const index = state.categories.findIndex(category => category.id === categoryId);
+    const index = state.categories.findIndex(
+        (category) => category.id === categoryId,
+    );
     if (index !== -1) {
         const existing = state.categories[index];
         state.categories[index] = {
             ...existing,
             image: next.image,
-            description: next.description || existing.description || ''
+            description: next.description || existing.description || "",
         };
     }
 
@@ -3040,7 +3529,7 @@ function syncCategoryExtras(categories = []) {
         const base = getDefaultCategoryExtras();
         acc[category.id] = {
             image: category.image ?? base.image,
-            description: category.description ?? base.description
+            description: category.description ?? base.description,
         };
         return acc;
     }, {});
@@ -3056,7 +3545,7 @@ function getCategorySource() {
 
 function getCategoryById(categoryId) {
     const source = getCategorySource();
-    return source.find(category => category.id === categoryId);
+    return source.find((category) => category.id === categoryId);
 }
 
 function ensureCategorySubcategories(categoryId) {
@@ -3079,13 +3568,13 @@ function getSubcategories(categoryId, { fallback = [] } = {}) {
 function getSubcategoryById(categoryId, subcategoryId) {
     if (!categoryId || !subcategoryId) return null;
     const collection = getSubcategories(categoryId);
-    return collection.find(entry => entry.id === subcategoryId) || null;
+    return collection.find((entry) => entry.id === subcategoryId) || null;
 }
 
 function upsertSubcategory(categoryId, subcategory = {}) {
     if (!categoryId || !subcategory?.id) return;
     const collection = ensureCategorySubcategories(categoryId);
-    const index = collection.findIndex(entry => entry.id === subcategory.id);
+    const index = collection.findIndex((entry) => entry.id === subcategory.id);
     if (index === -1) {
         collection.push(subcategory);
     } else {
@@ -3096,7 +3585,7 @@ function upsertSubcategory(categoryId, subcategory = {}) {
 function removeSubcategory(categoryId, subcategoryId) {
     if (!categoryId || !subcategoryId) return;
     const collection = ensureCategorySubcategories(categoryId);
-    const index = collection.findIndex(entry => entry.id === subcategoryId);
+    const index = collection.findIndex((entry) => entry.id === subcategoryId);
     if (index !== -1) {
         collection.splice(index, 1);
     }
@@ -3110,15 +3599,23 @@ function upsertSubcategoryExtras(categoryId, subcategoryId, extras = {}) {
     if (!state.subcategoryExtras[categoryId]) {
         state.subcategoryExtras[categoryId] = {};
     }
-    const current = state.subcategoryExtras[categoryId][subcategoryId] || { image: '', description: '' };
+    const current = state.subcategoryExtras[categoryId][subcategoryId] || {
+        image: "",
+        description: "",
+    };
     state.subcategoryExtras[categoryId][subcategoryId] = {
-        image: extras.image ?? current.image ?? '',
-        description: extras.description ?? current.description ?? ''
+        image: extras.image ?? current.image ?? "",
+        description: extras.description ?? current.description ?? "",
     };
 }
 
 function getSubcategoryExtras(categoryId, subcategoryId) {
-    return state.subcategoryExtras[categoryId]?.[subcategoryId] || { image: '', description: '' };
+    return (
+        state.subcategoryExtras[categoryId]?.[subcategoryId] || {
+            image: "",
+            description: "",
+        }
+    );
 }
 
 function setSubcategoryLoading(categoryId, value) {
@@ -3141,31 +3638,31 @@ function getSubcategoryError(categoryId) {
 
 // ===== Category and Product Form Functions =====
 function hydrateProductCategoryOptions() {
-    const select = document.getElementById('productCategory');
+    const select = document.getElementById("productCategory");
     if (!select) return;
 
     // حفظ القيمة المحددة حالياً
     const currentValue = select.value;
 
     // مسح الخيارات الحالية
-    select.innerHTML = '';
+    select.innerHTML = "";
 
     // إضافة الخيار الافتراضي
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'اختر الفئة الرئيسية';
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "اختر الفئة الرئيسية";
     select.appendChild(defaultOption);
 
     // إضافة الفئات المتاحة
-    state.categories.forEach(category => {
-        const option = document.createElement('option');
+    state.categories.forEach((category) => {
+        const option = document.createElement("option");
         option.value = category.id;
         option.textContent = category.name;
         select.appendChild(option);
     });
 
     // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-    if (currentValue && state.categories.some(c => c.id === currentValue)) {
+    if (currentValue && state.categories.some((c) => c.id === currentValue)) {
         select.value = currentValue;
         // تحديث قائمة الفئات الفرعية عند استعادة القيمة
         populateSubcategoryOptions(currentValue);
@@ -3190,7 +3687,10 @@ async function fetchBrands(options = {}) {
         try {
             await brandsFetchPromise;
         } catch (err) {
-            console.warn('⚠️ Previous brands fetch failed, retrying with force reload.', err);
+            console.warn(
+                "⚠️ Previous brands fetch failed, retrying with force reload.",
+                err,
+            );
         }
     }
 
@@ -3201,8 +3701,8 @@ async function fetchBrands(options = {}) {
         try {
             const response = await authorizedFetch(BRAND_API, {
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    "Content-Type": "application/json",
+                },
             });
 
             if (!response.ok) {
@@ -3210,7 +3710,6 @@ async function fetchBrands(options = {}) {
             }
 
             const data = await response.json();
-
 
             const candidates = [
                 data,
@@ -3220,21 +3719,20 @@ async function fetchBrands(options = {}) {
                 data?.data?.items,
                 data?.documents,
                 data?.brands,
-                Array.isArray(data?.data) ? data.data : null
+                Array.isArray(data?.data) ? data.data : null,
             ].filter(Array.isArray);
 
             if (candidates.length > 0) {
                 state.brands = candidates[0];
             } else {
-                console.warn('⚠️ Unexpected brands response format:', data);
+                console.warn("⚠️ Unexpected brands response format:", data);
                 state.brands = [];
             }
-
 
             return state.brands;
         } catch (error) {
             state.brandsError = error;
-            console.error('❌ Failed to fetch brands:', error);
+            console.error("❌ Failed to fetch brands:", error);
             throw error;
         } finally {
             state.brandsLoading = false;
@@ -3249,53 +3747,53 @@ async function fetchBrands(options = {}) {
 async function createBrand(brandData, imageFile = null) {
     try {
         const formData = new FormData();
-        formData.append('name', brandData.name);
-        formData.append('description', brandData.description);
+        formData.append("name", brandData.name);
+        formData.append("description", brandData.description);
 
         if (imageFile) {
-            formData.append('image', imageFile);
+            formData.append("image", imageFile);
         }
 
         const response = await authorizedFetch(BRAND_API, {
-            method: 'POST',
-            body: formData
+            method: "POST",
+            body: formData,
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            throw new Error(
+                errorData.message || `HTTP error! status: ${response.status}`,
+            );
         }
 
         const data = await response.json();
 
         return data;
     } catch (error) {
-        console.error('❌ Failed to create brand:', error);
+        console.error("❌ Failed to create brand:", error);
         throw error;
     }
 }
 
 async function updateBrand(brandId, brandData = {}, imageFile = null) {
-
-
     if (!brandId) {
-        throw new Error('معرّف العلامة التجارية غير صالح');
+        throw new Error("معرّف العلامة التجارية غير صالح");
     }
 
     if (!brandData?.name) {
-        throw new Error('يجب إدخال اسم العلامة التجارية');
+        throw new Error("يجب إدخال اسم العلامة التجارية");
     }
 
     const normalizedData = {
         name: brandData.name?.trim(),
-        description: brandData.description?.trim() ?? ''
+        description: brandData.description?.trim() ?? "",
     };
 
     const requestOptions = {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-            Accept: 'application/json'
-        }
+            Accept: "application/json",
+        },
     };
 
     if (imageFile instanceof File) {
@@ -3305,18 +3803,25 @@ async function updateBrand(brandId, brandData = {}, imageFile = null) {
                 formData.append(key, value);
             }
         });
-        formData.append('image', imageFile);
+        formData.append("image", imageFile);
         requestOptions.body = formData;
     } else {
-        requestOptions.headers['Content-Type'] = 'application/json';
+        requestOptions.headers["Content-Type"] = "application/json";
         requestOptions.body = JSON.stringify(normalizedData);
     }
 
-    const response = handleUnauthorized(await authorizedFetch(`${BRAND_API}/${encodeURIComponent(brandId)}`, requestOptions));
+    const response = handleUnauthorized(
+        await authorizedFetch(
+            `${BRAND_API}/${encodeURIComponent(brandId)}`,
+            requestOptions,
+        ),
+    );
 
-    const contentType = response.headers.get('content-type') || '';
-    const hasJsonBody = contentType.includes('application/json');
-    const responseBody = hasJsonBody ? await response.json().catch(() => ({})) : {};
+    const contentType = response.headers.get("content-type") || "";
+    const hasJsonBody = contentType.includes("application/json");
+    const responseBody = hasJsonBody
+        ? await response.json().catch(() => ({}))
+        : {};
 
     if (!response.ok) {
         const message = responseBody?.message || `HTTP ${response.status}`;
@@ -3327,8 +3832,8 @@ async function updateBrand(brandId, brandData = {}, imageFile = null) {
 
     if (Array.isArray(state.brands) && updatedBrand) {
         const targetId = String(brandId);
-        state.brands = state.brands.map(brand => {
-            const currentId = String(brand._id || brand.id || '');
+        state.brands = state.brands.map((brand) => {
+            const currentId = String(brand._id || brand.id || "");
             if (currentId !== targetId) return brand;
             return { ...brand, ...updatedBrand };
         });
@@ -3341,12 +3846,14 @@ async function updateBrand(brandId, brandData = {}, imageFile = null) {
 async function deleteBrand(brandId) {
     try {
         const response = await authorizedFetch(`${BRAND_API}/${brandId}`, {
-            method: 'DELETE'
+            method: "DELETE",
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            throw new Error(
+                errorData.message || `HTTP error! status: ${response.status}`,
+            );
         }
 
         const data = await response.json();
@@ -3369,7 +3876,10 @@ async function fetchBanners(options = {}) {
         try {
             await bannersFetchPromise;
         } catch (err) {
-            console.warn('⚠️ Previous banners fetch failed, retrying with force reload.', err);
+            console.warn(
+                "⚠️ Previous banners fetch failed, retrying with force reload.",
+                err,
+            );
         }
     }
 
@@ -3391,17 +3901,20 @@ async function fetchBanners(options = {}) {
                 data?.data,
                 data?.banners,
                 data?.documents,
-                Array.isArray(data) ? data : null
+                Array.isArray(data) ? data : null,
             ].filter(Array.isArray);
 
-            const banners = (candidates[0] || []).map((banner, index) => normalizeBanner(banner, index)).filter(Boolean);
+            const banners = (candidates[0] || [])
+                .map((banner, index) => normalizeBanner(banner, index))
+                .filter(Boolean);
             state.banners = banners;
             state.bannersError = null;
 
             return banners;
         } catch (error) {
-            console.error('❌ Failed to fetch banners:', error);
-            state.bannersError = error?.message || 'تعذر تحميل البانرات. يرجى المحاولة مرة أخرى.';
+            console.error("❌ Failed to fetch banners:", error);
+            state.bannersError =
+                error?.message || "تعذر تحميل البانرات. يرجى المحاولة مرة أخرى.";
             state.banners = [];
             throw error;
         } finally {
@@ -3418,15 +3931,15 @@ async function fetchBanners(options = {}) {
 async function createBanner(bannerData = {}, imageFile = null) {
     try {
         const formData = new FormData();
-        formData.append('title', bannerData.title);
-        formData.append('description', bannerData.description);
+        formData.append("title", bannerData.title);
+        formData.append("description", bannerData.description);
         if (imageFile instanceof File) {
-            formData.append('image', imageFile);
+            formData.append("image", imageFile);
         }
 
         const response = await authorizedFetch(BANNER_API, {
-            method: 'POST',
-            body: formData
+            method: "POST",
+            body: formData,
         });
 
         const data = await response.json().catch(() => ({}));
@@ -3434,37 +3947,40 @@ async function createBanner(bannerData = {}, imageFile = null) {
             throw new Error(data?.message || `HTTP ${response.status}`);
         }
 
-
         return data?.data || data;
     } catch (error) {
-        console.error('❌ Failed to create banner:', error);
+        console.error("❌ Failed to create banner:", error);
         throw error;
     }
 }
 
 async function updateBanner(bannerId, bannerData = {}, imageFile = null) {
     if (!bannerId) {
-        throw new Error('معرّف البانر غير صالح');
+        throw new Error("معرّف البانر غير صالح");
     }
 
     try {
         const formData = new FormData();
-        if (bannerData.title !== undefined) formData.append('title', bannerData.title);
-        if (bannerData.description !== undefined) formData.append('description', bannerData.description);
+        if (bannerData.title !== undefined)
+            formData.append("title", bannerData.title);
+        if (bannerData.description !== undefined)
+            formData.append("description", bannerData.description);
         if (imageFile instanceof File) {
-            formData.append('image', imageFile);
+            formData.append("image", imageFile);
         }
 
-        const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
-            method: 'PATCH',
-            body: formData
-        });
+        const response = await authorizedFetch(
+            `${BANNER_API}/${encodeURIComponent(bannerId)}`,
+            {
+                method: "PATCH",
+                body: formData,
+            },
+        );
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
             throw new Error(data?.message || `HTTP ${response.status}`);
         }
-
 
         return data?.data || data;
     } catch (error) {
@@ -3475,19 +3991,21 @@ async function updateBanner(bannerId, bannerData = {}, imageFile = null) {
 
 async function deleteBanner(bannerId) {
     if (!bannerId) {
-        throw new Error('معرّف البانر غير صالح');
+        throw new Error("معرّف البانر غير صالح");
     }
 
     try {
-        const response = await authorizedFetch(`${BANNER_API}/${encodeURIComponent(bannerId)}`, {
-            method: 'DELETE'
-        });
+        const response = await authorizedFetch(
+            `${BANNER_API}/${encodeURIComponent(bannerId)}`,
+            {
+                method: "DELETE",
+            },
+        );
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
             throw new Error(data?.message || `HTTP ${response.status}`);
         }
-
 
         return data?.data || data;
     } catch (error) {
@@ -3497,24 +4015,35 @@ async function deleteBanner(bannerId) {
 }
 
 function normalizeShippingZone(rawZone = {}, index = 0) {
-    if (!rawZone || typeof rawZone !== 'object') return null;
+    if (!rawZone || typeof rawZone !== "object") return null;
 
-    const id = rawZone._id
-        || rawZone.id
-        || rawZone.zoneId
-        || rawZone.key
-        || `zone-${Date.now()}-${index}`;
+    const id =
+        rawZone._id ||
+        rawZone.id ||
+        rawZone.zoneId ||
+        rawZone.key ||
+        `zone-${Date.now()}-${index}`;
 
-    const zoneName = rawZone.zoneName
-        || rawZone.nameAr
-        || rawZone.name
-        || rawZone.nameEn
-        || rawZone.title
-        || 'منطقة غير معروفة';
+    const zoneName =
+        rawZone.zoneName ||
+        rawZone.nameAr ||
+        rawZone.name ||
+        rawZone.nameEn ||
+        rawZone.title ||
+        "منطقة غير معروفة";
 
-    const rate = Number(rawZone.shippingRate ?? rawZone.rate ?? rawZone.price ?? rawZone.cost ?? 0) || 0;
+    const rate =
+        Number(
+            rawZone.shippingRate ??
+            rawZone.rate ??
+            rawZone.price ??
+            rawZone.cost ??
+            0,
+        ) || 0;
     const installationAvailable = Boolean(
-        rawZone.isInstallationAvailable ?? rawZone.installationAvailable ?? rawZone.hasInstallation
+        rawZone.isInstallationAvailable ??
+        rawZone.installationAvailable ??
+        rawZone.hasInstallation,
     );
 
     return {
@@ -3522,7 +4051,7 @@ function normalizeShippingZone(rawZone = {}, index = 0) {
         zoneName,
         shippingRate: rate,
         installationAvailable,
-        raw: rawZone
+        raw: rawZone,
     };
 }
 
@@ -3537,7 +4066,10 @@ async function fetchShippingZones(options = {}) {
         try {
             await shippingZonesFetchPromise;
         } catch (error) {
-            console.warn('⚠️ Previous shipping zones fetch failed, retrying...', error);
+            console.warn(
+                "⚠️ Previous shipping zones fetch failed, retrying...",
+                error,
+            );
         }
     }
 
@@ -3547,20 +4079,23 @@ async function fetchShippingZones(options = {}) {
 
     const request = (async () => {
         try {
-            const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT));
+            const response = handleUnauthorized(
+                await authorizedFetch(SHIPPING_ZONES_ENDPOINT),
+            );
             if (!response?.ok) {
                 throw new Error(`HTTP ${response?.status}`);
             }
 
             const payload = await response.json().catch(() => ({}));
-            const zonesArray = [
-                payload?.data?.zones,
-                payload?.data?.shippingZones,
-                payload?.data,
-                payload?.zones,
-                payload?.shippingZones,
-                Array.isArray(payload) ? payload : null
-            ].find(Array.isArray) || [];
+            const zonesArray =
+                [
+                    payload?.data?.zones,
+                    payload?.data?.shippingZones,
+                    payload?.data,
+                    payload?.zones,
+                    payload?.shippingZones,
+                    Array.isArray(payload) ? payload : null,
+                ].find(Array.isArray) || [];
 
             const normalized = zonesArray
                 .map((zone, index) => normalizeShippingZone(zone, index))
@@ -3569,17 +4104,18 @@ async function fetchShippingZones(options = {}) {
             state.shippingZones = normalized;
             state.shippingZonesError = null;
 
-            const hasSelected = normalized.some(zone => String(zone.id) === String(state.selectedShippingZoneId));
+            const hasSelected = normalized.some(
+                (zone) => String(zone.id) === String(state.selectedShippingZoneId),
+            );
             if (!hasSelected) {
-                state.selectedShippingZoneId = normalized[0]?.id || '';
+                state.selectedShippingZoneId = normalized[0]?.id || "";
             }
-
 
             return normalized;
         } catch (error) {
-            console.error('❌ Failed to fetch shipping zones:', error);
+            console.error("❌ Failed to fetch shipping zones:", error);
             state.shippingZones = [];
-            state.shippingZonesError = error?.message || 'تعذر تحميل مناطق الشحن';
+            state.shippingZonesError = error?.message || "تعذر تحميل مناطق الشحن";
             throw error;
         } finally {
             state.shippingZonesLoading = false;
@@ -3592,64 +4128,81 @@ async function fetchShippingZones(options = {}) {
     return request;
 }
 
-async function updateShippingZoneRate(zoneId, shippingRate, isInstallationAvailable) {
+async function updateShippingZoneRate(
+    zoneId,
+    shippingRate,
+    isInstallationAvailable,
+) {
     if (!zoneId) {
-        throw new Error('لم يتم تحديد منطقة الشحن');
+        throw new Error("لم يتم تحديد منطقة الشحن");
     }
 
     const numericRate = Number(shippingRate);
     if (!Number.isFinite(numericRate) || numericRate < 0) {
-        throw new Error('يرجى إدخال قيمة صالحة لتكلفة الشحن');
+        throw new Error("يرجى إدخال قيمة صالحة لتكلفة الشحن");
     }
 
     const payload = { shippingRate: numericRate };
-    if (typeof isInstallationAvailable === 'boolean') {
+    if (typeof isInstallationAvailable === "boolean") {
         payload.isInstallationAvailable = isInstallationAvailable;
         payload.installationAvailable = isInstallationAvailable;
     }
 
-    showToast('info', 'تحديث تكلفة الشحن', 'جاري تحديث تكلفة الشحن، يرجى الانتظار...');
+    showToast(
+        "info",
+        "تحديث تكلفة الشحن",
+        "جاري تحديث تكلفة الشحن، يرجى الانتظار...",
+    );
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }));
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                `${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                },
+            ),
+        );
 
         const responseBody = await response.json().catch(() => ({}));
         if (!response.ok) {
             throw new Error(responseBody?.message || `HTTP ${response.status}`);
         }
 
-        showToast('success', 'تحديث تكلفة الشحن', 'تم حفظ تكلفة الشحن بنجاح');
+        showToast("success", "تحديث تكلفة الشحن", "تم حفظ تكلفة الشحن بنجاح");
         await fetchShippingZones({ force: true });
         return responseBody?.data || responseBody;
     } catch (error) {
         console.error(`❌ Failed to update shipping zone ${zoneId}:`, error);
-        showToast('error', 'تحديث تكلفة الشحن', error?.message || 'حدث خطأ أثناء تحديث تكلفة الشحن');
+        showToast(
+            "error",
+            "تحديث تكلفة الشحن",
+            error?.message || "حدث خطأ أثناء تحديث تكلفة الشحن",
+        );
         throw error;
     }
 }
 
 async function createShippingZone(nameAr, nameEn, shippingRate) {
-    const arabicName = typeof nameAr === 'string' ? nameAr.trim() : '';
-    const englishName = typeof nameEn === 'string' ? nameEn.trim() : '';
+    const arabicName = typeof nameAr === "string" ? nameAr.trim() : "";
+    const englishName = typeof nameEn === "string" ? nameEn.trim() : "";
 
     if (!arabicName) {
-        throw new Error('يرجى إدخال اسم المنطقة بالعربية');
+        throw new Error("يرجى إدخال اسم المنطقة بالعربية");
     }
 
     if (!englishName) {
-        throw new Error('يرجى إدخال اسم المنطقة بالإنجليزية');
+        throw new Error("يرجى إدخال اسم المنطقة بالإنجليزية");
     }
 
     const numericRate = Number(shippingRate);
     if (!Number.isFinite(numericRate) || numericRate < 0) {
-        throw new Error('يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+        throw new Error("يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)");
     }
 
-    showToast('info', 'إضافة منطقة الشحن', 'جاري إنشاء منطقة الشحن الجديدة...');
+    showToast("info", "إضافة منطقة الشحن", "جاري إنشاء منطقة الشحن الجديدة...");
 
     try {
         const requestPayload = {
@@ -3658,75 +4211,95 @@ async function createShippingZone(nameAr, nameEn, shippingRate) {
             shippingRate: numericRate,
         };
 
-        const response = handleUnauthorized(await authorizedFetch(SHIPPING_ZONES_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestPayload)
-        }));
+        const response = handleUnauthorized(
+            await authorizedFetch(SHIPPING_ZONES_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestPayload),
+            }),
+        );
 
         const responseJson = await response.json().catch(() => ({}));
         if (!response.ok) {
             throw new Error(responseJson?.message || `HTTP ${response.status}`);
         }
 
-        const createdZone = responseJson?.data?.shippingZone
-            || responseJson?.data?.zone
-            || responseJson?.data
-            || responseJson;
-        const createdId = createdZone?._id || createdZone?.id || createdZone?.zoneId || null;
+        const createdZone =
+            responseJson?.data?.shippingZone ||
+            responseJson?.data?.zone ||
+            responseJson?.data ||
+            responseJson;
+        const createdId =
+            createdZone?._id || createdZone?.id || createdZone?.zoneId || null;
 
         if (createdId) {
             state.selectedShippingZoneId = createdId;
         }
 
-        showToast('success', 'إضافة منطقة الشحن', 'تم إنشاء منطقة الشحن بنجاح');
+        showToast("success", "إضافة منطقة الشحن", "تم إنشاء منطقة الشحن بنجاح");
         await fetchShippingZones({ force: true });
         return responseJson?.data || responseJson;
     } catch (error) {
-        console.error('❌ Failed to create shipping zone:', error);
-        showToast('error', 'إضافة منطقة الشحن', error?.message || 'حدث خطأ أثناء إنشاء منطقة الشحن');
+        console.error("❌ Failed to create shipping zone:", error);
+        showToast(
+            "error",
+            "إضافة منطقة الشحن",
+            error?.message || "حدث خطأ أثناء إنشاء منطقة الشحن",
+        );
         throw error;
     }
 }
 
 async function deleteShippingZone(zoneId) {
     if (!zoneId) {
-        throw new Error('لم يتم اختيار منطقة الشحن');
+        throw new Error("لم يتم اختيار منطقة الشحن");
     }
 
-    showToast('info', 'حذف منطقة الشحن', 'جاري حذف منطقة الشحن المحددة...');
+    showToast("info", "حذف منطقة الشحن", "جاري حذف منطقة الشحن المحددة...");
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(`${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`, {
-            method: 'DELETE'
-        }));
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                `${SHIPPING_ZONES_ENDPOINT}/${encodeURIComponent(zoneId)}`,
+                {
+                    method: "DELETE",
+                },
+            ),
+        );
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
             throw new Error(payload?.message || `HTTP ${response.status}`);
         }
 
-        showToast('success', 'حذف منطقة الشحن', 'تم حذف منطقة الشحن بنجاح');
+        showToast("success", "حذف منطقة الشحن", "تم حذف منطقة الشحن بنجاح");
         if (String(state.selectedShippingZoneId) === String(zoneId)) {
-            state.selectedShippingZoneId = '';
+            state.selectedShippingZoneId = "";
         }
         await fetchShippingZones({ force: true });
         return payload?.data || payload;
     } catch (error) {
         console.error(`❌ Failed to delete shipping zone ${zoneId}:`, error);
-        showToast('error', 'حذف منطقة الشحن', error?.message || 'حدث خطأ أثناء حذف منطقة الشحن');
+        showToast(
+            "error",
+            "حذف منطقة الشحن",
+            error?.message || "حدث خطأ أثناء حذف منطقة الشحن",
+        );
         throw error;
     }
 }
 
 function getShippingZoneById(zoneId) {
     if (!zoneId) return null;
-    return state.shippingZones.find(zone => String(zone.id) === String(zoneId)) || null;
+    return (
+        state.shippingZones.find((zone) => String(zone.id) === String(zoneId)) ||
+        null
+    );
 }
 
 function hydrateSettingsForms() {
-    fetchShippingZones().catch(error => {
-        console.error('❌ Failed to hydrate shipping settings:', error);
+    fetchShippingZones().catch((error) => {
+        console.error("❌ Failed to hydrate shipping settings:", error);
     });
 }
 
@@ -3734,35 +4307,42 @@ async function handleShippingSettingsSubmit(event) {
     event.preventDefault();
 
     const form = event.target;
-    if (!form || form.dataset.entity !== 'shipping-settings') {
+    if (!form || form.dataset.entity !== "shipping-settings") {
         return;
     }
 
-    const select = form.querySelector('#shippingZoneSelect');
-    const rateInput = form.querySelector('#shippingZoneRate');
-    const submitButton = form.querySelector('#shippingSettingsSubmit');
-    const installationCheckbox = form.querySelector('#shippingZoneInstallation');
+    const select = form.querySelector("#shippingZoneSelect");
+    const rateInput = form.querySelector("#shippingZoneRate");
+    const submitButton = form.querySelector("#shippingSettingsSubmit");
+    const installationCheckbox = form.querySelector("#shippingZoneInstallation");
 
     const zoneId = select?.value;
     const rateValue = rateInput?.value;
     const installationValue = installationCheckbox?.checked ?? null;
 
     if (!zoneId) {
-        showToast('error', 'إعدادات الشحن', 'يرجى اختيار المنطقة أولاً');
+        showToast("error", "إعدادات الشحن", "يرجى اختيار المنطقة أولاً");
         return;
     }
 
     const numericRate = Number(rateValue);
     if (!Number.isFinite(numericRate) || numericRate < 0) {
-        showToast('error', 'إعدادات الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+        showToast(
+            "error",
+            "إعدادات الشحن",
+            "يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)",
+        );
         rateInput?.focus();
         return;
     }
 
-    const originalState = submitButton ? { disabled: submitButton.disabled, label: submitButton.innerHTML } : null;
+    const originalState = submitButton
+        ? { disabled: submitButton.disabled, label: submitButton.innerHTML }
+        : null;
     if (submitButton) {
         submitButton.disabled = true;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+        submitButton.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
     }
 
     try {
@@ -3799,22 +4379,20 @@ async function fetchCategories() {
                     ? payload
                     : [];
 
-
         const previousExtras = { ...state.categoryExtras };
         const normalized = documents
             .map((doc, index) => normalizeCategory(doc, index))
             .filter(Boolean)
-            .map(category => {
+            .map((category) => {
                 const extras = previousExtras[category.id];
-                const image = category.image || extras?.image || '';
-                const description = category.description || extras?.description || '';
+                const image = category.image || extras?.image || "";
+                const description = category.description || extras?.description || "";
                 return {
                     ...category,
                     image,
-                    description
+                    description,
                 };
             });
-
 
         state.categories = normalized;
         syncCategoriesCache(normalized);
@@ -3827,12 +4405,13 @@ async function fetchCategories() {
         }
 
         if (normalized.length) {
-            const selectedCategoryId = state.filters.subcategoryCategory || normalized[0].id;
-            const preloadPromises = normalized.map(category =>
+            const selectedCategoryId =
+                state.filters.subcategoryCategory || normalized[0].id;
+            const preloadPromises = normalized.map((category) =>
                 fetchSubcategories(category.id, {
                     force: true,
-                    skipRender: category.id !== selectedCategoryId
-                })
+                    skipRender: category.id !== selectedCategoryId,
+                }),
             );
 
             await Promise.allSettled(preloadPromises);
@@ -3841,7 +4420,7 @@ async function fetchCategories() {
             renderSubcategories();
         }
     } catch (error) {
-        state.categoriesError = 'تعذر تحميل الفئات. يرجى المحاولة مرة أخرى.';
+        state.categoriesError = "تعذر تحميل الفئات. يرجى المحاولة مرة أخرى.";
     } finally {
         state.categoriesLoading = false;
         renderCategories();
@@ -3855,7 +4434,9 @@ async function fetchProducts() {
     renderProducts();
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(PRODUCT_ENDPOINT));
+        const response = handleUnauthorized(
+            await authorizedFetch(PRODUCT_ENDPOINT),
+        );
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -3877,23 +4458,26 @@ async function fetchProducts() {
         const normalized = documents
             .map((product, index) => normalizeProduct(product, index))
             .filter(Boolean)
-            .map(product => {
+            .map((product) => {
                 const extras = previousExtras[product.id];
                 return {
                     ...product,
                     image: extras?.image || product.image,
                     description: extras?.description || product.description,
                     specs: extras?.specs || product.specs,
-                    images: Array.isArray(extras?.images) && extras.images.length ? extras.images : product.images,
-                    brandName: extras?.brandName || product.brandName || product.brand
+                    images:
+                        Array.isArray(extras?.images) && extras.images.length
+                            ? extras.images
+                            : product.images,
+                    brandName: extras?.brandName || product.brandName || product.brand,
                 };
             });
-
 
         state.products = normalized;
         syncProductExtras(normalized);
     } catch (error) {
-        state.productsError = error.message || 'تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.';
+        state.productsError =
+            error.message || "تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.";
         state.products = [];
     } finally {
         state.productsLoading = false;
@@ -3902,7 +4486,7 @@ async function fetchProducts() {
         renderTopProducts();
 
         // تحديث إحصائيات نظرة عامة إذا كانت محملة
-        if (state.currentSection === 'overview') {
+        if (state.currentSection === "overview") {
             updateOverviewStats();
         }
     }
@@ -3917,40 +4501,49 @@ function mergeProductWithExtras(product) {
         image: extras.image || product.image,
         description: extras.description || product.description,
         specs: extras.specs || product.specs,
-        images: Array.isArray(extras.images) && extras.images.length
-            ? extras.images
-            : product.images,
-        brandName: extras.brandName || product.brandName || product.brand
+        images:
+            Array.isArray(extras.images) && extras.images.length
+                ? extras.images
+                : product.images,
+        brandName: extras.brandName || product.brandName || product.brand,
     };
 }
 
 function buildProductPayload(form) {
     const formData = new FormData(form);
 
-    const name = getFormValue(formData, 'name', '').trim();
-    const title = getFormValue(formData, 'title', '').trim() || name;
-    const description = getFormValue(formData, 'description', '').trim();
-    const priceValue = getFormValue(formData, 'price', '0');
-    const priceAfterDiscountValue = getFormValue(formData, 'priceAfterDiscount', '').trim();
-    const installationPriceValue = getFormValue(formData, 'installationPrice', '').trim();
-    const quantityValue = getFormValue(formData, 'quantity', '0');
-    const sku = getFormValue(formData, 'sku', '').trim();
-    const category = getFormValue(formData, 'category', '').trim();
-    const subCategory = getFormValue(formData, 'subCategory', '').trim();
-    const brand = getFormValue(formData, 'brand', '').trim();
-    const specs = getFormValue(formData, 'specs', '').trim();
-    const status = getFormValue(formData, 'status', '').trim();
+    const name = getFormValue(formData, "name", "").trim();
+    const title = getFormValue(formData, "title", "").trim() || name;
+    const description = getFormValue(formData, "description", "").trim();
+    const priceValue = getFormValue(formData, "price", "0");
+    const priceAfterDiscountValue = getFormValue(
+        formData,
+        "priceAfterDiscount",
+        "",
+    ).trim();
+    const installationPriceValue = getFormValue(
+        formData,
+        "installationPrice",
+        "",
+    ).trim();
+    const quantityValue = getFormValue(formData, "quantity", "0");
+    const sku = getFormValue(formData, "sku", "").trim();
+    const category = getFormValue(formData, "category", "").trim();
+    const subCategory = getFormValue(formData, "subCategory", "").trim();
+    const brand = getFormValue(formData, "brand", "").trim();
+    const specs = getFormValue(formData, "specs", "").trim();
+    const status = getFormValue(formData, "status", "").trim();
 
     const price = parseFloat(priceValue);
     if (Number.isNaN(price) || price < 0) {
-        throw new Error('يجب إدخال سعر صحيح');
+        throw new Error("يجب إدخال سعر صحيح");
     }
 
     let installationPrice = null;
     if (installationPriceValue) {
         const parsedInstallationPrice = parseFloat(installationPriceValue);
         if (Number.isNaN(parsedInstallationPrice) || parsedInstallationPrice < 0) {
-            throw new Error('يجب إدخال سعر تركيب صحيح (0 أو أكبر)');
+            throw new Error("يجب إدخال سعر تركيب صحيح (0 أو أكبر)");
         }
         installationPrice = parsedInstallationPrice;
     }
@@ -3959,18 +4552,18 @@ function buildProductPayload(form) {
     if (priceAfterDiscountValue) {
         const parsedDiscountPrice = parseFloat(priceAfterDiscountValue);
         if (Number.isNaN(parsedDiscountPrice) || parsedDiscountPrice < 0) {
-            throw new Error('يجب إدخال سعر بعد الخصم صحيح (0 أو أكبر)');
+            throw new Error("يجب إدخال سعر بعد الخصم صحيح (0 أو أكبر)");
         }
         priceAfterDiscount = parsedDiscountPrice;
     }
 
     const quantity = parseInt(quantityValue, 10);
     if (Number.isNaN(quantity) || quantity < 0) {
-        throw new Error('يجب إدخال كمية صحيحة');
+        throw new Error("يجب إدخال كمية صحيحة");
     }
 
     if (!brand) {
-        throw new Error('يجب اختيار علامة تجارية');
+        throw new Error("يجب اختيار علامة تجارية");
     }
 
     const payload = {
@@ -4008,9 +4601,9 @@ function buildProductRequestOptions(payload = {}, imageFiles = []) {
     const formData = new FormData();
 
     Object.entries(dataPayload).forEach(([key, value]) => {
-        if (value === undefined || value === null || value === '') return;
+        if (value === undefined || value === null || value === "") return;
         if (Array.isArray(value)) {
-            value.forEach(item => {
+            value.forEach((item) => {
                 if (item !== undefined && item !== null) {
                     formData.append(`${key}[]`, item);
                 }
@@ -4020,9 +4613,9 @@ function buildProductRequestOptions(payload = {}, imageFiles = []) {
         }
     });
 
-    imageFiles.forEach(file => {
+    imageFiles.forEach((file) => {
         if (file instanceof File) {
-            formData.append('images', file);
+            formData.append("images", file);
         }
     });
 
@@ -4033,31 +4626,31 @@ function buildProductRequestOptions(payload = {}, imageFiles = []) {
 }
 
 async function createProduct(payload, imageFiles = []) {
-
     try {
         const formData = new FormData();
 
         Object.entries(payload || {}).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value);
             }
         });
 
         if (imageFiles && imageFiles.length > 0) {
             imageFiles.forEach((file, index) => {
-                formData.append('images', file);
+                formData.append("images", file);
             });
         }
 
         const response = await authorizedFetch(PRODUCT_ENDPOINT, {
-            method: 'POST',
-            body: formData
+            method: "POST",
+            body: formData,
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
+            const errorMessage =
+                data.message || `HTTP ${response.status} - ${response.statusText}`;
             throw new Error(errorMessage);
         }
 
@@ -4068,17 +4661,21 @@ async function createProduct(payload, imageFiles = []) {
 }
 
 // دالة تحديث المنتج
-async function updateProduct(productId, payload, imageFiles = [], existingImages = []) {
-
+async function updateProduct(
+    productId,
+    payload,
+    imageFiles = [],
+    existingImages = [],
+) {
     if (!productId) {
-        throw new Error('معرف المنتج غير صالح');
+        throw new Error("معرف المنتج غير صالح");
     }
 
     try {
         const formData = new FormData();
 
         Object.entries(payload || {}).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value);
             }
         });
@@ -4087,7 +4684,7 @@ async function updateProduct(productId, payload, imageFiles = [], existingImages
         if (imageFiles && imageFiles.length > 0) {
             imageFiles.forEach((file, index) => {
                 if (file instanceof File) {
-                    formData.append('images', file);
+                    formData.append("images", file);
                 }
             });
         }
@@ -4097,40 +4694,49 @@ async function updateProduct(productId, payload, imageFiles = [], existingImages
             // Send existing image URLs to backend
             // The backend should handle keeping these images
             existingImages.forEach((imageUrl, index) => {
-                if (imageUrl && typeof imageUrl === 'string') {
+                if (imageUrl && typeof imageUrl === "string") {
                     formData.append(`existingImages[${index}]`, imageUrl);
                 }
             });
         }
 
-        const response = await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
-            method: 'PATCH',
-            body: formData
-        });
+        const response = await authorizedFetch(
+            `${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`,
+            {
+                method: "PATCH",
+                body: formData,
+            },
+        );
 
         const data = await response.json();
 
         if (!response.ok) {
-            const errorMessage = data.message || `HTTP ${response.status} - ${response.statusText}`;
+            const errorMessage =
+                data.message || `HTTP ${response.status} - ${response.statusText}`;
             throw new Error(errorMessage);
         }
-
 
         const updatedProduct = data.data || data;
 
         if (updatedProduct) {
             upsertProductExtras(productId, {
-                image: updatedProduct.images?.[0] || updatedProduct.image || '',
-                description: updatedProduct.description || '',
-                specs: updatedProduct.specs || updatedProduct.details || '',
-                images: Array.isArray(updatedProduct.images) ? updatedProduct.images : [],
-                brandName: updatedProduct.brand?.name || updatedProduct.brandName || updatedProduct.brand || ''
+                image: updatedProduct.images?.[0] || updatedProduct.image || "",
+                description: updatedProduct.description || "",
+                specs: updatedProduct.specs || updatedProduct.details || "",
+                images: Array.isArray(updatedProduct.images)
+                    ? updatedProduct.images
+                    : [],
+                brandName:
+                    updatedProduct.brand?.name ||
+                    updatedProduct.brandName ||
+                    updatedProduct.brand ||
+                    "",
             });
         }
 
         return updatedProduct;
     } catch (error) {
-        showToast('error', 'تحديث المنتج', error.message || 'حدث خطأ غير متوقع');
+        showToast("error", "تحديث المنتج", error.message || "حدث خطأ غير متوقع");
         throw error;
     }
 }
@@ -4139,26 +4745,38 @@ async function updateProduct(productId, payload, imageFiles = [], existingImages
  * عرض تفاصيل المنتج في نافذة منبثقة
  */
 function viewProductDetails(productId) {
-    const product = state.products?.find(p => (p._id || p.id) === productId);
+    const product = state.products?.find((p) => (p._id || p.id) === productId);
 
     if (!product) {
-        showToast('error', 'خطأ', 'لم يتم العثور على المنتج');
+        showToast("error", "خطأ", "لم يتم العثور على المنتج");
         return;
     }
 
-    const modal = document.createElement('div');
-    modal.className = 'product-details-modal';
-    modal.style.opacity = '0';
+    const modal = document.createElement("div");
+    modal.className = "product-details-modal";
+    modal.style.opacity = "0";
 
-    const categoryName = product.categoryName || getCategoryLabel(product.categorySlug) || product.category?.name || '-';
-    const subcategoryName = product.subcategoryName || product.subcategory?.name || '-';
-    const brandName = product.brandName || product.brand?.name || '-';
+    const categoryName =
+        product.categoryName ||
+        getCategoryLabel(product.categorySlug) ||
+        product.category?.name ||
+        "-";
+    const subcategoryName =
+        product.subcategoryName || product.subcategory?.name || "-";
+    const brandName = product.brandName || product.brand?.name || "-";
 
-    const hasStock = product.stock !== undefined && product.stock !== null && product.stock !== '';
+    const hasStock =
+        product.stock !== undefined &&
+        product.stock !== null &&
+        product.stock !== "";
     const stockNumber = Number(product.stock);
     const stockIsFinite = Number.isFinite(stockNumber);
     const stockValue = stockIsFinite ? stockNumber : product.stock;
-    const stockClass = stockIsFinite ? (stockNumber > 0 ? 'positive' : 'negative') : '';
+    const stockClass = stockIsFinite
+        ? stockNumber > 0
+            ? "positive"
+            : "negative"
+        : "";
 
     const stockMarkup = hasStock
         ? `
@@ -4167,7 +4785,7 @@ function viewProductDetails(productId) {
                         <span class="product-details-value ${stockClass}">${stockValue}</span>
                     </div>
                 `
-        : '';
+        : "";
 
     const installationMarkup = Number.isFinite(product.installationPrice)
         ? `
@@ -4176,7 +4794,7 @@ function viewProductDetails(productId) {
                         <span class="product-details-value price">${formatCurrency(product.installationPrice)}</span>
                     </div>
                 `
-        : '';
+        : "";
 
     const skuMarkup = product.sku
         ? `
@@ -4185,7 +4803,7 @@ function viewProductDetails(productId) {
                         <span class="product-details-value">${product.sku}</span>
                     </div>
                 `
-        : '';
+        : "";
 
     const hasDiscountPrice = Number.isFinite(product.priceAfterDiscount);
     const priceCardMarkup = hasDiscountPrice
@@ -4205,8 +4823,9 @@ function viewProductDetails(productId) {
                     </div>
                 `;
 
-    const subcategoryMarkup = subcategoryName !== '-'
-        ? `
+    const subcategoryMarkup =
+        subcategoryName !== "-"
+            ? `
                     <div class="product-details-card product-details-meta-card">
                         <i class="fas fa-tags"></i>
                         <div>
@@ -4215,10 +4834,11 @@ function viewProductDetails(productId) {
                         </div>
                     </div>
                 `
-        : '';
+            : "";
 
-    const brandMarkup = brandName !== '-'
-        ? `
+    const brandMarkup =
+        brandName !== "-"
+            ? `
                     <div class="product-details-card product-details-meta-card">
                         <i class="fas fa-certificate"></i>
                         <div>
@@ -4227,7 +4847,7 @@ function viewProductDetails(productId) {
                         </div>
                     </div>
                 `
-        : '';
+            : "";
 
     modal.innerHTML = `
                 <div class="product-details-dialog">
@@ -4238,35 +4858,48 @@ function viewProductDetails(productId) {
                     <div class="product-details-body">
                         ${(() => {
             const galleryImages = Array.isArray(product.images)
-                ? product.images.map(resolveImageSource).filter(Boolean)
+                ? product.images
+                    .map(resolveImageSource)
+                    .filter(Boolean)
                 : [];
             if (galleryImages.length) {
                 return `
                                 <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
-                                    ${galleryImages.map((img, index) => `
+                                    ${galleryImages
+                        .map(
+                            (img, index) => `
                                         <div class="product-details-image" style="flex:0 0 auto;">
                                             <img src="${img}" alt="${product.name} - صورة ${index + 1}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
                                         </div>
-                                    `).join('')}
+                                    `,
+                        )
+                        .join("")}
                                 </div>
                             `;
             }
-            const fallbackImage = resolveImageSource(product.image);
-            return fallbackImage ? `
+            const fallbackImage = resolveImageSource(
+                product.image,
+            );
+            return fallbackImage
+                ? `
                                 <div class="product-details-gallery" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
                                     <div class="product-details-image" style="flex:0 0 auto;">
                                         <img src="${fallbackImage}" alt="${product.name}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
                                     </div>
                                 </div>
-                            ` : '';
+                            `
+                : "";
         })()}
                         <div class="product-details-info">
                             <h3 class="product-details-title">${product.name}</h3>
-                            ${product.description ? `<p class="product-details-description">${product.description}</p>` : ''}
-                            ${product.specs ? `<div class="product-details-specs" style="background:rgba(0,0,0,0.04);padding:16px;border-radius:10px;">
+                            ${product.description ? `<p class="product-details-description">${product.description}</p>` : ""}
+                            ${product.specs
+            ? `<div class="product-details-specs" style="background:rgba(0,0,0,0.04);padding:16px;border-radius:10px;">
                                 <strong style="display:block;margin-bottom:8px;color:var(--text-main);">المواصفات</strong>
                                 <p style="margin:0;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;">${product.specs}</p>
-                            </div>` : ''}
+                            </div>`
+            : ""
+        }
                             <div class="product-details-stats">
                                 ${priceCardMarkup}
                                 ${stockMarkup}
@@ -4292,18 +4925,18 @@ function viewProductDetails(productId) {
     document.body.appendChild(modal);
 
     setTimeout(() => {
-        modal.style.opacity = '1';
+        modal.style.opacity = "1";
     }, 10);
 
-    const closeBtn = modal.querySelector('.close-btn');
-    closeBtn.addEventListener('click', () => {
-        modal.style.opacity = '0';
+    const closeBtn = modal.querySelector(".close-btn");
+    closeBtn.addEventListener("click", () => {
+        modal.style.opacity = "0";
         setTimeout(() => modal.remove(), 300);
     });
 
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener("click", (e) => {
         if (e.target === modal) {
-            modal.style.opacity = '0';
+            modal.style.opacity = "0";
             setTimeout(() => modal.remove(), 300);
         }
     });
@@ -4311,19 +4944,24 @@ function viewProductDetails(productId) {
 
 async function deleteProductImage(productId, publicId) {
     if (!productId || !publicId) {
-        throw new Error('معرف المنتج أو معرف الصورة غير صالح');
+        throw new Error("معرف المنتج أو معرف الصورة غير صالح");
     }
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(`${ADMIN_API_BASE_URL}/products/delete-image/${encodeURIComponent(productId)}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                public_id: publicId
-            })
-        }));
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                `${ADMIN_API_BASE_URL}/products/delete-image/${encodeURIComponent(productId)}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        public_id: publicId,
+                    }),
+                },
+            ),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -4333,54 +4971,67 @@ async function deleteProductImage(productId, publicId) {
 
         return true;
     } catch (error) {
-        console.error('Error deleting product image:', error);
+        console.error("Error deleting product image:", error);
         throw error;
     }
 }
 
 async function deleteProduct(productId, { productName } = {}) {
-
     if (!productId) return;
 
     const confirmationMessage = productName
         ? `هل أنت متأكد من حذف المنتج "${productName}"؟ لا يمكن التراجع عن هذا الإجراء.`
-        : 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.';
+        : "هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.";
 
-    confirmPopup('تأكيد حذف المنتج', confirmationMessage, async () => {
-        try {
-            const response = handleUnauthorized(await authorizedFetch(`${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`, {
-                method: 'DELETE'
-            }));
+    confirmPopup(
+        "تأكيد حذف المنتج",
+        confirmationMessage,
+        async () => {
+            try {
+                const response = handleUnauthorized(
+                    await authorizedFetch(
+                        `${PRODUCT_ENDPOINT}/${encodeURIComponent(productId)}`,
+                        {
+                            method: "DELETE",
+                        },
+                    ),
+                );
 
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({}));
+                    const message = errorBody?.message || `HTTP ${response.status}`;
+                    throw new Error(message);
+                }
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                const message = errorBody?.message || `HTTP ${response.status}`;
-                throw new Error(message);
+                await fetchProducts();
+                showToast("success", "حذف المنتج", "تم حذف المنتج بنجاح");
+            } catch (error) {
+                showToast("error", "حذف المنتج", error.message || "حدث خطأ غير متوقع");
             }
-
-            await fetchProducts();
-            showToast('success', 'حذف المنتج', 'تم حذف المنتج بنجاح');
-        } catch (error) {
-            showToast('error', 'حذف المنتج', error.message || 'حدث خطأ غير متوقع');
-        }
-    }, null, 'حذف', 'إلغاء');
+        },
+        null,
+        "حذف",
+        "إلغاء",
+    );
 }
 
 async function createCategory(payload, extras = {}, imageFile = null) {
-
     try {
-        const { body, headers } = buildCategoryRequestOptions(payload, {
-            description: extras.description
-        }, imageFile);
+        const { body, headers } = buildCategoryRequestOptions(
+            payload,
+            {
+                description: extras.description,
+            },
+            imageFile,
+        );
 
-
-        const response = handleUnauthorized(await authorizedFetch(CATEGORY_ENDPOINT, {
-            method: 'POST',
-            headers: headers || undefined,
-            body
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(CATEGORY_ENDPOINT, {
+                method: "POST",
+                headers: headers || undefined,
+                body,
+            }),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -4396,39 +5047,45 @@ async function createCategory(payload, extras = {}, imageFile = null) {
 
         if (newCategoryId) {
             const mergedExtras = {
-                image: extras.image || '',
-                description: extras.description || ''
+                image: extras.image || "",
+                description: extras.description || "",
             };
             upsertCategoryExtras(newCategoryId, mergedExtras);
         }
 
         renderCategories();
-        showToast('success', 'إضافة الفئة', 'تمت إضافة الفئة بنجاح');
-        closeModal('categoryModal');
+        showToast("success", "إضافة الفئة", "تمت إضافة الفئة بنجاح");
+        closeModal("categoryModal");
     } catch (error) {
-        showToast('error', 'إضافة الفئة', error.message || 'حدث خطأ غير متوقع');
+        showToast("error", "إضافة الفئة", error.message || "حدث خطأ غير متوقع");
     }
 }
 
-async function updateCategory(categoryId, payload, extras = {}, imageFile = null) {
-
+async function updateCategory(
+    categoryId,
+    payload,
+    extras = {},
+    imageFile = null,
+) {
     if (!categoryId) return;
 
     try {
         const cleanPayload = {};
-        Object.keys(payload || {}).forEach(key => {
+        Object.keys(payload || {}).forEach((key) => {
             const value = payload[key];
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 cleanPayload[key] = value;
             }
         });
 
         if (!imageFile) {
-            const existingImage = cleanPayload.image
-                ?? extras.image
-                ?? state.categoryExtras[categoryId]?.image
-                ?? state.categories.find(category => category.id === categoryId)?.image
-                ?? '';
+            const existingImage =
+                cleanPayload.image ??
+                extras.image ??
+                state.categoryExtras[categoryId]?.image ??
+                state.categories.find((category) => category.id === categoryId)
+                    ?.image ??
+                "";
 
             if (existingImage) {
                 cleanPayload.image = existingImage;
@@ -4437,18 +5094,24 @@ async function updateCategory(categoryId, payload, extras = {}, imageFile = null
             }
         }
 
+        const { body, headers } = buildCategoryRequestOptions(
+            cleanPayload,
+            {
+                description: extras.description,
+            },
+            imageFile,
+        );
 
-        const { body, headers } = buildCategoryRequestOptions(cleanPayload, {
-            description: extras.description
-        }, imageFile);
-
-
-        const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
-            method: 'PATCH',
-            headers: headers || undefined,
-            body
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`,
+                {
+                    method: "PATCH",
+                    headers: headers || undefined,
+                    body,
+                },
+            ),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -4458,22 +5121,26 @@ async function updateCategory(categoryId, payload, extras = {}, imageFile = null
 
         const responseData = await response.json();
 
-        const document = responseData?.data?.category
-            ?? responseData?.data
-            ?? responseData;
+        const document =
+            responseData?.data?.category ?? responseData?.data ?? responseData;
 
-        if (document && typeof document === 'object') {
+        if (document && typeof document === "object") {
             const normalized = normalizeCategory(document, 0);
             if (normalized) {
                 const merged = {
                     ...normalized,
                     ...cleanPayload,
-                    description: extras.description ?? cleanPayload.description ?? normalized.description ?? '',
-                    image: extras.image || cleanPayload.image || normalized.image || ''
+                    description:
+                        extras.description ??
+                        cleanPayload.description ??
+                        normalized.description ??
+                        "",
+                    image: extras.image || cleanPayload.image || normalized.image || "",
                 };
 
-
-                const categoryIndex = state.categories.findIndex(category => category.id === categoryId);
+                const categoryIndex = state.categories.findIndex(
+                    (category) => category.id === categoryId,
+                );
                 if (categoryIndex !== -1) {
                     state.categories[categoryIndex] = merged;
                 } else {
@@ -4484,30 +5151,35 @@ async function updateCategory(categoryId, payload, extras = {}, imageFile = null
 
         await fetchCategories();
 
-        const updatedCategory = state.categories.find(category => category.id === categoryId);
+        const updatedCategory = state.categories.find(
+            (category) => category.id === categoryId,
+        );
         const mergedExtras = {
-            image: updatedCategory?.image || extras.image || '',
-            description: extras.description || updatedCategory?.description || ''
+            image: updatedCategory?.image || extras.image || "",
+            description: extras.description || updatedCategory?.description || "",
         };
         upsertCategoryExtras(categoryId, mergedExtras);
 
         renderCategories();
-        showToast('success', 'تحديث الفئة', 'تم تحديث الفئة بنجاح');
-        closeModal('categoryModal');
+        showToast("success", "تحديث الفئة", "تم تحديث الفئة بنجاح");
+        closeModal("categoryModal");
     } catch (error) {
-        showToast('error', 'تحديث الفئة', error.message || 'حدث خطأ غير متوقع');
+        showToast("error", "تحديث الفئة", error.message || "حدث خطأ غير متوقع");
     }
 }
 
 async function deleteCategory(categoryId) {
-
     if (!categoryId) return;
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(`${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`, {
-            method: 'DELETE'
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                `${CATEGORY_ENDPOINT}/${encodeURIComponent(categoryId)}`,
+                {
+                    method: "DELETE",
+                },
+            ),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -4515,11 +5187,10 @@ async function deleteCategory(categoryId) {
             throw new Error(message);
         }
 
-
         await fetchCategories();
-        showToast('success', 'حذف الفئة', 'تم حذف الفئة بنجاح');
+        showToast("success", "حذف الفئة", "تم حذف الفئة بنجاح");
     } catch (error) {
-        showToast('error', 'حذف الفئة', error.message || 'حدث خطأ غير متوقع');
+        showToast("error", "حذف الفئة", error.message || "حدث خطأ غير متوقع");
     }
 }
 
@@ -4534,11 +5205,11 @@ function buildSubcategoryRequestOptions(payload = {}, imageFile = null) {
         delete dataPayload.image;
         const formData = new FormData();
         Object.entries(dataPayload).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value);
             }
         });
-        formData.append('image', imageFile);
+        formData.append("image", imageFile);
 
         for (let [key, value] of formData.entries()) {
         }
@@ -4548,64 +5219,71 @@ function buildSubcategoryRequestOptions(payload = {}, imageFile = null) {
 
     return {
         body: JSON.stringify(dataPayload),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
     };
 }
 
 function buildSubcategoryFormData(formData, formElement = null) {
     if (!(formData instanceof FormData)) {
         return {
-            categoryId: '',
-            originalCategoryId: '',
-            subcategoryId: '',
+            categoryId: "",
+            originalCategoryId: "",
+            subcategoryId: "",
             payload: {},
-            imageFile: null
+            imageFile: null,
         };
     }
 
-    const form = formElement || document.getElementById('subcategoryForm');
-    const categoryId = getFormValue(formData, 'categoryId');
-    const originalCategoryId = getFormValue(formData, 'originalCategoryId');
-    const subcategoryId = getFormValue(formData, 'id');
-    const name = getFormValue(formData, 'name');
-    const slug = getFormValue(formData, 'slug') || slugify(name);
+    const form = formElement || document.getElementById("subcategoryForm");
+    const categoryId = getFormValue(formData, "categoryId");
+    const originalCategoryId = getFormValue(formData, "originalCategoryId");
+    const subcategoryId = getFormValue(formData, "id");
+    const name = getFormValue(formData, "name");
+    const slug = getFormValue(formData, "slug") || slugify(name);
     const descriptionField = form?.querySelector('[name="description"]');
     const maxLength = getDescriptionMaxLength(descriptionField);
-    const description = truncateText(getFormValue(formData, 'description'), maxLength);
+    const description = truncateText(
+        getFormValue(formData, "description"),
+        maxLength,
+    );
     if (descriptionField && descriptionField.value !== description) {
         descriptionField.value = description;
         updateDescriptionCounter(descriptionField);
     }
-    const status = getFormValue(formData, 'status', 'active');
+    const status = getFormValue(formData, "status", "active");
 
     const payload = {
         name,
         slug,
         description,
-        status
+        status,
     };
 
-    Object.keys(payload).forEach(key => {
-        if (payload[key] === undefined || payload[key] === null || payload[key] === '') {
+    Object.keys(payload).forEach((key) => {
+        if (
+            payload[key] === undefined ||
+            payload[key] === null ||
+            payload[key] === ""
+        ) {
             delete payload[key];
         }
     });
 
-    const imageFile = formData.get('image');
+    const imageFile = formData.get("image");
 
     return {
         categoryId,
         originalCategoryId,
         subcategoryId,
         payload,
-        imageFile: imageFile instanceof File && imageFile.name ? imageFile : null
+        imageFile: imageFile instanceof File && imageFile.name ? imageFile : null,
     };
 }
 
 async function fetchSubcategories(categoryId, options = {}) {
     const { force = false, skipRender = false } = options || {};
 
-    if (!categoryId || categoryId === 'all') {
+    if (!categoryId || categoryId === "all") {
         return [];
     }
 
@@ -4617,7 +5295,9 @@ async function fetchSubcategories(categoryId, options = {}) {
     setSubcategoryError(categoryId, null);
 
     try {
-        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId)));
+        const response = handleUnauthorized(
+            await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId)),
+        );
 
         if (!response.ok) {
             if (response.status === 404) {
@@ -4646,20 +5326,21 @@ async function fetchSubcategories(categoryId, options = {}) {
         const normalized = documents
             .map((doc, index) => normalizeSubcategory(doc, index, categoryId))
             .filter(Boolean)
-            .map(subcategory => {
+            .map((subcategory) => {
                 const extras = getSubcategoryExtras(categoryId, subcategory.id);
                 return {
                     ...subcategory,
                     image: subcategory.image || extras.image,
-                    description: subcategory.description || extras.description
+                    description: subcategory.description || extras.description,
                 };
             });
 
         state.subcategories[categoryId] = normalized;
         return normalized;
     } catch (error) {
-        console.error('❌ Failed to fetch subcategories:', error);
-        const message = error?.message || 'تعذر تحميل الفئات الفرعية. يرجى المحاولة مرة أخرى.';
+        console.error("❌ Failed to fetch subcategories:", error);
+        const message =
+            error?.message || "تعذر تحميل الفئات الفرعية. يرجى المحاولة مرة أخرى.";
         setSubcategoryError(categoryId, message);
         return [];
     } finally {
@@ -4672,172 +5353,215 @@ async function fetchSubcategories(categoryId, options = {}) {
 
 async function createSubcategory(categoryId, payload = {}, imageFile = null) {
     if (!categoryId) {
-        throw new Error('رقم الفئة الرئيسية مفقود.');
+        throw new Error("رقم الفئة الرئيسية مفقود.");
     }
 
-
     try {
-        const { body, headers } = buildSubcategoryRequestOptions(payload, imageFile);
+        const { body, headers } = buildSubcategoryRequestOptions(
+            payload,
+            imageFile,
+        );
 
-        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId), {
-            method: 'POST',
-            headers: headers || undefined,
-            body
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(SUBCATEGORY_ENDPOINT(categoryId), {
+                method: "POST",
+                headers: headers || undefined,
+                body,
+            }),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
-            console.error('❌ Create subcategory error:', errorBody);
+            console.error("❌ Create subcategory error:", errorBody);
             const message = errorBody?.message || `HTTP ${response.status}`;
             throw new Error(message);
         }
 
         const responseData = await response.json();
 
-        const document = responseData?.data?.subcategory
-            ?? responseData?.data
-            ?? responseData;
+        const document =
+            responseData?.data?.subcategory ?? responseData?.data ?? responseData;
 
         const normalized = normalizeSubcategory(document, 0, categoryId);
         if (normalized) {
             const merged = {
                 ...normalized,
-                image: normalized.image || payload.image || '',
-                description: normalized.description || payload.description || ''
+                image: normalized.image || payload.image || "",
+                description: normalized.description || payload.description || "",
             };
             upsertSubcategory(categoryId, merged);
             upsertSubcategoryExtras(categoryId, merged.id, {
                 image: merged.image,
-                description: merged.description
+                description: merged.description,
             });
         }
 
         await fetchSubcategories(categoryId, { force: true });
-        showToast('success', 'إضافة الفئة الفرعية', 'تمت إضافة الفئة الفرعية بنجاح');
+        showToast(
+            "success",
+            "إضافة الفئة الفرعية",
+            "تمت إضافة الفئة الفرعية بنجاح",
+        );
         return normalized;
     } catch (error) {
-        console.error('❌ Failed to create subcategory:', error);
-        showToast('error', 'إضافة الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        console.error("❌ Failed to create subcategory:", error);
+        showToast(
+            "error",
+            "إضافة الفئة الفرعية",
+            error.message || "حدث خطأ غير متوقع",
+        );
         throw error;
     }
 }
 
-async function updateSubcategory(categoryId, subcategoryId, payload = {}, imageFile = null, options = {}) {
+async function updateSubcategory(
+    categoryId,
+    subcategoryId,
+    payload = {},
+    imageFile = null,
+    options = {},
+) {
     if (!categoryId || !subcategoryId) {
-        throw new Error('بيانات الفئة الفرعية غير مكتملة.');
+        throw new Error("بيانات الفئة الفرعية غير مكتملة.");
     }
 
     const previousCategoryId = options.previousCategoryId;
-    const targetCategoryId = options.targetCategoryId || payload.categoryId || categoryId;
-
+    const targetCategoryId =
+        options.targetCategoryId || payload.categoryId || categoryId;
 
     try {
         const cleanPayload = {};
-        Object.keys(payload || {}).forEach(key => {
+        Object.keys(payload || {}).forEach((key) => {
             const value = payload[key];
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 cleanPayload[key] = value;
             }
         });
 
-        if (!imageFile && 'image' in cleanPayload) {
+        if (!imageFile && "image" in cleanPayload) {
             delete cleanPayload.image;
         }
 
+        const { body, headers } = buildSubcategoryRequestOptions(
+            cleanPayload,
+            imageFile,
+        );
 
-        const { body, headers } = buildSubcategoryRequestOptions(cleanPayload, imageFile);
-
-        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
-            method: 'PATCH',
-            headers: headers || undefined,
-            body
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId),
+                {
+                    method: "PATCH",
+                    headers: headers || undefined,
+                    body,
+                },
+            ),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
-            console.error('❌ Update subcategory error:', errorBody);
+            console.error("❌ Update subcategory error:", errorBody);
             const message = errorBody?.message || `HTTP ${response.status}`;
             throw new Error(message);
         }
 
         const responseData = await response.json();
 
-        const document = responseData?.data?.subcategory
-            ?? responseData?.data
-            ?? responseData;
+        const document =
+            responseData?.data?.subcategory ?? responseData?.data ?? responseData;
 
         const normalizedCategoryId = document?.categoryId || targetCategoryId;
 
-        const normalized = normalizeSubcategory(document, 0, normalizedCategoryId) || {
+        const normalized = normalizeSubcategory(
+            document,
+            0,
+            normalizedCategoryId,
+        ) || {
             id: subcategoryId,
             ...cleanPayload,
-            categoryId: normalizedCategoryId
+            categoryId: normalizedCategoryId,
         };
 
         const merged = {
             ...normalized,
             ...cleanPayload,
             categoryId: targetCategoryId,
-            description: cleanPayload.description ?? normalized.description ?? '',
-            image: normalized.image || cleanPayload.image || payload?.image || '',
-            status: cleanPayload.status ?? normalized.status
+            description: cleanPayload.description ?? normalized.description ?? "",
+            image: normalized.image || cleanPayload.image || payload?.image || "",
+            status: cleanPayload.status ?? normalized.status,
         };
-
 
         upsertSubcategory(targetCategoryId, merged);
         upsertSubcategoryExtras(targetCategoryId, merged.id, {
             image: merged.image,
-            description: merged.description
+            description: merged.description,
         });
 
         if (previousCategoryId && previousCategoryId !== targetCategoryId) {
             removeSubcategory(previousCategoryId, subcategoryId);
-            await fetchSubcategories(previousCategoryId, { force: true, skipRender: true });
+            await fetchSubcategories(previousCategoryId, {
+                force: true,
+                skipRender: true,
+            });
         }
 
         await fetchSubcategories(targetCategoryId, { force: true });
-        showToast('success', 'تحديث الفئة الفرعية', 'تم تحديث الفئة الفرعية بنجاح');
+        showToast("success", "تحديث الفئة الفرعية", "تم تحديث الفئة الفرعية بنجاح");
         return merged;
     } catch (error) {
-        console.error('❌ Failed to update subcategory:', error);
-        showToast('error', 'تحديث الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        console.error("❌ Failed to update subcategory:", error);
+        showToast(
+            "error",
+            "تحديث الفئة الفرعية",
+            error.message || "حدث خطأ غير متوقع",
+        );
         throw error;
     }
 }
 
 async function deleteSubcategory(categoryId, subcategoryId) {
     if (!categoryId || !subcategoryId) {
-        throw new Error('بيانات الفئة الفرعية غير مكتملة.');
+        throw new Error("بيانات الفئة الفرعية غير مكتملة.");
     }
 
-
     try {
-        const response = handleUnauthorized(await authorizedFetch(SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId), {
-            method: 'DELETE'
-        }));
-
+        const response = handleUnauthorized(
+            await authorizedFetch(
+                SUBCATEGORY_DETAIL_ENDPOINT(categoryId, subcategoryId),
+                {
+                    method: "DELETE",
+                },
+            ),
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
-            console.error('❌ Delete subcategory error:', errorBody);
+            console.error("❌ Delete subcategory error:", errorBody);
             const message = errorBody?.message || `HTTP ${response.status}`;
             throw new Error(message);
         }
 
         removeSubcategory(categoryId, subcategoryId);
         renderSubcategories();
-        showToast('success', 'حذف الفئة الفرعية', 'تم حذف الفئة الفرعية بنجاح');
+        showToast("success", "حذف الفئة الفرعية", "تم حذف الفئة الفرعية بنجاح");
         return true;
     } catch (error) {
-        console.error('❌ Failed to delete subcategory:', error);
-        showToast('error', 'حذف الفئة الفرعية', error.message || 'حدث خطأ غير متوقع');
+        console.error("❌ Failed to delete subcategory:", error);
+        showToast(
+            "error",
+            "حذف الفئة الفرعية",
+            error.message || "حدث خطأ غير متوقع",
+        );
         throw error;
     }
 }
 
-function buildCategoryRequestOptions(payload, meta = {}, file = null, options = {}) {
+function buildCategoryRequestOptions(
+    payload,
+    meta = {},
+    file = null,
+    options = {},
+) {
     const dataPayload = { ...payload };
 
     if (meta.description) {
@@ -4855,13 +5579,13 @@ function buildCategoryRequestOptions(payload, meta = {}, file = null, options = 
         }
 
         Object.entries(dataPayload).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && value !== "") {
                 formData.append(key, value);
             }
         });
 
         if (file instanceof File) {
-            formData.append('image', file);
+            formData.append("image", file);
         }
 
         for (let [key, value] of formData.entries()) {
@@ -4870,10 +5594,9 @@ function buildCategoryRequestOptions(payload, meta = {}, file = null, options = 
         return { body: formData, headers: null };
     }
 
-
     return {
         body: JSON.stringify(dataPayload),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
     };
 }
 
@@ -4882,43 +5605,47 @@ function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف'));
+        reader.onerror = () =>
+            reject(reader.error || new Error("تعذر قراءة الملف"));
         reader.readAsDataURL(file);
     });
 }
 
 function updateCategoryImagePreview(image) {
-    const preview = document.getElementById('categoryImagePreview');
+    const preview = document.getElementById("categoryImagePreview");
     if (!preview) return;
 
     if (image) {
         preview.innerHTML = `<img src="${image}" alt="صورة الفئة">`;
-        preview.classList.add('has-image');
+        preview.classList.add("has-image");
     } else {
-        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-        preview.classList.remove('has-image');
+        preview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove("has-image");
     }
 }
 
 function updateSubcategoryImagePreview(image) {
-    const preview = document.getElementById('subcategoryImagePreview');
+    const preview = document.getElementById("subcategoryImagePreview");
     if (!preview) return;
 
     if (image) {
         preview.innerHTML = `<img src="${image}" alt="صورة الفئة الفرعية">`;
-        preview.classList.add('has-image');
+        preview.classList.add("has-image");
     } else {
-        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-        preview.classList.remove('has-image');
+        preview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove("has-image");
     }
 }
 
 function updateBrandImagePreview(image) {
-    const preview = document.getElementById('brandImagePreview');
+    const preview = document.getElementById("brandImagePreview");
     if (!preview) return;
 
     if (!image) {
-        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
         return;
     }
 
@@ -4926,26 +5653,28 @@ function updateBrandImagePreview(image) {
 }
 
 function updateProductImagePreview(images = []) {
-    const preview = document.getElementById('productImagePreview');
+    const preview = document.getElementById("productImagePreview");
     if (!preview) return;
 
     // Ensure images is an array
-    const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
+    const imageArray = Array.isArray(images) ? images : images ? [images] : [];
     const resolvedImages = imageArray.map(resolveImageSource);
     const hasImages = resolvedImages.some(Boolean);
 
     if (!hasImages) {
-        preview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
-        preview.classList.remove('has-image');
+        preview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        preview.classList.remove("has-image");
         return;
     }
 
-    preview.classList.add('has-image');
+    preview.classList.add("has-image");
     preview.innerHTML = `
         <div class="image-preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
-            ${resolvedImages.map((img, idx) => {
-        if (!img) return '';
-        return `
+            ${resolvedImages
+            .map((img, idx) => {
+                if (!img) return "";
+                return `
                 <div class="image-preview-item" data-image-index="${idx}" style="position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 1; background: #f5f5f5;">
                     <img src="${img}" alt="صورة المنتج ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
                     <button type="button" class="image-remove-btn" data-image-index="${idx}" style="position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; padding: 0; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.2s;">
@@ -4953,99 +5682,101 @@ function updateProductImagePreview(images = []) {
                     </button>
                 </div>
                 `;
-    }).join('')}
+            })
+            .join("")}
         </div>
     `;
 
     // Attach remove button handlers
-    preview.querySelectorAll('.image-remove-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    preview.querySelectorAll(".image-remove-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
             removeProductImage(parseInt(btn.dataset.imageIndex));
         });
         // Hover effect
-        btn.addEventListener('mouseenter', () => {
-            btn.style.background = 'rgba(192, 57, 43, 1)';
+        btn.addEventListener("mouseenter", () => {
+            btn.style.background = "rgba(192, 57, 43, 1)";
         });
-        btn.addEventListener('mouseleave', () => {
-            btn.style.background = 'rgba(231, 76, 60, 0.9)';
+        btn.addEventListener("mouseleave", () => {
+            btn.style.background = "rgba(231, 76, 60, 0.9)";
         });
     });
 }
 
 async function handleCategoryImageChange(event) {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
 
     const file = input.files?.[0];
     if (!file) {
-        input.dataset.previewImage = '';
-        updateCategoryImagePreview(input.dataset.originalImage || '');
+        input.dataset.previewImage = "";
+        updateCategoryImagePreview(input.dataset.originalImage || "");
         return;
     }
-
 
     try {
         const dataUrl = await readFileAsDataUrl(file);
         input.dataset.previewImage = dataUrl;
         updateCategoryImagePreview(dataUrl);
     } catch (error) {
-        console.error('❌ Failed to preview category image:', error);
-        showToast('error', 'صورة الفئة', 'تعذر معاينة ملف الصورة المحدد');
+        console.error("❌ Failed to preview category image:", error);
+        showToast("error", "صورة الفئة", "تعذر معاينة ملف الصورة المحدد");
     }
 }
 
 async function handleSubcategoryImageChange(event) {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
 
     const file = input.files?.[0];
     if (!file) {
-        input.dataset.previewImage = '';
-        updateSubcategoryImagePreview(input.dataset.originalImage || '');
+        input.dataset.previewImage = "";
+        updateSubcategoryImagePreview(input.dataset.originalImage || "");
         return;
     }
-
 
     try {
         const dataUrl = await readFileAsDataUrl(file);
         input.dataset.previewImage = dataUrl;
         updateSubcategoryImagePreview(dataUrl);
     } catch (error) {
-        console.error('❌ Failed to preview subcategory image:', error);
-        showToast('error', 'صورة الفئة الفرعية', 'تعذر معاينة ملف الصورة المحدد');
+        console.error("❌ Failed to preview subcategory image:", error);
+        showToast("error", "صورة الفئة الفرعية", "تعذر معاينة ملف الصورة المحدد");
     }
 }
 
 async function handleBrandImageChange(event) {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
 
     const file = input.files?.[0];
     if (!file) {
-        updateBrandImagePreview('');
+        updateBrandImagePreview("");
         return;
     }
-
 
     try {
         const dataUrl = await readFileAsDataUrl(file);
         updateBrandImagePreview(dataUrl);
     } catch (error) {
-        console.error('❌ Failed to preview brand image:', error);
-        showToast('error', 'صورة العلامة التجارية', 'تعذر معاينة ملف الصورة المحدد');
+        console.error("❌ Failed to preview brand image:", error);
+        showToast(
+            "error",
+            "صورة العلامة التجارية",
+            "تعذر معاينة ملف الصورة المحدد",
+        );
     }
 }
 
 async function handleProductImageChange(event) {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+    if (!(input instanceof HTMLInputElement) || input.type !== "file") return;
 
     const newFiles = input.files ? Array.from(input.files) : [];
     if (!newFiles.length) return;
 
-    const form = input.closest('form');
+    const form = input.closest("form");
     if (!form) return;
 
     try {
@@ -5053,13 +5784,13 @@ async function handleProductImageChange(event) {
         if (!form.__productImageState) {
             form.__productImageState = {
                 newImages: [], // Store actual File objects here
-                newImageDataUrls: [] // Store data URLs for preview
+                newImageDataUrls: [], // Store data URLs for preview
             };
         }
 
         // Get existing images
         let existingImages = [];
-        let existingImagesJson = form.dataset.existingProductImages || '[]';
+        let existingImagesJson = form.dataset.existingProductImages || "[]";
         try {
             existingImages = JSON.parse(existingImagesJson);
         } catch (e) {
@@ -5073,37 +5804,38 @@ async function handleProductImageChange(event) {
                 form.__productImageState.newImages.push(file);
                 form.__productImageState.newImageDataUrls.push(dataUrl);
             } catch (error) {
-                console.error('Failed to read file:', error);
-                showToast('error', 'صورة المنتج', `تعذر معالجة الملف: ${file.name}`);
+                console.error("Failed to read file:", error);
+                showToast("error", "صورة المنتج", `تعذر معالجة الملف: ${file.name}`);
             }
         }
 
         // Clear the file input to allow re-selection
-        input.value = '';
+        input.value = "";
 
         // Update preview with all images (existing + new)
         const allImages = [
             ...existingImages,
-            ...form.__productImageState.newImageDataUrls
+            ...form.__productImageState.newImageDataUrls,
         ];
         updateProductImagePreview(allImages);
-
     } catch (error) {
-        console.error('Error processing product images:', error);
-        showToast('error', 'صورة المنتج', 'تعذر معالجة الصور المحددة');
-        input.value = '';
+        console.error("Error processing product images:", error);
+        showToast("error", "صورة المنتج", "تعذر معالجة الصور المحددة");
+        input.value = "";
     }
 }
 
 async function removeProductImage(imageIndex) {
-    const form = document.getElementById('addProductModal')?.querySelector('form');
+    const form = document
+        .getElementById("addProductModal")
+        ?.querySelector("form");
     if (!form) return;
 
     // Initialize state if needed
     if (!form.__productImageState) {
         form.__productImageState = {
             newImages: [],
-            newImageDataUrls: []
+            newImageDataUrls: [],
         };
     }
 
@@ -5111,8 +5843,10 @@ async function removeProductImage(imageIndex) {
     let removedExistingImages = [];
 
     try {
-        existingImages = JSON.parse(form.dataset.existingProductImages || '[]');
-        removedExistingImages = JSON.parse(form.dataset.removedProductImages || '[]');
+        existingImages = JSON.parse(form.dataset.existingProductImages || "[]");
+        removedExistingImages = JSON.parse(
+            form.dataset.removedProductImages || "[]",
+        );
     } catch (e) {
         existingImages = [];
         removedExistingImages = [];
@@ -5130,23 +5864,27 @@ async function removeProductImage(imageIndex) {
         if (productId) {
             try {
                 // Extract public_id and make immediate API call
-                let publicId = '';
-                if (typeof removedImage === 'string') {
+                let publicId = "";
+                if (typeof removedImage === "string") {
                     const matches = removedImage.match(/\/([^\/]+)\.[^.]+$/);
-                    publicId = matches ? `action-sports/Product/${matches[1]}` : removedImage;
+                    publicId = matches
+                        ? `action-sports/Product/${matches[1]}`
+                        : removedImage;
                 } else if (removedImage.public_id) {
                     publicId = removedImage.public_id;
                 } else if (removedImage.url) {
                     const matches = removedImage.url.match(/\/([^\/]+)\.[^.]+$/);
-                    publicId = matches ? `action-sports/Product/${matches[1]}` : removedImage.url;
+                    publicId = matches
+                        ? `action-sports/Product/${matches[1]}`
+                        : removedImage.url;
                 }
 
                 if (publicId) {
                     await deleteProductImage(productId, publicId);
-                    showToast('success', 'حذف الصورة', 'تم حذف الصورة بنجاح');
+                    showToast("success", "حذف الصورة", "تم حذف الصورة بنجاح");
                 }
             } catch (error) {
-                showToast('error', 'حذف الصورة', error.message || 'فشل حذف الصورة');
+                showToast("error", "حذف الصورة", error.message || "فشل حذف الصورة");
                 return; // Don't remove from UI if API call fails
             }
         }
@@ -5158,7 +5896,10 @@ async function removeProductImage(imageIndex) {
     } else {
         // Removing a newly selected image
         const newImageIndex = imageIndex - totalExistingCount;
-        if (newImageIndex >= 0 && newImageIndex < form.__productImageState.newImages.length) {
+        if (
+            newImageIndex >= 0 &&
+            newImageIndex < form.__productImageState.newImages.length
+        ) {
             form.__productImageState.newImages.splice(newImageIndex, 1);
             form.__productImageState.newImageDataUrls.splice(newImageIndex, 1);
         }
@@ -5167,7 +5908,7 @@ async function removeProductImage(imageIndex) {
     // Update preview
     const allImages = [
         ...existingImages,
-        ...form.__productImageState.newImageDataUrls
+        ...form.__productImageState.newImageDataUrls,
     ];
     updateProductImagePreview(allImages);
 }
@@ -5176,16 +5917,15 @@ async function removeProductImage(imageIndex) {
 async function handleCategoryFormSubmit(event) {
     event.preventDefault();
     const form = event.target;
-    if (!form || form.dataset.entity !== 'category') return;
-
+    if (!form || form.dataset.entity !== "category") return;
 
     const formData = new FormData(form);
-    const mode = form.dataset.mode || 'create';
-    const id = formData.get('id');
+    const mode = form.dataset.mode || "create";
+    const id = formData.get("id");
 
-    const name = getFormValue(formData, 'name');
-    const slug = getFormValue(formData, 'slug') || slugify(name);
-    const description = getFormValue(formData, 'description');
+    const name = getFormValue(formData, "name");
+    const slug = getFormValue(formData, "slug") || slugify(name);
+    const description = getFormValue(formData, "description");
     const descriptionField = form.querySelector('[name="description"]');
     const descriptionMaxLength = getDescriptionMaxLength(descriptionField);
     const normalizedDescription = truncateText(description, descriptionMaxLength);
@@ -5193,20 +5933,20 @@ async function handleCategoryFormSubmit(event) {
         descriptionField.value = normalizedDescription;
         updateDescriptionCounter(descriptionField);
     }
-    const imageInput = form.querySelector('#categoryImage');
+    const imageInput = form.querySelector("#categoryImage");
     const imageFile = imageInput?.files?.[0];
 
-
-
     const existingCategory = id ? getCategoryById(id) : null;
-    const existingExtras = existingCategory ? state.categoryExtras[existingCategory.id] : null;
-    const existingImage = existingExtras?.image || existingCategory?.image || '';
+    const existingExtras = existingCategory
+        ? state.categoryExtras[existingCategory.id]
+        : null;
+    const existingImage = existingExtras?.image || existingCategory?.image || "";
 
     const originalValues = (() => {
         try {
-            return JSON.parse(form.dataset.originalCategory || '{}');
+            return JSON.parse(form.dataset.originalCategory || "{}");
         } catch (error) {
-            console.warn('⚠️ Failed to parse original category dataset', error);
+            console.warn("⚠️ Failed to parse original category dataset", error);
             return {};
         }
     })();
@@ -5219,32 +5959,31 @@ async function handleCategoryFormSubmit(event) {
             if (imageInput) {
                 imageInput.dataset.previewImage = image;
             }
-
         } catch (error) {
-            console.error('❌ Failed to read category image:', error);
-            showToast('error', 'صورة الفئة', 'تعذر قراءة ملف الصورة المحدد');
+            console.error("❌ Failed to read category image:", error);
+            showToast("error", "صورة الفئة", "تعذر قراءة ملف الصورة المحدد");
             return;
         }
     }
 
     if (!name) {
-        showToast('error', 'حفظ الفئة', 'يرجى إدخال اسم الفئة');
+        showToast("error", "حفظ الفئة", "يرجى إدخال اسم الفئة");
         return;
     }
 
-    if (!image && mode === 'create') {
-        showToast('error', 'حفظ الفئة', 'يرجى اختيار صورة للفئة');
+    if (!image && mode === "create") {
+        showToast("error", "حفظ الفئة", "يرجى اختيار صورة للفئة");
         return;
     }
 
-    const safeDescription = normalizedDescription || '';
+    const safeDescription = normalizedDescription || "";
     const payload = {};
     const extras = {};
 
-    if (mode === 'edit' && id) {
-        const originalName = originalValues.name ?? '';
-        const originalSlug = originalValues.slug ?? '';
-        const originalDescription = originalValues.description ?? '';
+    if (mode === "edit" && id) {
+        const originalName = originalValues.name ?? "";
+        const originalSlug = originalValues.slug ?? "";
+        const originalDescription = originalValues.description ?? "";
 
         if (name !== originalName) {
             payload.name = name;
@@ -5259,14 +5998,14 @@ async function handleCategoryFormSubmit(event) {
         }
 
         if (imageFile) {
-            extras.image = image || '';
+            extras.image = image || "";
         }
 
         const hasPayloadChanges = Object.keys(payload).length > 0;
         const hasExtrasChanges = Object.keys(extras).length > 0;
 
         if (!hasPayloadChanges && !hasExtrasChanges) {
-            showToast('info', 'حفظ الفئة', 'لم يتم تعديل أي بيانات لحفظها.');
+            showToast("info", "حفظ الفئة", "لم يتم تعديل أي بيانات لحفظها.");
             return;
         }
 
@@ -5279,7 +6018,7 @@ async function handleCategoryFormSubmit(event) {
             payload.image = image;
         }
 
-        extras.image = image || '';
+        extras.image = image || "";
         extras.description = safeDescription;
 
         await createCategory(payload, extras, imageFile);
@@ -5289,162 +6028,208 @@ async function handleCategoryFormSubmit(event) {
 async function handleBrandFormSubmit(event) {
     event.preventDefault();
     const form = event.target;
-    if (!form || form.dataset.entity !== 'brand') return;
-
-
+    if (!form || form.dataset.entity !== "brand") return;
 
     const formData = new FormData(form);
-    const mode = form.dataset.mode || 'create';
-    const id = formData.get('id');
-    const name = getFormValue(formData, 'name');
-    const description = getFormValue(formData, 'description');
-    const imageInput = form.querySelector('#brandImage');
+    const mode = form.dataset.mode || "create";
+    const id = formData.get("id");
+    const name = getFormValue(formData, "name");
+    const description = getFormValue(formData, "description");
+    const imageInput = form.querySelector("#brandImage");
     const imageFile = imageInput?.files?.[0];
 
     if (!name) {
-        showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال اسم العلامة التجارية');
+        showToast(
+            "error",
+            "حفظ العلامة التجارية",
+            "يرجى إدخال اسم العلامة التجارية",
+        );
         return;
     }
 
     if (!description) {
-        showToast('error', 'حفظ العلامة التجارية', 'يرجى إدخال وصف العلامة التجارية');
+        showToast(
+            "error",
+            "حفظ العلامة التجارية",
+            "يرجى إدخال وصف العلامة التجارية",
+        );
         return;
     }
 
-    if (!imageFile && mode === 'create') {
-        showToast('error', 'حفظ العلامة التجارية', 'يرجى اختيار صورة للعلامة التجارية');
+    if (!imageFile && mode === "create") {
+        showToast(
+            "error",
+            "حفظ العلامة التجارية",
+            "يرجى اختيار صورة للعلامة التجارية",
+        );
         return;
     }
 
     try {
-        if (mode === 'edit' && id) {
+        if (mode === "edit" && id) {
             await updateBrand(id, { name, description }, imageFile);
-            showToast('success', 'تحديث العلامة التجارية', 'تم تحديث العلامة التجارية بنجاح');
+            showToast(
+                "success",
+                "تحديث العلامة التجارية",
+                "تم تحديث العلامة التجارية بنجاح",
+            );
         } else {
             await createBrand({ name, description }, imageFile);
-            showToast('success', 'إضافة العلامة التجارية', 'تمت إضافة العلامة التجارية بنجاح');
+            showToast(
+                "success",
+                "إضافة العلامة التجارية",
+                "تمت إضافة العلامة التجارية بنجاح",
+            );
         }
 
-        closeModal('brandModal');
+        closeModal("brandModal");
         form.reset();
         await fetchBrands();
         renderBrands();
     } catch (error) {
-        console.error('❌ Brand form error:', error);
-        showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حفظ العلامة التجارية');
+        console.error("❌ Brand form error:", error);
+        showToast(
+            "error",
+            "خطأ",
+            error.message || "حدث خطأ أثناء حفظ العلامة التجارية",
+        );
     }
 }
 
 function prepareBrandCreateForm() {
-    const form = document.getElementById('brandForm');
+    const form = document.getElementById("brandForm");
     if (!form) return;
 
-    form.dataset.mode = 'create';
-    setFieldValue(form, 'id', '');
-    setFieldValue(form, 'name', '');
-    setFieldValue(form, 'description', '');
+    form.dataset.mode = "create";
+    setFieldValue(form, "id", "");
+    setFieldValue(form, "name", "");
+    setFieldValue(form, "description", "");
 
-    const imageInput = form.querySelector('#brandImage');
+    const imageInput = form.querySelector("#brandImage");
     if (imageInput) {
         imageInput.required = true;
-        imageInput.value = '';
+        imageInput.value = "";
         delete imageInput.dataset.originalImage;
     }
 
-    const imagePreview = document.getElementById('brandImagePreview');
+    const imagePreview = document.getElementById("brandImagePreview");
     if (imagePreview) {
-        imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+        imagePreview.innerHTML =
+            '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
     }
 }
 
 function handleEditBrand(brandId) {
-    const brand = state.brands.find(b => (b._id === brandId || b.id === brandId));
+    const brand = state.brands.find((b) => b._id === brandId || b.id === brandId);
     if (!brand) {
-        showToast('error', 'تعديل العلامة التجارية', 'لم يتم العثور على العلامة التجارية');
+        showToast(
+            "error",
+            "تعديل العلامة التجارية",
+            "لم يتم العثور على العلامة التجارية",
+        );
         return;
     }
 
-    openModal('brandModal', 'edit');
+    openModal("brandModal", "edit");
 
-    const form = document.getElementById('brandForm');
+    const form = document.getElementById("brandForm");
     if (!form) return;
 
-    form.dataset.mode = 'edit';
-    setFieldValue(form, 'id', brand._id || brand.id || '');
-    setFieldValue(form, 'name', brand.name || '');
-    setFieldValue(form, 'description', truncateText(brand.description || '', getDescriptionMaxLength(form.querySelector('[name="description"]'))));
+    form.dataset.mode = "edit";
+    setFieldValue(form, "id", brand._id || brand.id || "");
+    setFieldValue(form, "name", brand.name || "");
+    setFieldValue(
+        form,
+        "description",
+        truncateText(
+            brand.description || "",
+            getDescriptionMaxLength(form.querySelector('[name="description"]')),
+        ),
+    );
     const brandDescriptionField = form.querySelector('[name="description"]');
     if (brandDescriptionField) {
         updateDescriptionCounter(brandDescriptionField);
     }
 
-    const imageInput = form.querySelector('#brandImage');
+    const imageInput = form.querySelector("#brandImage");
     if (imageInput) {
         imageInput.required = false;
-        imageInput.value = '';
-        const currentImage = brand.image?.secure_url || brand.image?.url || brand.image || '';
+        imageInput.value = "";
+        const currentImage =
+            brand.image?.secure_url || brand.image?.url || brand.image || "";
         imageInput.dataset.originalImage = currentImage;
     }
 
-    const imagePreview = document.getElementById('brandImagePreview');
+    const imagePreview = document.getElementById("brandImagePreview");
     if (imagePreview) {
-        const imageUrl = brand.image?.secure_url || brand.image?.url || brand.image || '';
+        const imageUrl =
+            brand.image?.secure_url || brand.image?.url || brand.image || "";
         if (imageUrl) {
-            imagePreview.innerHTML = `<img src="${imageUrl}" alt="${escapeHtml(brand.name || 'علامة تجارية')}">`;
+            imagePreview.innerHTML = `<img src="${imageUrl}" alt="${escapeHtml(brand.name || "علامة تجارية")}">`;
         } else {
-            imagePreview.innerHTML = '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
+            imagePreview.innerHTML =
+                '<span class="image-preview__placeholder">لم يتم اختيار صورة</span>';
         }
     }
 }
 
 async function handleDeleteBrand(brandId) {
-    confirmPopup('تأكيد حذف العلامة التجارية', 'هل أنت متأكد من حذف هذه العلامة التجارية؟', async () => {
-        try {
-            await deleteBrand(brandId);
-            showToast('success', 'حذف العلامة التجارية', 'تم حذف العلامة التجارية بنجاح');
-            await fetchBrands();
-            renderBrands();
-        } catch (error) {
-            console.error('❌ Delete brand error:', error);
-            showToast('error', 'خطأ', error.message || 'حدث خطأ أثناء حذف العلامة التجارية');
-        }
-    }, null, 'حذف', 'إلغاء');
+    confirmPopup(
+        "تأكيد حذف العلامة التجارية",
+        "هل أنت متأكد من حذف هذه العلامة التجارية؟",
+        async () => {
+            try {
+                await deleteBrand(brandId);
+                showToast(
+                    "success",
+                    "حذف العلامة التجارية",
+                    "تم حذف العلامة التجارية بنجاح",
+                );
+                await fetchBrands();
+                renderBrands();
+            } catch (error) {
+                console.error("❌ Delete brand error:", error);
+                showToast(
+                    "error",
+                    "خطأ",
+                    error.message || "حدث خطأ أثناء حذف العلامة التجارية",
+                );
+            }
+        },
+        null,
+        "حذف",
+        "إلغاء",
+    );
 }
 
 async function handleSubcategoryFormSubmit(event) {
     event.preventDefault();
     const form = event.target;
-    if (!form || form.dataset.entity !== 'subcategory') return;
-
-
+    if (!form || form.dataset.entity !== "subcategory") return;
 
     const formData = new FormData(form);
-    const mode = form.dataset.mode || 'create';
-    const {
-        categoryId,
-        originalCategoryId,
-        subcategoryId,
-        payload,
-        imageFile
-    } = buildSubcategoryFormData(formData, form);
+    const mode = form.dataset.mode || "create";
+    const { categoryId, originalCategoryId, subcategoryId, payload, imageFile } =
+        buildSubcategoryFormData(formData, form);
 
     if (!payload.name) {
-        showToast('error', 'حفظ الفئة الفرعية', 'يرجى إدخال اسم الفئة الفرعية');
+        showToast("error", "حفظ الفئة الفرعية", "يرجى إدخال اسم الفئة الفرعية");
         return;
     }
 
     if (!categoryId) {
-        showToast('error', 'حفظ الفئة الفرعية', 'يرجى اختيار الفئة الرئيسية');
+        showToast("error", "حفظ الفئة الفرعية", "يرجى اختيار الفئة الرئيسية");
         return;
     }
 
-    const statusField = form.elements['status'];
+    const statusField = form.elements["status"];
     if (statusField && statusField.value) {
         payload.status = statusField.value;
     }
 
-    const imageInput = form.querySelector('#subcategoryImage');
-    let previewImage = imageInput?.dataset.previewImage || imageInput?.dataset.originalImage || '';
+    const imageInput = form.querySelector("#subcategoryImage");
+    let previewImage =
+        imageInput?.dataset.previewImage || imageInput?.dataset.originalImage || "";
 
     if (imageFile && !previewImage) {
         try {
@@ -5453,8 +6238,8 @@ async function handleSubcategoryFormSubmit(event) {
                 imageInput.dataset.previewImage = previewImage;
             }
         } catch (error) {
-            console.error('❌ Failed to read subcategory image:', error);
-            showToast('error', 'صورة الفئة الفرعية', 'تعذر قراءة ملف الصورة المحدد');
+            console.error("❌ Failed to read subcategory image:", error);
+            showToast("error", "صورة الفئة الفرعية", "تعذر قراءة ملف الصورة المحدد");
             return;
         }
     }
@@ -5464,16 +6249,16 @@ async function handleSubcategoryFormSubmit(event) {
         try {
             return JSON.parse(form.dataset.originalSubcategory) || null;
         } catch (error) {
-            console.warn('⚠️ Failed to parse original subcategory snapshot', error);
+            console.warn("⚠️ Failed to parse original subcategory snapshot", error);
             return null;
         }
     })();
 
     try {
-        if (mode === 'edit' && subcategoryId) {
+        if (mode === "edit" && subcategoryId) {
             const normalizeValue = (value) => {
-                if (value === null || value === undefined) return '';
-                if (typeof value === 'string') return value.trim();
+                if (value === null || value === undefined) return "";
+                if (typeof value === "string") return value.trim();
                 return String(value).trim();
             };
 
@@ -5482,12 +6267,19 @@ async function handleSubcategoryFormSubmit(event) {
             if (originalSnapshot) {
                 Object.entries(payload).forEach(([key, value]) => {
                     const newValueNormalized = normalizeValue(value);
-                    const oldValueNormalized = Object.prototype.hasOwnProperty.call(originalSnapshot, key)
+                    const oldValueNormalized = Object.prototype.hasOwnProperty.call(
+                        originalSnapshot,
+                        key,
+                    )
                         ? normalizeValue(originalSnapshot[key])
                         : null;
 
                     if (oldValueNormalized === null) {
-                        if (value !== undefined && value !== null && newValueNormalized !== '') {
+                        if (
+                            value !== undefined &&
+                            value !== null &&
+                            newValueNormalized !== ""
+                        ) {
                             diffPayload[key] = value;
                         }
                     } else if (newValueNormalized !== oldValueNormalized) {
@@ -5498,20 +6290,25 @@ async function handleSubcategoryFormSubmit(event) {
                 Object.assign(diffPayload, payload);
             }
 
-            const categoryChanged = Boolean(originalCategoryId && originalCategoryId !== categoryId);
+            const categoryChanged = Boolean(
+                originalCategoryId && originalCategoryId !== categoryId,
+            );
             if (categoryChanged) {
                 diffPayload.categoryId = categoryId;
             }
 
-            const endpointCategoryId = categoryChanged && originalCategoryId
-                ? originalCategoryId
-                : categoryId;
+            const endpointCategoryId =
+                categoryChanged && originalCategoryId ? originalCategoryId : categoryId;
 
             const hasPayloadChanges = Object.keys(diffPayload).length > 0;
             const hasImageChange = !!imageFile;
 
             if (!hasPayloadChanges && !hasImageChange) {
-                showToast('info', 'تحديث الفئة الفرعية', 'لم يتم تعديل أي بيانات لحفظها.');
+                showToast(
+                    "info",
+                    "تحديث الفئة الفرعية",
+                    "لم يتم تعديل أي بيانات لحفظها.",
+                );
                 return;
             }
 
@@ -5522,8 +6319,8 @@ async function handleSubcategoryFormSubmit(event) {
                 imageFile,
                 {
                     previousCategoryId: categoryChanged ? originalCategoryId : null,
-                    targetCategoryId: categoryId
-                }
+                    targetCategoryId: categoryId,
+                },
             );
         } else {
             await createSubcategory(categoryId, payload, imageFile);
@@ -5535,26 +6332,26 @@ async function handleSubcategoryFormSubmit(event) {
 
         form.reset();
         if (imageInput) {
-            imageInput.dataset.previewImage = '';
-            imageInput.dataset.originalImage = '';
+            imageInput.dataset.previewImage = "";
+            imageInput.dataset.originalImage = "";
         }
-        updateSubcategoryImagePreview('');
-        closeModal('subcategoryModal');
+        updateSubcategoryImagePreview("");
+        closeModal("subcategoryModal");
     } catch (error) {
-        console.error('❌ Failed to submit subcategory form:', error);
+        console.error("❌ Failed to submit subcategory form:", error);
     }
 }
 
 // ===== Modal Population =====
 async function populateProductModal(productId = null) {
-    const modal = document.getElementById('addProductModal');
-    const form = modal?.querySelector('form');
-    const title = modal?.querySelector('[data-modal-title]') || modal?.querySelector('.modal-title');
-
-
+    const modal = document.getElementById("addProductModal");
+    const form = modal?.querySelector("form");
+    const title =
+        modal?.querySelector("[data-modal-title]") ||
+        modal?.querySelector(".modal-title");
 
     if (!modal || !form) {
-        console.error('❌ Missing required elements:', { modal, form, title });
+        console.error("❌ Missing required elements:", { modal, form, title });
         return;
     }
 
@@ -5565,89 +6362,105 @@ async function populateProductModal(productId = null) {
     try {
         await hydrateBrandOptions();
     } catch (error) {
-        console.error('❌ Failed to load brands:', error);
+        console.error("❌ Failed to load brands:", error);
     }
 
     // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
-    const categorySelect = form.querySelector('#productCategory');
+    const categorySelect = form.querySelector("#productCategory");
     if (categorySelect) {
         // إزالة أي مستمعات سابقة لتجنب التكرار
         const newCategorySelect = categorySelect.cloneNode(true);
         categorySelect.parentNode.replaceChild(newCategorySelect, categorySelect);
 
-        newCategorySelect.addEventListener('change', (e) => {
+        newCategorySelect.addEventListener("change", (e) => {
             const categoryId = e.target.value;
 
             populateSubcategoryOptions(categoryId);
 
             // تفعيل/تعطيل حقل الفئة الفرعية بناءً على وجود فئة محددة
-            const subcategorySelect = form.querySelector('#productSubcategory');
+            const subcategorySelect = form.querySelector("#productSubcategory");
             if (subcategorySelect) {
                 subcategorySelect.disabled = !categoryId;
                 if (!categoryId) {
-                    subcategorySelect.innerHTML = '<option value="">اختر الفئة الفرعية</option>';
+                    subcategorySelect.innerHTML =
+                        '<option value="">اختر الفئة الفرعية</option>';
                 }
             }
         });
     }
 
-    form.dataset.mode = productId ? 'edit' : 'create';
+    form.dataset.mode = productId ? "edit" : "create";
 
     if (productId) {
         // وضع التعديل: تعبئة البيانات الحالية للمنتج
-        const baseProduct = state.products.find(p => p.id === productId);
+        const baseProduct = state.products.find((p) => p.id === productId);
         const product = mergeProductWithExtras(baseProduct);
         if (!product) {
-            console.error('المنتج غير موجود:', productId);
+            console.error("المنتج غير موجود:", productId);
             return;
         }
 
         // تعبئة حقول النموذج
-        title.textContent = 'تعديل المنتج';
+        title.textContent = "تعديل المنتج";
         form.dataset.entityId = product.id;
-        setFieldValue(form, 'id', product.id);
+        setFieldValue(form, "id", product.id);
 
         // تعبئة الحقول الأساسية
-        setFieldValue(form, 'name', product.name);
+        setFieldValue(form, "name", product.name);
         const descriptionField = form.querySelector('[name="description"]');
-        setFieldValue(form, 'description', truncateText(product.description, getDescriptionMaxLength(descriptionField)));
+        setFieldValue(
+            form,
+            "description",
+            truncateText(
+                product.description,
+                getDescriptionMaxLength(descriptionField),
+            ),
+        );
         if (descriptionField) {
             updateDescriptionCounter(descriptionField);
         }
         const specsField = form.querySelector('[name="specs"]');
-        setFieldValue(form, 'specs', truncateText(product.specs || '', getDescriptionMaxLength(specsField)));
+        setFieldValue(
+            form,
+            "specs",
+            truncateText(product.specs || "", getDescriptionMaxLength(specsField)),
+        );
         if (specsField) {
             updateDescriptionCounter(specsField);
         }
-        setFieldValue(form, 'price', product.price);
-        setFieldValue(form, 'installationPrice', product.installationPrice ?? '');
-        setFieldValue(form, 'priceAfterDiscount', product.raw?.priceAfterDiscount ?? '');
-        setFieldValue(form, 'quantity', product.stock);
-        setFieldValue(form, 'sku', product.sku || '');
-        setFieldValue(form, 'status', product.status || 'draft');
+        setFieldValue(form, "price", product.price);
+        setFieldValue(form, "installationPrice", product.installationPrice ?? "");
+        setFieldValue(
+            form,
+            "priceAfterDiscount",
+            product.raw?.priceAfterDiscount ?? "",
+        );
+        setFieldValue(form, "quantity", product.stock);
+        setFieldValue(form, "sku", product.sku || "");
+        setFieldValue(form, "status", product.status || "draft");
 
         // تعبئة الفئة الرئيسية والفرعية
         if (product.categoryId) {
-            setFieldValue(form, 'category', product.categoryId);
+            setFieldValue(form, "category", product.categoryId);
             // تحديث قائمة الفئات الفرعية
             populateSubcategoryOptions(product.categoryId);
 
             // تأخير تعيين الفئة الفرعية لضمان تحميل القائمة
             setTimeout(() => {
                 if (product.subCategoryId) {
-                    setFieldValue(form, 'subCategory', product.subCategoryId);
+                    setFieldValue(form, "subCategory", product.subCategoryId);
                 }
             }, 100);
         }
 
         // تعبئة العلامة التجارية
         if (product.brandId) {
-            setFieldValue(form, 'brand', product.brandId);
+            setFieldValue(form, "brand", product.brandId);
         } else if (product.brandName) {
             // إذا كانت هناك علامة تجارية نصية وليست معرف، نضيفها كخيار جديد
-            const brandSelect = form.querySelector('#productBrand');
+            const brandSelect = form.querySelector("#productBrand");
             if (brandSelect) {
-                const option = document.createElement('option');
+                const option = document.createElement("option");
                 option.value = product.brandName;
                 option.textContent = product.brandName;
                 brandSelect.appendChild(option);
@@ -5656,43 +6469,50 @@ async function populateProductModal(productId = null) {
         }
 
         // تحديث معاينة الصورة إذا وجدت
-        const productImagesRaw = product.images && Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []);
+        const productImagesRaw =
+            product.images && Array.isArray(product.images)
+                ? product.images
+                : product.images
+                    ? [product.images]
+                    : [];
         form.dataset.existingProductImages = JSON.stringify(productImagesRaw);
         form.dataset.removedProductImages = JSON.stringify([]);
         form.__productImageState = {
             newImages: [],
-            newImageDataUrls: []
+            newImageDataUrls: [],
         };
         updateProductImagePreview(productImagesRaw);
-        const firstImage = productImagesRaw.find(img => resolveImageSource(img));
-        form.dataset.productImageOriginal = firstImage ? resolveImageSource(firstImage) : '';
+        const firstImage = productImagesRaw.find((img) => resolveImageSource(img));
+        form.dataset.productImageOriginal = firstImage
+            ? resolveImageSource(firstImage)
+            : "";
     } else {
         // وضع الإضافة: إعداد النموذج فارغاً
-        title.textContent = 'إضافة منتج جديد';
+        title.textContent = "إضافة منتج جديد";
         delete form.dataset.entityId;
-        setFieldValue(form, 'id', '');
+        setFieldValue(form, "id", "");
         form.dataset.existingProductImages = JSON.stringify([]);
         form.dataset.removedProductImages = JSON.stringify([]);
-        form.dataset.productImageOriginal = '';
+        form.dataset.productImageOriginal = "";
         form.__productImageState = {
             newImages: [],
-            newImageDataUrls: []
+            newImageDataUrls: [],
         };
         updateProductImagePreview([]);
 
         const descriptionField = form.querySelector('[name="description"]');
         if (descriptionField) {
-            setFieldValue(form, 'description', '');
+            setFieldValue(form, "description", "");
             updateDescriptionCounter(descriptionField);
         }
         const specsField = form.querySelector('[name="specs"]');
         if (specsField) {
-            setFieldValue(form, 'specs', '');
+            setFieldValue(form, "specs", "");
             updateDescriptionCounter(specsField);
         }
 
         // تعطيل حقل الفئة الفرعية حتى يتم اختيار فئة رئيسية
-        const subcategorySelect = document.getElementById('productSubcategory');
+        const subcategorySelect = document.getElementById("productSubcategory");
         if (subcategorySelect) {
             subcategorySelect.disabled = true;
         }
@@ -5700,43 +6520,51 @@ async function populateProductModal(productId = null) {
 }
 
 function populateCategoryModal(categoryId) {
-    const form = document.getElementById('categoryForm');
+    const form = document.getElementById("categoryForm");
     if (!form) return;
 
     const category = categoryId ? getCategoryById(categoryId) : null;
     const extras = category ? state.categoryExtras[category.id] : null;
 
-
-
-    form.dataset.mode = category ? 'edit' : 'create';
-    setFieldValue(form, 'id', category?.id || '');
-    setFieldValue(form, 'name', category?.name || '');
-    setFieldValue(form, 'slug', category?.slug || '');
-    const targetImage = extras?.image ?? category?.image ?? '';
-    const imageInput = form.querySelector('#categoryImage');
+    form.dataset.mode = category ? "edit" : "create";
+    setFieldValue(form, "id", category?.id || "");
+    setFieldValue(form, "name", category?.name || "");
+    setFieldValue(form, "slug", category?.slug || "");
+    const targetImage = extras?.image ?? category?.image ?? "";
+    const imageInput = form.querySelector("#categoryImage");
     if (imageInput) {
-        imageInput.value = '';
+        imageInput.value = "";
         imageInput.dataset.originalImage = targetImage;
-        imageInput.dataset.previewImage = '';
+        imageInput.dataset.previewImage = "";
         imageInput.required = !targetImage;
     }
     updateCategoryImagePreview(targetImage);
-    const resolvedDescription = extras?.description || category?.description || '';
+    const resolvedDescription =
+        extras?.description || category?.description || "";
     const descriptionField = form.querySelector('[name="description"]');
-    setFieldValue(form, 'description', truncateText(resolvedDescription, getDescriptionMaxLength(descriptionField)));
+    setFieldValue(
+        form,
+        "description",
+        truncateText(
+            resolvedDescription,
+            getDescriptionMaxLength(descriptionField),
+        ),
+    );
     if (descriptionField) {
         updateDescriptionCounter(descriptionField);
     }
 
     const originalSnapshot = {
-        name: category?.name || '',
-        slug: category?.slug || '',
+        name: category?.name || "",
+        slug: category?.slug || "",
         description: resolvedDescription,
-        image: targetImage
+        image: targetImage,
     };
     form.dataset.originalCategory = JSON.stringify(originalSnapshot);
 
-    form.querySelector('[type="submit"]').textContent = category ? 'حفظ التعديلات' : 'حفظ الفئة';
+    form.querySelector('[type="submit"]').textContent = category
+        ? "حفظ التعديلات"
+        : "حفظ الفئة";
 }
 
 // ===== Utility Functions =====
@@ -5747,13 +6575,13 @@ function isValidObjectId(id) {
 
 function formatCurrency(value) {
     const num = Number(value) || 0;
-    return `${num.toLocaleString('ar-EG')} ريال`;
+    return `${num.toLocaleString("ar-EG")} ريال`;
 }
 
 function formatNumber(value) {
-    if (value === null || value === undefined) return '0';
+    if (value === null || value === undefined) return "0";
     const number = Number(value);
-    return Number.isNaN(number) ? String(value) : number.toLocaleString('ar-EG');
+    return Number.isNaN(number) ? String(value) : number.toLocaleString("ar-EG");
 }
 
 function formatPercent(value) {
@@ -5762,60 +6590,62 @@ function formatPercent(value) {
 
 function formatDate(value, options = {}) {
     const date = parseDateValue(value);
-    if (!date) return '-';
+    if (!date) return "-";
 
     const formatOptions = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        ...options
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        ...options,
     };
 
-    return date.toLocaleDateString('ar-EG', formatOptions);
+    return date.toLocaleDateString("ar-EG", formatOptions);
 }
 
 function formatRelativeTime(value) {
     const date = parseDateValue(value);
-    if (!date) return '-';
+    if (!date) return "-";
 
     const now = new Date();
     const diffMs = date.getTime() - now.getTime();
     const absDiffMs = Math.abs(diffMs);
 
     const units = [
-        { unit: 'year', ms: 1000 * 60 * 60 * 24 * 365 },
-        { unit: 'month', ms: 1000 * 60 * 60 * 24 * 30 },
-        { unit: 'week', ms: 1000 * 60 * 60 * 24 * 7 },
-        { unit: 'day', ms: 1000 * 60 * 60 * 24 },
-        { unit: 'hour', ms: 1000 * 60 * 60 },
-        { unit: 'minute', ms: 1000 * 60 },
-        { unit: 'second', ms: 1000 }
+        { unit: "year", ms: 1000 * 60 * 60 * 24 * 365 },
+        { unit: "month", ms: 1000 * 60 * 60 * 24 * 30 },
+        { unit: "week", ms: 1000 * 60 * 60 * 24 * 7 },
+        { unit: "day", ms: 1000 * 60 * 60 * 24 },
+        { unit: "hour", ms: 1000 * 60 * 60 },
+        { unit: "minute", ms: 1000 * 60 },
+        { unit: "second", ms: 1000 },
     ];
 
     for (const { unit, ms } of units) {
-        if (absDiffMs >= ms || unit === 'second') {
+        if (absDiffMs >= ms || unit === "second") {
             const value = Math.round(diffMs / ms);
-            if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
-                const formatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' });
+            if (typeof Intl !== "undefined" && Intl.RelativeTimeFormat) {
+                const formatter = new Intl.RelativeTimeFormat("ar", {
+                    numeric: "auto",
+                });
                 return formatter.format(value, unit);
             }
 
             const absValue = Math.abs(value);
-            const suffix = value < 0 ? 'منذ' : 'بعد';
+            const suffix = value < 0 ? "منذ" : "بعد";
             const labels = {
-                second: 'ثانية',
-                minute: 'دقيقة',
-                hour: 'ساعة',
-                day: 'يوم',
-                week: 'أسبوع',
-                month: 'شهر',
-                year: 'سنة'
+                second: "ثانية",
+                minute: "دقيقة",
+                hour: "ساعة",
+                day: "يوم",
+                week: "أسبوع",
+                month: "شهر",
+                year: "سنة",
             };
-            return `${suffix} ${absValue} ${labels[unit] || ''}`.trim();
+            return `${suffix} ${absValue} ${labels[unit] || ""}`.trim();
         }
     }
 
-    return '-';
+    return "-";
 }
 
 function parseDateValue(value) {
@@ -5825,12 +6655,12 @@ function parseDateValue(value) {
         return isNaN(value.getTime()) ? null : value;
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         const date = new Date(value);
         return isNaN(date.getTime()) ? null : date;
     }
 
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
         const trimmed = value.trim();
         if (!trimmed) return null;
 
@@ -5840,7 +6670,7 @@ function parseDateValue(value) {
             return date;
         }
 
-        date = new Date(trimmed.replace(' ', 'T'));
+        date = new Date(trimmed.replace(" ", "T"));
         return isNaN(date.getTime()) ? null : date;
     }
 
@@ -5849,12 +6679,12 @@ function parseDateValue(value) {
 
 function formatDateInputValue(date) {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
-        return '';
+        return "";
     }
 
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 }
@@ -5912,15 +6742,15 @@ function getCustomerCreatedDate(customer = {}) {
 }
 
 function formatChange(value) {
-    return `${value > 0 ? '+' : ''}${(value * 100).toFixed(1)}%`;
+    return `${value > 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
 }
 
 function isValidObjectId(value) {
-    return typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value.trim());
+    return typeof value === "string" && /^[0-9a-fA-F]{24}$/.test(value.trim());
 }
 
 function normalizeFilterValue(value) {
-    if (value === undefined || value === null) return '';
+    if (value === undefined || value === null) return "";
     return String(value).trim().toLowerCase();
 }
 
@@ -5928,17 +6758,17 @@ function setFieldValue(form, name, value) {
     if (!form) return;
     const field = form.elements[name];
     if (!field) return;
-    field.value = value ?? '';
+    field.value = value ?? "";
 }
 
-function getFormValue(formData, name, fallback = '') {
+function getFormValue(formData, name, fallback = "") {
     if (!formData) return fallback;
     const value = formData.get(name);
     return value !== null ? value.trim() : fallback;
 }
 
-function truncateText(value = '', maxLength = DESCRIPTION_MAX_LENGTH) {
-    const text = typeof value === 'string' ? value : String(value ?? '');
+function truncateText(value = "", maxLength = DESCRIPTION_MAX_LENGTH) {
+    const text = typeof value === "string" ? value : String(value ?? "");
     if (!Number.isFinite(maxLength) || maxLength <= 0) {
         return text;
     }
@@ -5946,15 +6776,16 @@ function truncateText(value = '', maxLength = DESCRIPTION_MAX_LENGTH) {
 }
 
 function getDescriptionMaxLength(field) {
-    if (!field || typeof field.getAttribute !== 'function') return DESCRIPTION_MAX_LENGTH;
-    const attr = Number(field.getAttribute('maxlength'));
+    if (!field || typeof field.getAttribute !== "function")
+        return DESCRIPTION_MAX_LENGTH;
+    const attr = Number(field.getAttribute("maxlength"));
     return Number.isFinite(attr) && attr > 0 ? attr : DESCRIPTION_MAX_LENGTH;
 }
 
 function updateDescriptionCounter(field) {
     if (!field) return;
     const maxLength = getDescriptionMaxLength(field);
-    const currentValue = field.value || '';
+    const currentValue = field.value || "";
     if (currentValue.length > maxLength) {
         field.value = currentValue.slice(0, maxLength);
     }
@@ -5967,24 +6798,26 @@ function updateDescriptionCounter(field) {
 }
 
 function refreshDescriptionCounters(container = document) {
-    if (!container || typeof container.querySelectorAll !== 'function') return;
-    container.querySelectorAll('.js-description-input').forEach(field => updateDescriptionCounter(field));
+    if (!container || typeof container.querySelectorAll !== "function") return;
+    container
+        .querySelectorAll(".js-description-input")
+        .forEach((field) => updateDescriptionCounter(field));
 }
 
 function initDescriptionInputs(root = document) {
-    if (!root || typeof root.querySelectorAll !== 'function') return;
-    root.querySelectorAll('.js-description-input').forEach(field => {
-        if (field.dataset.descriptionWatcherAttached === 'true') return;
-        field.dataset.descriptionWatcherAttached = 'true';
-        field.addEventListener('input', () => updateDescriptionCounter(field));
-        field.addEventListener('blur', () => updateDescriptionCounter(field));
+    if (!root || typeof root.querySelectorAll !== "function") return;
+    root.querySelectorAll(".js-description-input").forEach((field) => {
+        if (field.dataset.descriptionWatcherAttached === "true") return;
+        field.dataset.descriptionWatcherAttached = "true";
+        field.addEventListener("input", () => updateDescriptionCounter(field));
+        field.addEventListener("blur", () => updateDescriptionCounter(field));
         updateDescriptionCounter(field);
     });
 }
 
 function getNumericValue(formData, name, fallback = 0) {
     const value = formData.get(name);
-    if (value === null || value === '') return fallback;
+    if (value === null || value === "") return fallback;
     const number = Number(value);
     return Number.isNaN(number) ? fallback : number;
 }
@@ -5992,29 +6825,39 @@ function getNumericValue(formData, name, fallback = 0) {
 function getStatusLabel(status) {
     const normalized = normalizeStatusKey(status);
     const entry = normalized ? STATUS_META[normalized] : null;
-    return entry?.label || status || normalized || '-';
+    return entry?.label || status || normalized || "-";
 }
 
 function getStatusBadge(status) {
-    const normalized = normalizeStatusKey(status) || 'new';
-    const entry = STATUS_META[normalized] || { label: normalized, class: 'status-default' };
+    const normalized = normalizeStatusKey(status) || "new";
+    const entry = STATUS_META[normalized] || {
+        label: normalized,
+        class: "status-default",
+    };
     return `<span class="status-badge ${entry.class}">${entry.label}</span>`;
 }
 
 function renderOrderStatusControls(order = {}) {
-    const statusKey = normalizeStatusKey(order.status) || 'new';
-    const orderIdRaw = order?.id ?? '';
-    const orderIdLiteral = JSON.stringify(orderIdRaw ?? '');
-    const hasValidId = !(orderIdRaw === undefined || orderIdRaw === null || String(orderIdRaw).trim() === '');
+    const statusKey = normalizeStatusKey(order.status) || "new";
+    const orderIdRaw = order?.id ?? "";
+    const orderIdLiteral = JSON.stringify(orderIdRaw ?? "");
+    const hasValidId = !(
+        orderIdRaw === undefined ||
+        orderIdRaw === null ||
+        String(orderIdRaw).trim() === ""
+    );
 
     const optionsMarkup = getOrderStatusOptions()
-        .map(option => `<option value="${option.value}"${option.value === statusKey ? ' selected' : ''}>${option.label}</option>`)
-        .join('');
+        .map(
+            (option) =>
+                `<option value="${option.value}"${option.value === statusKey ? " selected" : ""}>${option.label}</option>`,
+        )
+        .join("");
 
     return `
                 <div class="order-status-control">
                     ${getStatusBadge(statusKey)}
-                    <select class="order-status-select"${hasValidId ? '' : ' disabled'} data-order-id=${orderIdLiteral} onchange="changeOrderStatus(${orderIdLiteral}, this.value, this)">
+                    <select class="order-status-select"${hasValidId ? "" : " disabled"} data-order-id=${orderIdLiteral} onchange="changeOrderStatus(${orderIdLiteral}, this.value, this)">
                         ${optionsMarkup}
                     </select>
                 </div>
@@ -6023,17 +6866,17 @@ function renderOrderStatusControls(order = {}) {
 
 function getRoleBadge(role) {
     const map = {
-        admin: { label: 'مدير', class: 'role-admin' },
-        editor: { label: 'محرر', class: 'role-editor' },
-        support: { label: 'دعم', class: 'role-support' },
-        viewer: { label: 'مشاهد', class: 'role-viewer' }
+        admin: { label: "مدير", class: "role-admin" },
+        editor: { label: "محرر", class: "role-editor" },
+        support: { label: "دعم", class: "role-support" },
+        viewer: { label: "مشاهد", class: "role-viewer" },
     };
-    const entry = map[role] || { label: role, class: 'role-default' };
+    const entry = map[role] || { label: role, class: "role-default" };
     return `<span class="role-badge ${entry.class}">${entry.label}</span>`;
 }
 
 function getCategoryLabel(slug) {
-    const category = state.categories.find(cat => cat.slug === slug);
+    const category = state.categories.find((cat) => cat.slug === slug);
     if (category) {
         return category.name;
     }
@@ -6042,40 +6885,50 @@ function getCategoryLabel(slug) {
 
 function getCustomerSegmentLabel(segment) {
     const map = {
-        vip: 'عميل مميز',
-        loyal: 'عميل وفي',
-        new: 'عميل جديد',
-        churn: 'مهدد بالمغادرة'
+        vip: "عميل مميز",
+        loyal: "عميل وفي",
+        new: "عميل جديد",
+        churn: "مهدد بالمغادرة",
     };
-    return map[segment] || segment || '-';
+    return map[segment] || segment || "-";
 }
 
 function getPaymentLabel(method) {
     const map = {
-        cash: 'الدفع عند الاستلام',
-        card: 'بطاقة ائتمان',
-        installment: 'التقسيط',
-        bank: 'تحويل بنكي'
+        cash: "الدفع عند الاستلام",
+        card: "بطاقة ائتمان",
+        installment: "التقسيط",
+        bank: "تحويل بنكي",
     };
-    return map[method] || method || '-';
+    return map[method] || method || "-";
 }
 
 function getProductById(productId) {
     if (!productId) return null;
-    return getProductsSource().find(product => String(product.id) === String(productId)) || null;
+    return (
+        getProductsSource().find(
+            (product) => String(product.id) === String(productId),
+        ) || null
+    );
 }
 
 function getOrderById(orderId) {
     const normalizedId = normalizeOrderId(orderId);
     if (!normalizedId) return null;
 
-    const orderFromState = getOrdersSource().find(order => normalizeOrderId(order.id) === normalizedId);
+    const orderFromState = getOrdersSource().find(
+        (order) => normalizeOrderId(order.id) === normalizedId,
+    );
     if (orderFromState) {
         return orderFromState;
     }
 
-    if (typeof mockData !== 'undefined' && Array.isArray(mockData.orders)) {
-        return mockData.orders.find(order => normalizeOrderId(order.id) === normalizedId) || null;
+    if (typeof mockData !== "undefined" && Array.isArray(mockData.orders)) {
+        return (
+            mockData.orders.find(
+                (order) => normalizeOrderId(order.id) === normalizedId,
+            ) || null
+        );
     }
 
     return null;
@@ -6102,44 +6955,69 @@ function getOrderDetails(orderId) {
         })();
 
         const items = itemsSource.length
-            ? itemsSource.map(item => {
-                const quantity = Number(item.quantity ?? item.qty ?? item.count ?? 1) || 1;
-                const price = Number(item.price ?? item.unitPrice ?? item.salePrice ?? 0) || 0;
+            ? itemsSource.map((item) => {
+                const quantity =
+                    Number(item.quantity ?? item.qty ?? item.count ?? 1) || 1;
+                const price =
+                    Number(item.price ?? item.unitPrice ?? item.salePrice ?? 0) || 0;
                 return {
-                    name: item.name || item.product?.name || item.productId?.name || 'منتج',
+                    name:
+                        item.name || item.product?.name || item.productId?.name || "منتج",
                     quantity,
-                    price
+                    price,
                 };
             })
-            : [{
-                name: order.raw?.cartItems?.[0]?.productId?.name || order.raw?.items?.[0]?.name || 'منتج',
-                quantity: Number(order.items) || 1,
-                price: Number(order.total) || 0
-            }];
+            : [
+                {
+                    name:
+                        order.raw?.cartItems?.[0]?.productId?.name ||
+                        order.raw?.items?.[0]?.name ||
+                        "منتج",
+                    quantity: Number(order.items) || 1,
+                    price: Number(order.total) || 0,
+                },
+            ];
 
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const shippingInfo = order.shipping || normalizeOrderShipping(order.raw?.shippingAddress || order.raw?.shipping || null, order.raw);
-        const shippingCost = Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? shippingInfo?.shippingRate ?? 0) || 0;
-        const installationCost = Number(
-            order.raw?.totalInstallationPrice
-            ?? order.raw?.installationCost
-            ?? order.raw?.installation_price
-            ?? order.raw?.installationFee
-            ?? order.installationCost
-            ?? order.totalInstallationPrice
-            ?? 0
-        ) || 0;
-        const discountValue = Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
+        const subtotal = items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0,
+        );
+        const shippingInfo =
+            order.shipping ||
+            normalizeOrderShipping(
+                order.raw?.shippingAddress || order.raw?.shipping || null,
+                order.raw,
+            );
+        const shippingCost =
+            Number(
+                order.raw?.shippingCost ??
+                order.raw?.shippingPrice ??
+                order.raw?.deliveryFee ??
+                shippingInfo?.shippingRate ??
+                0,
+            ) || 0;
+        const installationCost =
+            Number(
+                order.raw?.totalInstallationPrice ??
+                order.raw?.installationCost ??
+                order.raw?.installation_price ??
+                order.raw?.installationFee ??
+                order.installationCost ??
+                order.totalInstallationPrice ??
+                0,
+            ) || 0;
+        const discountValue =
+            Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0;
         const totalValue = Number(order.total);
         const resolvedTotal = Number.isFinite(totalValue)
             ? totalValue
-            : (subtotal + shippingCost + installationCost - discountValue);
+            : subtotal + shippingCost + installationCost - discountValue;
 
         return {
             customer: {
-                name: order.customer || order.user?.name || '-',
-                email: order.customerEmail || order.user?.email || '-',
-                phone: order.customerPhone || order.user?.phone || '-'
+                name: order.customer || order.user?.name || "-",
+                email: order.customerEmail || order.user?.email || "-",
+                phone: order.customerPhone || order.user?.phone || "-",
             },
             shipping: shippingInfo,
             paymentMethod: order.payment,
@@ -6150,44 +7028,62 @@ function getOrderDetails(orderId) {
                 shipping: shippingCost,
                 installation: installationCost,
                 discount: discountValue,
-                total: resolvedTotal
+                total: resolvedTotal,
             },
             status: order.status,
-            notes: order.raw?.notes || ''
+            notes: order.raw?.notes || "",
         };
     }
 
-    if (typeof mockData !== 'undefined') {
+    if (typeof mockData !== "undefined") {
         const mockDetails = mockData.orderDetails?.[normalizedId];
         if (mockDetails) {
             return mockDetails;
         }
 
         const mockOrder = Array.isArray(mockData.orders)
-            ? mockData.orders.find(entry => normalizeOrderId(entry.id) === normalizedId)
+            ? mockData.orders.find(
+                (entry) => normalizeOrderId(entry.id) === normalizedId,
+            )
             : null;
 
         if (mockOrder) {
-            const quantity = mockOrder.items && mockOrder.items > 0 ? mockOrder.items : 1;
-            const unitPrice = quantity > 0 ? mockOrder.total / quantity : mockOrder.total;
-            const installationCost = Number(mockOrder.totalInstallationPrice ?? mockOrder.installationCost ?? mockOrder.installation ?? 0) || 0;
-            const shippingCost = Number(mockOrder.shippingCost ?? mockOrder.shipping ?? 0) || 0;
+            const quantity =
+                mockOrder.items && mockOrder.items > 0 ? mockOrder.items : 1;
+            const unitPrice =
+                quantity > 0 ? mockOrder.total / quantity : mockOrder.total;
+            const installationCost =
+                Number(
+                    mockOrder.totalInstallationPrice ??
+                    mockOrder.installationCost ??
+                    mockOrder.installation ??
+                    0,
+                ) || 0;
+            const shippingCost =
+                Number(mockOrder.shippingCost ?? mockOrder.shipping ?? 0) || 0;
             const discountValue = Number(mockOrder.discount ?? 0) || 0;
             return {
-                customer: { name: mockOrder.customer, email: '-', phone: '-' },
-                shipping: { line: '-', city: '-', country: '-' },
+                customer: { name: mockOrder.customer, email: "-", phone: "-" },
+                shipping: { line: "-", city: "-", country: "-" },
                 paymentMethod: mockOrder.payment,
                 date: mockOrder.date,
-                items: [{ name: 'تفاصيل المنتجات غير متاحة', quantity, price: unitPrice }],
+                items: [
+                    { name: "تفاصيل المنتجات غير متاحة", quantity, price: unitPrice },
+                ],
                 summary: {
                     subtotal: unitPrice * quantity,
                     shipping: shippingCost,
                     installation: installationCost,
                     discount: discountValue,
-                    total: mockOrder.total ?? ((unitPrice * quantity) + shippingCost + installationCost - discountValue)
+                    total:
+                        mockOrder.total ??
+                        unitPrice * quantity +
+                        shippingCost +
+                        installationCost -
+                        discountValue,
                 },
                 status: mockOrder.status,
-                notes: ''
+                notes: "",
             };
         }
     }
@@ -6199,7 +7095,7 @@ function getCustomerById(customerId) {
     if (!customerId) return null;
 
     const normalizedId = String(customerId);
-    const customerFromState = (state.customers || []).find(customer => {
+    const customerFromState = (state.customers || []).find((customer) => {
         const id = customer._id ?? customer.id;
         return id && String(id) === normalizedId;
     });
@@ -6208,11 +7104,15 @@ function getCustomerById(customerId) {
         return customerFromState;
     }
 
-    return mockData.customers.find(customer => String(customer.id) === normalizedId) || null;
+    return (
+        mockData.customers.find(
+            (customer) => String(customer.id) === normalizedId,
+        ) || null
+    );
 }
 
 function getPaymentMethodById(paymentId) {
-    return mockData.payments.find(method => method.id === paymentId) || null;
+    return mockData.payments.find((method) => method.id === paymentId) || null;
 }
 
 async function fetchPaymentSettingsStatus() {
@@ -6225,16 +7125,18 @@ async function fetchPaymentSettingsStatus() {
         const payload = await response.json().catch(() => null);
         const data = payload?.data || payload;
 
-        if (!data || typeof data !== 'object') {
-            throw new Error('استجابة غير متوقعة من خادم طرق الدفع');
+        if (!data || typeof data !== "object") {
+            throw new Error("استجابة غير متوقعة من خادم طرق الدفع");
         }
 
         Object.entries(data).forEach(([field, value]) => {
             const paymentId = PAYMENT_ID_BY_STATUS_FIELD[field];
             if (!paymentId) return;
 
-            const card = document.querySelector(`.payment-method-card[data-payment-id="${paymentId}"]`);
-            const toggle = card?.querySelector('.toggle-switch input');
+            const card = document.querySelector(
+                `.payment-method-card[data-payment-id="${paymentId}"]`,
+            );
+            const toggle = card?.querySelector(".toggle-switch input");
             if (toggle) {
                 setPaymentToggleState(toggle, Boolean(value));
             }
@@ -6242,8 +7144,12 @@ async function fetchPaymentSettingsStatus() {
 
         return data;
     } catch (error) {
-        console.error('❌ فشل جلب حالة إعدادات الدفع:', error);
-        showToast('error', 'إعدادات الدفع', error?.message || 'تعذر جلب حالة طرق الدفع.');
+        console.error("❌ فشل جلب حالة إعدادات الدفع:", error);
+        showToast(
+            "error",
+            "إعدادات الدفع",
+            error?.message || "تعذر جلب حالة طرق الدفع.",
+        );
         throw error;
     }
 }
@@ -6253,13 +7159,15 @@ async function renderPaymentMethods() {
     const methods = mockData.payments;
     methods.forEach(updatePaymentMethodCard);
 
-    document.querySelectorAll('.payment-method-card .toggle-switch input').forEach(input => {
-        const card = input.closest('.payment-method-card');
-        const stored = card?.dataset.enabled;
-        if (stored == null) {
-            setPaymentToggleState(input, true);
-        }
-    });
+    document
+        .querySelectorAll(".payment-method-card .toggle-switch input")
+        .forEach((input) => {
+            const card = input.closest(".payment-method-card");
+            const stored = card?.dataset.enabled;
+            if (stored == null) {
+                setPaymentToggleState(input, true);
+            }
+        });
 }
 
 async function togglePaymentMethod(paymentKey, enabled) {
@@ -6269,20 +7177,22 @@ async function togglePaymentMethod(paymentKey, enabled) {
     }
 
     const response = await authorizedFetch(endpoint, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
         },
-        body: JSON.stringify({ enabled })
+        body: JSON.stringify({ enabled }),
     });
 
     const handled = handleUnauthorized(response);
     if (handled !== response) {
-        throw new Error('انتهت الجلسة. يرجى إعادة تسجيل الدخول.');
+        throw new Error("انتهت الجلسة. يرجى إعادة تسجيل الدخول.");
     }
 
-    const contentType = response.headers.get('content-type') || '';
-    const body = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {};
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+        ? await response.json().catch(() => ({}))
+        : {};
 
     if (!response.ok) {
         const message = body?.message || `HTTP ${response.status}`;
@@ -6293,23 +7203,25 @@ async function togglePaymentMethod(paymentKey, enabled) {
 }
 
 function updatePaymentMethodCard(payment) {
-    const card = document.querySelector(`.payment-method-card[data-payment-id="${payment.id}"]`);
+    const card = document.querySelector(
+        `.payment-method-card[data-payment-id="${payment.id}"]`,
+    );
     if (!card) return;
 
-    let noteEl = card.querySelector('[data-payment-note]');
+    let noteEl = card.querySelector("[data-payment-note]");
     if (payment.note) {
         if (!noteEl) {
-            noteEl = document.createElement('p');
-            noteEl.setAttribute('data-payment-note', 'true');
-            noteEl.className = 'payment-note';
-            card.querySelector('.payment-method-details')?.appendChild(noteEl);
+            noteEl = document.createElement("p");
+            noteEl.setAttribute("data-payment-note", "true");
+            noteEl.className = "payment-note";
+            card.querySelector(".payment-method-details")?.appendChild(noteEl);
         }
         noteEl.textContent = payment.note;
     } else if (noteEl) {
         noteEl.remove();
     }
 
-    const toggle = card.querySelector('.toggle-switch input');
+    const toggle = card.querySelector(".toggle-switch input");
     if (toggle) {
         setPaymentToggleState(toggle, payment.enabled);
     }
@@ -6317,27 +7229,34 @@ function updatePaymentMethodCard(payment) {
 
 // ===== Filter Helpers =====
 function normalizeFilterValue(value) {
-    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+    return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 function filterBySearch(term, fields = []) {
     const needle = normalizeFilterValue(term);
     if (!needle) return () => true;
-    const targetFields = Array.isArray(fields) && fields.length ? fields : ['name'];
-    return item => targetFields.some(field => normalizeFilterValue(item?.[field]).includes(needle));
+    const targetFields =
+        Array.isArray(fields) && fields.length ? fields : ["name"];
+    return (item) =>
+        targetFields.some((field) =>
+            normalizeFilterValue(item?.[field]).includes(needle),
+        );
 }
 
 function applyFilters(collection, filters = []) {
-    return filters.reduce((items, filterFn) => items.filter(filterFn), collection);
+    return filters.reduce(
+        (items, filterFn) => items.filter(filterFn),
+        collection,
+    );
 }
 
 // ===== Print & Export Functions =====
 function buildReportTemplate(title, sections = [], options = {}) {
-    const generatedAt = options.generatedAt || new Date().toLocaleString('ar-EG');
+    const generatedAt = options.generatedAt || new Date().toLocaleString("ar-EG");
     const {
-        footerNote = 'تم توليد هذا التقرير من لوحة التحكم التجريبية لـ Action Sports.',
+        footerNote = "تم توليد هذا التقرير من لوحة التحكم التجريبية لـ Action Sports.",
         includePrintButton = true,
-        extraStyles = ''
+        extraStyles = "",
     } = options;
 
     const baseStyles = `
@@ -6361,14 +7280,20 @@ function buildReportTemplate(title, sections = [], options = {}) {
             `;
 
     const styles = `${baseStyles}${extraStyles}`;
-    const buttonHtml = includePrintButton ? `<button onclick="window.print()">طباعة التقرير</button>` : '';
+    const buttonHtml = includePrintButton
+        ? `<button onclick="window.print()">طباعة التقرير</button>`
+        : "";
 
-    const sectionsHtml = sections.map(section => `
+    const sectionsHtml = sections
+        .map(
+            (section) => `
                 <section class="section">
-                    ${section.title ? `<h2>${section.title}</h2>` : ''}
-                    ${section.content || ''}
+                    ${section.title ? `<h2>${section.title}</h2>` : ""}
+                    ${section.content || ""}
                 </section>
-            `).join('');
+            `,
+        )
+        .join("");
 
     return `
                 <!DOCTYPE html>
@@ -6396,7 +7321,7 @@ function buildReportTemplate(title, sections = [], options = {}) {
 }
 
 function openReportWindow(html) {
-    const reportWindow = window.open('', '_blank');
+    const reportWindow = window.open("", "_blank");
     if (!reportWindow) {
         return false;
     }
@@ -6412,11 +7337,14 @@ function exportOrders() {
     const orders = filterOrders().slice();
 
     if (!orders.length) {
-        showToast('info', 'تصدير الطلبات', 'لا توجد طلبات متاحة للتقرير حالياً.');
+        showToast("info", "تصدير الطلبات", "لا توجد طلبات متاحة للتقرير حالياً.");
         return;
     }
 
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalRevenue = orders.reduce(
+        (sum, order) => sum + (order.total || 0),
+        0,
+    );
     const totalItems = orders.reduce((sum, order) => sum + (order.items || 0), 0);
 
     const statusCounts = orders.reduce((acc, order) => {
@@ -6434,7 +7362,7 @@ function exportOrders() {
                     <tbody>
                         <tr><th>عدد الطلبات</th><td>${formatNumber(orders.length)}</td></tr>
                         <tr><th>إجمالي الإيرادات</th><td>${formatCurrency(totalRevenue)}</td></tr>
-                        <tr><th>متوسط قيمة الطلب</th><td>${orders.length ? formatCurrency(totalRevenue / orders.length) : '0 ريال'}</td></tr>
+                        <tr><th>متوسط قيمة الطلب</th><td>${orders.length ? formatCurrency(totalRevenue / orders.length) : "0 ريال"}</td></tr>
                         <tr><th>إجمالي عدد المنتجات</th><td>${formatNumber(totalItems)}</td></tr>
                     </tbody>
                 </table>
@@ -6447,9 +7375,13 @@ function exportOrders() {
                             <tr><th>الحالة</th><th>عدد الطلبات</th></tr>
                         </thead>
                         <tbody>
-                            ${Object.entries(statusCounts).map(([status, count]) => `
+                            ${Object.entries(statusCounts)
+            .map(
+                ([status, count]) => `
                                 <tr><td>${getStatusLabel(status)}</td><td>${formatNumber(count)}</td></tr>
-                            `).join('')}
+                            `,
+            )
+            .join("")}
                         </tbody>
                     </table>
                 `
@@ -6462,15 +7394,21 @@ function exportOrders() {
                             <tr><th>طريقة الدفع</th><th>عدد الطلبات</th></tr>
                         </thead>
                         <tbody>
-                            ${Object.entries(paymentCounts).map(([payment, count]) => `
+                            ${Object.entries(paymentCounts)
+            .map(
+                ([payment, count]) => `
                                 <tr><td>${getPaymentLabel(payment)}</td><td>${formatNumber(count)}</td></tr>
-                            `).join('')}
+                            `,
+            )
+            .join("")}
                         </tbody>
                     </table>
                 `
         : '<p class="empty-state">لا تتوفر بيانات لطرق الدفع.</p>';
 
-    const ordersRows = orders.map((order, index) => `
+    const ordersRows = orders
+        .map(
+            (order, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
@@ -6481,7 +7419,9 @@ function exportOrders() {
                     <td>${getStatusLabel(order.status)}</td>
                     <td>${order.date}</td>
                 </tr>
-            `).join('');
+            `,
+        )
+        .join("");
 
     const ordersTable = `
                 <table class="data-table">
@@ -6502,42 +7442,60 @@ function exportOrders() {
             `;
 
     const sections = [
-        { title: 'ملخص سريع', content: summaryContent },
+        { title: "ملخص سريع", content: summaryContent },
         {
-            title: 'تفاصيل الحالة وطرق الدفع',
-            content: `<div class="grid-2">${statusTable}${paymentTable}</div>`
+            title: "تفاصيل الحالة وطرق الدفع",
+            content: `<div class="grid-2">${statusTable}${paymentTable}</div>`,
         },
-        { title: 'قائمة الطلبات', content: ordersTable }
+        { title: "قائمة الطلبات", content: ordersTable },
     ];
 
-    const reportHtml = buildReportTemplate('تقرير الطلبات', sections, {
-        extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
+    const reportHtml = buildReportTemplate("تقرير الطلبات", sections, {
+        extraStyles:
+            ".grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }",
     });
 
     if (!openReportWindow(reportHtml)) {
-        showToast('error', 'تصدير الطلبات', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        showToast(
+            "error",
+            "تصدير الطلبات",
+            "تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
+        );
         return;
     }
 
-    showToast('success', 'تصدير الطلبات', 'تم فتح تقرير الطلبات في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast(
+        "success",
+        "تصدير الطلبات",
+        "تم فتح تقرير الطلبات في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.",
+    );
 }
 
 function exportCustomers() {
     const customers = getCustomersForDisplay();
 
     if (!customers.length) {
-        showToast('info', 'تصدير العملاء', 'لا توجد بيانات عملاء متاحة للتقرير حالياً.');
+        showToast(
+            "info",
+            "تصدير العملاء",
+            "لا توجد بيانات عملاء متاحة للتقرير حالياً.",
+        );
         return;
     }
 
     const orders = Array.isArray(state.orders) ? state.orders : [];
 
-    const customersWithMetrics = customers.map(customer => {
-        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+    const customersWithMetrics = customers.map((customer) => {
+        const relatedOrders = orders.filter((order) =>
+            doesOrderBelongToCustomer(order, customer),
+        );
         const ordersCount = relatedOrders.length;
-        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+        const totalSpent = relatedOrders.reduce(
+            (sum, order) => sum + (Number(order.total) || 0),
+            0,
+        );
 
-        let lastOrderDisplay = customer.lastOrder || '-';
+        let lastOrderDisplay = customer.lastOrder || "-";
         if (relatedOrders.length) {
             const latestOrder = relatedOrders.reduce((latest, current) => {
                 const latestDate = latest ? getOrderDate(latest) : null;
@@ -6551,7 +7509,7 @@ function exportCustomers() {
 
             const latestDate = getOrderDate(latestOrder);
             if (latestDate) {
-                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
+                lastOrderDisplay = latestDate.toLocaleString("ar-EG");
             }
         }
 
@@ -6559,13 +7517,19 @@ function exportCustomers() {
             ...customer,
             ordersCount,
             totalSpent,
-            lastOrderDisplay
+            lastOrderDisplay,
         };
     });
 
     const totalCustomers = customersWithMetrics.length;
-    const totalOrders = customersWithMetrics.reduce((sum, customer) => sum + (customer.ordersCount || 0), 0);
-    const totalSpend = customersWithMetrics.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0);
+    const totalOrders = customersWithMetrics.reduce(
+        (sum, customer) => sum + (customer.ordersCount || 0),
+        0,
+    );
+    const totalSpend = customersWithMetrics.reduce(
+        (sum, customer) => sum + (customer.totalSpent || 0),
+        0,
+    );
     const averageSpend = totalCustomers ? totalSpend / totalCustomers : 0;
 
     const summaryContent = `
@@ -6579,16 +7543,20 @@ function exportCustomers() {
                 </table>
             `;
 
-    const customersRows = customersWithMetrics.map((customer, index) => `
+    const customersRows = customersWithMetrics
+        .map(
+            (customer, index) => `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${customer.name || '-'}</td>
-                    <td>${customer.email || '-'}</td>
-                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.name || "-"}</td>
+                    <td>${customer.email || "-"}</td>
+                    <td>${customer.phone || "-"}</td>
                     <td>${formatCurrency(customer.totalSpent || 0)}</td>
-                    <td>${customer.lastOrderDisplay || '-'}</td>
+                    <td>${customer.lastOrderDisplay || "-"}</td>
                 </tr>
-            `).join('');
+            `,
+        )
+        .join("");
 
     const customersTable = `
                 <table class="data-table">
@@ -6607,27 +7575,36 @@ function exportCustomers() {
             `;
 
     const sections = [
-        { title: 'ملخص سريع', content: summaryContent },
-        { title: 'قائمة العملاء', content: customersTable }
+        { title: "ملخص سريع", content: summaryContent },
+        { title: "قائمة العملاء", content: customersTable },
     ];
 
-    const reportHtml = buildReportTemplate('تقرير العملاء', sections, {
-        extraStyles: '.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }'
+    const reportHtml = buildReportTemplate("تقرير العملاء", sections, {
+        extraStyles:
+            ".grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }",
     });
 
     if (!openReportWindow(reportHtml)) {
-        showToast('error', 'تصدير العملاء', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        showToast(
+            "error",
+            "تصدير العملاء",
+            "تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
+        );
         return;
     }
 
-    showToast('success', 'تصدير العملاء', 'تم فتح تقرير العملاء في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast(
+        "success",
+        "تصدير العملاء",
+        "تم فتح تقرير العملاء في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.",
+    );
 }
 
 function exportAuditLogs() {
     const logs = mockData.auditLogs.slice();
 
     if (!logs.length) {
-        showToast('info', 'تصدير سجل النشاط', 'لا توجد سجلات نشاط متاحة حالياً.');
+        showToast("info", "تصدير سجل النشاط", "لا توجد سجلات نشاط متاحة حالياً.");
         return;
     }
 
@@ -6636,7 +7613,7 @@ function exportAuditLogs() {
         return acc;
     }, {});
 
-    const uniqueUsers = new Set(logs.map(log => log.user)).size;
+    const uniqueUsers = new Set(logs.map((log) => log.user)).size;
     const latestLog = logs[0];
 
     const summaryContent = `
@@ -6644,7 +7621,7 @@ function exportAuditLogs() {
                     <tbody>
                         <tr><th>إجمالي السجلات</th><td>${formatNumber(logs.length)}</td></tr>
                         <tr><th>عدد المستخدمين</th><td>${formatNumber(uniqueUsers)}</td></tr>
-                        <tr><th>أحدث حدث</th><td>${latestLog?.createdAt || '-'}</td></tr>
+                        <tr><th>أحدث حدث</th><td>${latestLog?.createdAt || "-"}</td></tr>
                     </tbody>
                 </table>
             `;
@@ -6655,14 +7632,20 @@ function exportAuditLogs() {
                         <tr><th>نوع الإجراء</th><th>عدد المرات</th></tr>
                     </thead>
                     <tbody>
-                        ${Object.entries(actionCounts).map(([action, count]) => `
+                        ${Object.entries(actionCounts)
+            .map(
+                ([action, count]) => `
                             <tr><td>${getStatusLabel(action)}</td><td>${formatNumber(count)}</td></tr>
-                        `).join('')}
+                        `,
+            )
+            .join("")}
                     </tbody>
                 </table>
             `;
 
-    const logsRows = logs.map(log => `
+    const logsRows = logs
+        .map(
+            (log) => `
                 <tr>
                     <td>${log.createdAt}</td>
                     <td>${log.user}</td>
@@ -6670,7 +7653,9 @@ function exportAuditLogs() {
                     <td>${log.message}</td>
                     <td>${log.ip}</td>
                 </tr>
-            `).join('');
+            `,
+        )
+        .join("");
 
     const logsTable = `
                 <table class="data-table">
@@ -6688,23 +7673,31 @@ function exportAuditLogs() {
             `;
 
     const sections = [
-        { title: 'ملخص سريع', content: summaryContent },
-        { title: 'توزيع الإجراءات', content: actionTable },
-        { title: 'السجل التفصيلي', content: logsTable }
+        { title: "ملخص سريع", content: summaryContent },
+        { title: "توزيع الإجراءات", content: actionTable },
+        { title: "السجل التفصيلي", content: logsTable },
     ];
 
-    const reportHtml = buildReportTemplate('تقرير سجل النشاط', sections);
+    const reportHtml = buildReportTemplate("تقرير سجل النشاط", sections);
 
     if (!openReportWindow(reportHtml)) {
-        showToast('error', 'تصدير سجل النشاط', 'تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.');
+        showToast(
+            "error",
+            "تصدير سجل النشاط",
+            "تعذر فتح التقرير. يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
+        );
         return;
     }
 
-    showToast('success', 'تصدير سجل النشاط', 'تم فتح تقرير السجل في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast(
+        "success",
+        "تصدير سجل النشاط",
+        "تم فتح تقرير السجل في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.",
+    );
 }
 
 async function exportAnalyticsReport() {
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     if (!chartsLoaded.overview) {
         loadOverviewCharts();
@@ -6719,38 +7712,66 @@ async function exportAnalyticsReport() {
     await wait(200);
 
     const chartDefinitions = [
-        { scope: 'overview', key: 'sales', title: 'المبيعات الشهرية', description: 'أداء المبيعات خلال آخر ستة أشهر.' },
-        { scope: 'overview', key: 'products', title: 'توزيع أفضل المنتجات', description: 'نسبة المبيعات حسب نوع المنتج.' },
-        { scope: 'analytics', key: 'revenue', title: 'الإيرادات مقابل التكاليف', description: 'مقارنة شهرية بين الإيرادات والتكاليف.' },
-        { scope: 'analytics', key: 'traffic', title: 'مصادر الزيارات', description: 'توزيع مصادر زيارات المتجر خلال الفترة المحددة.' },
-        { scope: 'analytics', key: 'performance', title: 'رادار الأداء العام', description: 'قياس مؤشرات الأداء الرئيسية الحالية.' }
+        {
+            scope: "overview",
+            key: "sales",
+            title: "المبيعات الشهرية",
+            description: "أداء المبيعات خلال آخر ستة أشهر.",
+        },
+        {
+            scope: "overview",
+            key: "products",
+            title: "توزيع أفضل المنتجات",
+            description: "نسبة المبيعات حسب نوع المنتج.",
+        },
+        {
+            scope: "analytics",
+            key: "revenue",
+            title: "الإيرادات مقابل التكاليف",
+            description: "مقارنة شهرية بين الإيرادات والتكاليف.",
+        },
+        {
+            scope: "analytics",
+            key: "traffic",
+            title: "مصادر الزيارات",
+            description: "توزيع مصادر زيارات المتجر خلال الفترة المحددة.",
+        },
+        {
+            scope: "analytics",
+            key: "performance",
+            title: "رادار الأداء العام",
+            description: "قياس مؤشرات الأداء الرئيسية الحالية.",
+        },
     ];
 
-    const chartCards = chartDefinitions.map(def => {
-        const chart = chartInstances[def.scope]?.[def.key];
-        if (!chart || !chart.canvas) {
-            return '';
-        }
+    const chartCards = chartDefinitions
+        .map((def) => {
+            const chart = chartInstances[def.scope]?.[def.key];
+            if (!chart || !chart.canvas) {
+                return "";
+            }
 
-        let dataUrl = '';
-        try {
-            dataUrl = chart.canvas.toDataURL('image/png');
-        } catch (error) {
-            console.warn('Failed to export chart image', error);
-        }
+            let dataUrl = "";
+            try {
+                dataUrl = chart.canvas.toDataURL("image/png");
+            } catch (error) {
+                console.warn("Failed to export chart image", error);
+            }
 
-        if (!dataUrl) {
-            return '';
-        }
+            if (!dataUrl) {
+                return "";
+            }
 
-        return `
+            return `
                     <div class="chart-card">
                         <h3>${def.title}</h3>
                         <p>${def.description}</p>
                         <img src="${dataUrl}" alt="${def.title}" />
                     </div>
                 `;
-    }).filter(Boolean).join('');
+        })
+        .filter(Boolean)
+        .join("");
 
     const analyticsData = calculateAnalyticsData();
 
@@ -6761,16 +7782,22 @@ async function exportAnalyticsReport() {
                 <tr><th>إجمالي المنتجات المباعة</th><td>${formatNumber(analyticsData.totalItems)}</td></tr>
             `;
 
-    const topProductsData = (analyticsData.topProducts || []).filter(product => Number(product.quantity) >= 5);
+    const topProductsData = (analyticsData.topProducts || []).filter(
+        (product) => Number(product.quantity) >= 5,
+    );
 
-    const topProductsRows = topProductsData.map((product, index) => `
+    const topProductsRows = topProductsData
+        .map(
+            (product, index) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${product.name}</td>
                     <td>${formatNumber(product.quantity)}</td>
                     <td>${formatCurrency(product.revenue)}</td>
                 </tr>
-            `).join('');
+            `,
+        )
+        .join("");
 
     const orders = Array.isArray(state.orders) ? state.orders : [];
     let customers = Array.isArray(state.customers) ? state.customers.slice() : [];
@@ -6780,12 +7807,17 @@ async function exportAnalyticsReport() {
         customers = Array.isArray(state.customers) ? state.customers.slice() : [];
     }
 
-    const customersWithMetrics = (customers || []).map(customer => {
-        const relatedOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+    const customersWithMetrics = (customers || []).map((customer) => {
+        const relatedOrders = orders.filter((order) =>
+            doesOrderBelongToCustomer(order, customer),
+        );
         const ordersCount = relatedOrders.length;
-        const totalSpent = relatedOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+        const totalSpent = relatedOrders.reduce(
+            (sum, order) => sum + (Number(order.total) || 0),
+            0,
+        );
 
-        let lastOrderDisplay = customer.lastOrder || '-';
+        let lastOrderDisplay = customer.lastOrder || "-";
         if (relatedOrders.length) {
             const latestOrder = relatedOrders.reduce((latest, current) => {
                 const latestDate = latest ? getOrderDate(latest) : null;
@@ -6799,7 +7831,7 @@ async function exportAnalyticsReport() {
 
             const latestDate = getOrderDate(latestOrder);
             if (latestDate) {
-                lastOrderDisplay = latestDate.toLocaleString('ar-EG');
+                lastOrderDisplay = latestDate.toLocaleString("ar-EG");
             }
         }
 
@@ -6812,30 +7844,38 @@ async function exportAnalyticsReport() {
             totalSpent,
             lastOrderDisplay,
             status,
-            segment
+            segment,
         };
     });
 
     const topCustomersData = customersWithMetrics
-        .filter(customer => (customer.totalSpent || 0) > 0 || (customer.ordersCount || 0) > 0)
+        .filter(
+            (customer) =>
+                (customer.totalSpent || 0) > 0 || (customer.ordersCount || 0) > 0,
+        )
         .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
         .slice(0, 10);
 
-    const topCustomersRows = topCustomersData.map((customer, index) => `
+    const topCustomersRows = topCustomersData
+        .map(
+            (customer, index) => `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${customer.name || '-'}</td>
-                    <td>${customer.email || '-'}</td>
-                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.name || "-"}</td>
+                    <td>${customer.email || "-"}</td>
+                    <td>${customer.phone || "-"}</td>
                     <td>${getCustomerSegmentLabel(customer.segment)}</td>
                     <td>${formatNumber(customer.ordersCount || 0)}</td>
                     <td>${formatCurrency(customer.totalSpent || 0)}</td>
-                    <td>${customer.status ? getStatusLabel(customer.status) : '-'}</td>
-                    <td>${customer.lastOrderDisplay || '-'}</td>
+                    <td>${customer.status ? getStatusLabel(customer.status) : "-"}</td>
+                    <td>${customer.lastOrderDisplay || "-"}</td>
                 </tr>
-            `).join('');
+            `,
+        )
+        .join("");
 
-    const chartsMarkup = chartCards || '<p class="empty-state">لا تتوفر رسوم بيانية حالياً.</p>';
+    const chartsMarkup =
+        chartCards || '<p class="empty-state">لا تتوفر رسوم بيانية حالياً.</p>';
     const productsMarkup = topProductsData.length
         ? `<table class="data-table"><thead><tr><th>#</th><th>اسم المنتج</th><th>المبيعات (الكمية)</th><th>الإيرادات</th></tr></thead><tbody>${topProductsRows}</tbody></table>`
         : '<p class="empty-state">لا توجد منتجات حققت 5 مبيعات أو أكثر للعرض.</p>';
@@ -6845,31 +7885,39 @@ async function exportAnalyticsReport() {
 
     const sections = [
         {
-            title: 'المؤشرات الرئيسية',
-            content: `<table class="data-table"><tbody>${metricsRows}</tbody></table>`
+            title: "المؤشرات الرئيسية",
+            content: `<table class="data-table"><tbody>${metricsRows}</tbody></table>`,
         },
         {
-            title: 'الرسوم البيانية',
-            content: `<div class="charts-grid">${chartsMarkup}</div>`
+            title: "الرسوم البيانية",
+            content: `<div class="charts-grid">${chartsMarkup}</div>`,
         },
         {
-            title: 'أفضل المنتجات أداءً',
-            content: productsMarkup
+            title: "أفضل المنتجات أداءً",
+            content: productsMarkup,
         },
         {
-            title: 'أعلى العملاء إنفاقاً',
-            content: customersMarkup
-        }
+            title: "أعلى العملاء إنفاقاً",
+            content: customersMarkup,
+        },
     ];
 
-    const reportHtml = buildReportTemplate('تقرير التحليلات', sections);
+    const reportHtml = buildReportTemplate("تقرير التحليلات", sections);
 
     if (!openReportWindow(reportHtml)) {
-        showToast('error', 'تصدير التقرير', 'فشل فتح نافذة جديدة. يرجى السماح بالنوافذ المنبثقة والمحاولة مجدداً.');
+        showToast(
+            "error",
+            "تصدير التقرير",
+            "فشل فتح نافذة جديدة. يرجى السماح بالنوافذ المنبثقة والمحاولة مجدداً.",
+        );
         return;
     }
 
-    showToast('success', 'تصدير التقرير', 'تم فتح التقرير في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.');
+    showToast(
+        "success",
+        "تصدير التقرير",
+        "تم فتح التقرير في نافذة جديدة. يمكنك طباعته أو حفظه كملف PDF.",
+    );
 }
 
 // ===== Rendering Functions =====
@@ -6884,22 +7932,24 @@ function updateOverviewStats() {
 
     // 1. إجمالي الإيرادات لهذا الشهر (استثناء الملغاة)
     const monthlyRevenue = orders
-        .filter(order => order.status !== 'cancelled')
-        .filter(order => {
+        .filter((order) => order.status !== "cancelled")
+        .filter((order) => {
             const orderDate = getOrderDate(order);
             return isSameMonth(orderDate, now);
         })
         .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
     // 2. العملاء الجدد (المضافون اليوم وفق تواريخ الإنشاء)
-    const dailyNewCustomers = customers.filter(customer => {
+    const dailyNewCustomers = customers.filter((customer) => {
         const createdAt = getCustomerCreatedDate(customer);
         if (createdAt) {
             return isSameDay(createdAt, now);
         }
 
         // fallback: إذا لم يتوفر تاريخ الإنشاء نتحقق من آخر طلب
-        const customerOrders = orders.filter(order => doesOrderBelongToCustomer(order, customer));
+        const customerOrders = orders.filter((order) =>
+            doesOrderBelongToCustomer(order, customer),
+        );
         if (!customerOrders.length) return false;
 
         const latestOrder = customerOrders.reduce((latest, current) => {
@@ -6917,23 +7967,23 @@ function updateOverviewStats() {
     }).length;
 
     // 3. المنتجات منخفضة المخزون (٥ أو أقل)
-    const lowStockProducts = products.filter(product => {
+    const lowStockProducts = products.filter((product) => {
         const stockValue = product.stock ?? product.quantity ?? product.count ?? 0;
         return Number.isFinite(stockValue) && stockValue <= 5;
     });
 
     // تحديث العناصر في HTML باستخدام IDs
-    const revenueEl = document.getElementById('monthlyRevenue');
-    const customersEl = document.getElementById('newCustomersCount');
-    const lowStockEl = document.getElementById('lowStockCount');
-    const todayOrdersEl = document.getElementById('todayOrdersCount');
-    const lowStockCard = document.getElementById('lowStockCard');
+    const revenueEl = document.getElementById("monthlyRevenue");
+    const customersEl = document.getElementById("newCustomersCount");
+    const lowStockEl = document.getElementById("lowStockCount");
+    const todayOrdersEl = document.getElementById("todayOrdersCount");
+    const lowStockCard = document.getElementById("lowStockCard");
 
     if (revenueEl) revenueEl.textContent = formatCurrency(monthlyRevenue);
     if (customersEl) customersEl.textContent = formatNumber(dailyNewCustomers);
     if (lowStockEl) lowStockEl.textContent = lowStockProducts.length;
     if (todayOrdersEl) {
-        const todayOrdersCount = orders.filter(order => {
+        const todayOrdersCount = orders.filter((order) => {
             const orderDate = getOrderDate(order);
             return isSameDay(orderDate, now);
         }).length;
@@ -6942,16 +7992,17 @@ function updateOverviewStats() {
 
     if (lowStockCard) {
         if (lowStockProducts.length === 0) {
-            lowStockCard.removeAttribute('title');
+            lowStockCard.removeAttribute("title");
         } else {
             const tooltip = lowStockProducts
-                .map(product => {
-                    const name = product.name || product.title || 'منتج غير معروف';
-                    const quantity = product.stock ?? product.quantity ?? product.count ?? 0;
+                .map((product) => {
+                    const name = product.name || product.title || "منتج غير معروف";
+                    const quantity =
+                        product.stock ?? product.quantity ?? product.count ?? 0;
                     return `${name} — ${quantity}`;
                 })
-                .join('\n');
-            lowStockCard.setAttribute('title', tooltip);
+                .join("\n");
+            lowStockCard.setAttribute("title", tooltip);
         }
     }
 
@@ -6959,13 +8010,13 @@ function updateOverviewStats() {
 }
 
 function renderTodayOrders() {
-    const body = document.getElementById('todayOrdersTableBody');
+    const body = document.getElementById("todayOrdersTableBody");
     if (!body) return;
 
     const orders = Array.isArray(state.orders) ? state.orders : [];
     const today = new Date();
 
-    const todayOrders = orders.filter(order => {
+    const todayOrders = orders.filter((order) => {
         const orderDate = getOrderDate(order);
         return isSameDay(orderDate, today);
     });
@@ -6981,10 +8032,11 @@ function renderTodayOrders() {
         return;
     }
 
-    const rows = todayOrders.map((order, index) => {
-        const orderIdLiteral = JSON.stringify(order?.id ?? '');
+    const rows = todayOrders
+        .map((order, index) => {
+            const orderIdLiteral = JSON.stringify(order?.id ?? "");
 
-        return `
+            return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
@@ -7002,14 +8054,14 @@ function renderTodayOrders() {
                     </td>
                 </tr>
             `;
-    }).join('');
+        })
+        .join("");
 
     body.innerHTML = rows;
 }
 
-
 function renderProducts() {
-    const grid = document.getElementById('productsGrid');
+    const grid = document.getElementById("productsGrid");
     if (!grid) return;
 
     if (state.productsLoading) {
@@ -7037,32 +8089,46 @@ function renderProducts() {
     const source = getProductsSource();
 
     if (!source.length) {
-        safeHTML(grid, `
+        safeHTML(
+            grid,
+            `
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <h3>لا توجد منتجات حالياً</h3>
                     <p>استخدم زر "إضافة منتج جديد" لإنشاء أول منتج.</p>
                 </div>
-            `);
+            `,
+        );
         return;
     }
 
     const filterFns = [
-        filterBySearch(state.filters.productSearch, ['name', 'sku']),
-        state.filters.productCategory !== 'all' ? item => normalizeFilterValue(item.categoryId || item.categorySlug) === normalizeFilterValue(state.filters.productCategory) : () => true
+        filterBySearch(state.filters.productSearch, ["name", "sku"]),
+        state.filters.productCategory !== "all"
+            ? (item) =>
+                normalizeFilterValue(item.categoryId || item.categorySlug) ===
+                normalizeFilterValue(state.filters.productCategory)
+            : () => true,
     ];
 
     const filtered = applyFilters(source, filterFns);
     if (!filtered.length) {
-        safeHTML(grid, `<div class="empty-state">
+        safeHTML(
+            grid,
+            `<div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <h3>لا توجد منتجات مطابقة</h3>
                 <p>حاول تعديل البحث أو الفلاتر</p>
-            </div>`);
+            </div>`,
+        );
         return;
     }
 
-    safeHTML(grid, filtered.map(product => `
+    safeHTML(
+        grid,
+        filtered
+            .map(
+                (product) => `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-thumb">
                     <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
@@ -7080,11 +8146,14 @@ function renderProducts() {
                     <button class="btn-danger" title="حذف المنتج" data-action="delete-product" data-entity-id="${product.id}"><i class="fas fa-trash"></i> حذف</button>
                 </div>
             </div>
-        `).join(''));
+        `,
+            )
+            .join(""),
+    );
 }
 
 function renderCategories() {
-    const list = document.getElementById('categoriesList');
+    const list = document.getElementById("categoriesList");
     if (!list) return;
 
     if (state.categoriesLoading) {
@@ -7111,36 +8180,39 @@ function renderCategories() {
 
     const categories = getCategorySource();
     const filteredCategories = applyFilters(categories, [
-        filterBySearch(state.filters.categorySearch, ['name', 'description'])
+        filterBySearch(state.filters.categorySearch, ["name", "description"]),
     ]);
 
     if (!filteredCategories.length) {
         list.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-tags"></i>
-                    <h3>${state.filters.categorySearch ? 'لا توجد نتائج مطابقة لبحثك' : 'لا توجد فئات حالياً'}</h3>
-                    <p>${state.filters.categorySearch ? 'حاول تعديل كلمات البحث أو إعادة ضبطه.' : 'استخدم زر "إضافة فئة جديدة" لإنشاء أول فئة.'}</p>
+                    <h3>${state.filters.categorySearch ? "لا توجد نتائج مطابقة لبحثك" : "لا توجد فئات حالياً"}</h3>
+                    <p>${state.filters.categorySearch ? "حاول تعديل كلمات البحث أو إعادة ضبطه." : 'استخدم زر "إضافة فئة جديدة" لإنشاء أول فئة.'}</p>
                 </div>
             `;
         return;
     }
 
-    safeHTML(list, filteredCategories.map(category => {
-        const loadedSubcategories = getSubcategories(category.id);
-        const subcategoriesCount = loadedSubcategories.length
-            ? loadedSubcategories.length
-            : typeof category.subcategoriesCount === 'number'
-                ? category.subcategoriesCount
-                : Number(category.subcategoriesCount) || 0;
-        return `
+    safeHTML(
+        list,
+        filteredCategories
+            .map((category) => {
+                const loadedSubcategories = getSubcategories(category.id);
+                const subcategoriesCount = loadedSubcategories.length
+                    ? loadedSubcategories.length
+                    : typeof category.subcategoriesCount === "number"
+                        ? category.subcategoriesCount
+                        : Number(category.subcategoriesCount) || 0;
+                return `
                 <div class="category-card" data-id="${category.id}">
                     <div class="category-content">
-                        <div class="category-icon ${category.image ? 'has-image' : ''}">
+                        <div class="category-icon ${category.image ? "has-image" : ""}">
                             ${category.image ? `<img src="${category.image}" alt="${escapeHtml(category.name)}">` : '<i class="fas fa-tag"></i>'}
                         </div>
                         <div class="category-info">
                             <h3>${escapeHtml(category.name)}</h3>
-                            <p class="category-description">${escapeHtml(truncateText(category.description || 'لا يوجد وصف متاح لهذه الفئة حالياً.', DESCRIPTION_MAX_LENGTH))}</p>
+                            <p class="category-description">${escapeHtml(truncateText(category.description || "لا يوجد وصف متاح لهذه الفئة حالياً.", DESCRIPTION_MAX_LENGTH))}</p>
                             <div class="category-meta">
                                 <span class="meta-item"><i class="fas fa-sitemap"></i> ${formatNumber(subcategoriesCount)} فئة فرعية</span>
                             </div>
@@ -7152,14 +8224,18 @@ function renderCategories() {
                     </div>
                 </div>
             `;
-    }).join(''));
+            })
+            .join(""),
+    );
 }
 
 function renderCollections() {
-    const grid = document.getElementById('collectionsGrid');
+    const grid = document.getElementById("collectionsGrid");
     if (!grid) return;
 
-    grid.innerHTML = mockData.collections.map(collection => `
+    grid.innerHTML = mockData.collections
+        .map(
+            (collection) => `
             <div class="collection-card" data-id="${collection.id}">
                 <div class="collection-cover">
                     <img src="${collection.image}" alt="${collection.name}">
@@ -7174,14 +8250,18 @@ function renderCollections() {
                     <button class="btn-secondary" data-action="view-collection" data-entity="collection" data-entity-id="${collection.id}"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
-        `).join('');
+        `,
+        )
+        .join("");
 }
 
 function renderPromotions() {
-    const grid = document.getElementById('promotionsGrid');
+    const grid = document.getElementById("promotionsGrid");
     if (!grid) return;
 
-    grid.innerHTML = mockData.promotions.map(promotion => `
+    grid.innerHTML = mockData.promotions
+        .map(
+            (promotion) => `
             <div class="promotion-card" data-id="${promotion.id}">
                 <div class="promotion-header">
                     <h3>${promotion.title}</h3>
@@ -7197,32 +8277,43 @@ function renderPromotions() {
                     <button class="btn-danger btn-sm" data-action="pause" data-entity="promotion" data-entity-id="${promotion.id}"><i class="fas fa-pause"></i> إيقاف</button>
                 </div>
             </div>
-        `).join('');
+        `,
+        )
+        .join("");
 }
 
 function renderShippingSettings() {
-    const form = document.getElementById('shippingSettingsForm');
-    const select = document.getElementById('shippingZoneSelect');
-    const rateInput = document.getElementById('shippingZoneRate');
-    const submitButton = document.getElementById('shippingSettingsSubmit');
-    const deleteButton = document.getElementById('shippingZoneDeleteBtn');
-    const installationCheckbox = document.getElementById('shippingZoneInstallation');
+    const form = document.getElementById("shippingSettingsForm");
+    const select = document.getElementById("shippingZoneSelect");
+    const rateInput = document.getElementById("shippingZoneRate");
+    const submitButton = document.getElementById("shippingSettingsSubmit");
+    const deleteButton = document.getElementById("shippingZoneDeleteBtn");
+    const installationCheckbox = document.getElementById(
+        "shippingZoneInstallation",
+    );
 
     if (!form || !select || !rateInput || !submitButton || !deleteButton) {
         return;
     }
 
-    const { shippingZonesLoading, shippingZonesError, shippingZones, selectedShippingZoneId } = state;
+    const {
+        shippingZonesLoading,
+        shippingZonesError,
+        shippingZones,
+        selectedShippingZoneId,
+    } = state;
 
     select.disabled = shippingZonesLoading;
     rateInput.disabled = shippingZonesLoading;
-    submitButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
-    deleteButton.disabled = shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+    submitButton.disabled =
+        shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
+    deleteButton.disabled =
+        shippingZonesLoading || !!shippingZonesError || !shippingZones.length;
 
     if (shippingZonesLoading) {
         select.innerHTML = '<option value="">جاري التحميل...</option>';
         if (document.activeElement !== rateInput) {
-            rateInput.value = '';
+            rateInput.value = "";
         }
         if (installationCheckbox) {
             installationCheckbox.checked = false;
@@ -7234,7 +8325,7 @@ function renderShippingSettings() {
     if (shippingZonesError) {
         select.innerHTML = `<option value="">${escapeHtml(shippingZonesError)}</option>`;
         if (document.activeElement !== rateInput) {
-            rateInput.value = '';
+            rateInput.value = "";
         }
         if (installationCheckbox) {
             installationCheckbox.checked = false;
@@ -7246,7 +8337,7 @@ function renderShippingSettings() {
     if (!shippingZones.length) {
         select.innerHTML = '<option value="">لا توجد مناطق شحن متاحة</option>';
         if (document.activeElement !== rateInput) {
-            rateInput.value = '';
+            rateInput.value = "";
         }
         if (installationCheckbox) {
             installationCheckbox.checked = false;
@@ -7256,14 +8347,18 @@ function renderShippingSettings() {
     }
 
     const optionsMarkup = shippingZones
-        .map(zone => `<option value="${escapeHtml(zone.id)}">${escapeHtml(zone.zoneName)}</option>`)
-        .join('');
+        .map(
+            (zone) =>
+                `<option value="${escapeHtml(zone.id)}">${escapeHtml(zone.zoneName)}</option>`,
+        )
+        .join("");
 
     select.innerHTML = optionsMarkup;
 
-    const targetZoneId = selectedShippingZoneId && getShippingZoneById(selectedShippingZoneId)
-        ? selectedShippingZoneId
-        : shippingZones[0].id;
+    const targetZoneId =
+        selectedShippingZoneId && getShippingZoneById(selectedShippingZoneId)
+            ? selectedShippingZoneId
+            : shippingZones[0].id;
 
     state.selectedShippingZoneId = targetZoneId;
     select.value = targetZoneId;
@@ -7284,28 +8379,34 @@ function renderShippingSettings() {
 }
 
 function renderBanners() {
-    const grid = document.getElementById('bannersGrid');
+    const grid = document.getElementById("bannersGrid");
     if (!grid) return;
 
     if (state.bannersLoading) {
-        safeHTML(grid, `
+        safeHTML(
+            grid,
+            `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>جاري تحميل البانرات...</p>
                 </div>
-            `);
+            `,
+        );
         return;
     }
 
     if (state.bannersError) {
-        safeHTML(grid, `
+        safeHTML(
+            grid,
+            `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>حدث خطأ أثناء تحميل البانرات</h3>
                     <p>${escapeHtml(state.bannersError)}</p>
                     <button class="btn-primary" data-action="refresh-banners">إعادة المحاولة</button>
                 </div>
-            `);
+            `,
+        );
         return;
     }
 
@@ -7322,48 +8423,59 @@ function renderBanners() {
         return;
     }
 
-    safeHTML(grid, banners.map(banner => {
-        const bannerId = banner._id || banner.id;
-        const imageUrl = banner.image?.secure_url || banner.image?.url || banner.image || 'https://via.placeholder.com/1200x400?text=Banner';
-        const description = banner.description ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH)) : '';
+    safeHTML(
+        grid,
+        banners
+            .map((banner) => {
+                const bannerId = banner._id || banner.id;
+                const imageUrl =
+                    banner.image?.secure_url ||
+                    banner.image?.url ||
+                    banner.image ||
+                    "https://via.placeholder.com/1200x400?text=Banner";
+                const description = banner.description
+                    ? escapeHtml(truncateText(banner.description, DESCRIPTION_MAX_LENGTH))
+                    : "";
 
-        return `
-                <div class="banner-card" data-id="${escapeHtml(bannerId || '')}">
+                return `
+                <div class="banner-card" data-id="${escapeHtml(bannerId || "")}">
                     <div class="banner-preview">
-                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(banner.title || 'بانر')}">
+                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(banner.title || "بانر")}">
                     </div>
                     <div class="banner-info">
-                        <h3>${escapeHtml(banner.title || 'بانر بدون عنوان')}</h3>
-                        ${description ? `<p class="banner-description">${description}</p>` : ''}
+                        <h3>${escapeHtml(banner.title || "بانر بدون عنوان")}</h3>
+                        ${description ? `<p class="banner-description">${description}</p>` : ""}
                         <div class="banner-actions">
-                            <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="${escapeHtml(bannerId || '')}"><i class="fas fa-edit"></i> تعديل</button>
-                            <button class="btn-danger btn-sm" data-action="delete-banner" data-entity-id="${escapeHtml(bannerId || '')}"><i class="fas fa-trash"></i> حذف</button>
+                            <button class="btn-secondary btn-sm" data-open-modal="bannerModal" data-modal-mode="edit" data-entity="banner" data-entity-id="${escapeHtml(bannerId || "")}"><i class="fas fa-edit"></i> تعديل</button>
+                            <button class="btn-danger btn-sm" data-action="delete-banner" data-entity-id="${escapeHtml(bannerId || "")}"><i class="fas fa-trash"></i> حذف</button>
                         </div>
                     </div>
                 </div>
             `;
-    }).join(''));
+            })
+            .join(""),
+    );
 }
-
-
 
 /**
  * عرض قائمة العملاء
  */
 function getCustomersForDisplay() {
-    const ordersFilter = state.filters?.customerOrdersFilter || 'all';
-    const searchTerm = state.filters?.customerSearch?.toLowerCase() || '';
+    const ordersFilter = state.filters?.customerOrdersFilter || "all";
+    const searchTerm = state.filters?.customerSearch?.toLowerCase() || "";
 
     let customers = Array.isArray(state.customers) ? [...state.customers] : [];
 
-    if (ordersFilter === 'withOrders') {
-        customers = customers.filter(customer => (Number(customer.ordersCount) || 0) > 0);
+    if (ordersFilter === "withOrders") {
+        customers = customers.filter(
+            (customer) => (Number(customer.ordersCount) || 0) > 0,
+        );
     }
 
     if (searchTerm) {
-        customers = customers.filter(customer => {
-            const name = (customer.name || '').toLowerCase();
-            const phone = (customer.phone || '').toLowerCase();
+        customers = customers.filter((customer) => {
+            const name = (customer.name || "").toLowerCase();
+            const phone = (customer.phone || "").toLowerCase();
             return name.includes(searchTerm) || phone.includes(searchTerm);
         });
     }
@@ -7392,31 +8504,31 @@ function getCustomersForDisplay() {
  * - Preserves data-id attributes for interactivity
  */
 function renderCustomers() {
-    const body = document.getElementById('customersTableBody');
+    const body = document.getElementById("customersTableBody");
     if (!body) {
-        console.warn('⚠️ customersTableBody element not found!');
+        console.warn("⚠️ customersTableBody element not found!");
         return;
     }
 
     // Clear previous rows
-    body.innerHTML = '';
+    body.innerHTML = "";
 
     // ===== STATE: LOADING =====
     if (state.customersLoading) {
-        const loadingRow = document.createElement('tr');
-        loadingRow.style.cssText = 'text-align: center; padding: 40px;';
+        const loadingRow = document.createElement("tr");
+        loadingRow.style.cssText = "text-align: center; padding: 40px;";
 
-        const loadingCell = document.createElement('td');
-        loadingCell.colSpan = '6';
-        loadingCell.style.cssText = 'padding: 40px;';
+        const loadingCell = document.createElement("td");
+        loadingCell.colSpan = "6";
+        loadingCell.style.cssText = "padding: 40px;";
 
-        const spinner = document.createElement('i');
-        spinner.className = 'fas fa-spinner fa-spin';
-        spinner.style.cssText = 'font-size: 24px; color: #e74c3c; display: block;';
+        const spinner = document.createElement("i");
+        spinner.className = "fas fa-spinner fa-spin";
+        spinner.style.cssText = "font-size: 24px; color: #e74c3c; display: block;";
 
-        const loadingText = document.createElement('p');
-        loadingText.style.cssText = 'margin-top: 10px;';
-        loadingText.textContent = 'جاري تحميل العملاء...';
+        const loadingText = document.createElement("p");
+        loadingText.style.cssText = "margin-top: 10px;";
+        loadingText.textContent = "جاري تحميل العملاء...";
 
         loadingCell.appendChild(spinner);
         loadingCell.appendChild(loadingText);
@@ -7427,24 +8539,25 @@ function renderCustomers() {
 
     // ===== STATE: ERROR =====
     if (state.customersError) {
-        const errorRow = document.createElement('tr');
-        const errorCell = document.createElement('td');
-        errorCell.colSpan = '6';
-        errorCell.style.cssText = 'padding: 40px; text-align: center;';
+        const errorRow = document.createElement("tr");
+        const errorCell = document.createElement("td");
+        errorCell.colSpan = "6";
+        errorCell.style.cssText = "padding: 40px; text-align: center;";
 
-        const errorIcon = document.createElement('i');
-        errorIcon.className = 'fas fa-exclamation-triangle';
-        errorIcon.style.cssText = 'font-size: 24px; color: #f39c12; display: block;';
+        const errorIcon = document.createElement("i");
+        errorIcon.className = "fas fa-exclamation-triangle";
+        errorIcon.style.cssText =
+            "font-size: 24px; color: #f39c12; display: block;";
 
-        const errorText = document.createElement('p');
-        errorText.style.cssText = 'margin-top: 10px; color: #e74c3c;';
+        const errorText = document.createElement("p");
+        errorText.style.cssText = "margin-top: 10px; color: #e74c3c;";
         errorText.textContent = state.customersError;
 
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'btn-primary';
-        retryBtn.style.cssText = 'margin-top: 15px;';
-        retryBtn.textContent = 'إعادة المحاولة';
-        retryBtn.addEventListener('click', fetchCustomers);
+        const retryBtn = document.createElement("button");
+        retryBtn.className = "btn-primary";
+        retryBtn.style.cssText = "margin-top: 15px;";
+        retryBtn.textContent = "إعادة المحاولة";
+        retryBtn.addEventListener("click", fetchCustomers);
 
         errorCell.appendChild(errorIcon);
         errorCell.appendChild(errorText);
@@ -7455,8 +8568,8 @@ function renderCustomers() {
     }
 
     // ===== FETCH CUSTOMERS =====
-    const ordersFilter = state.filters?.customerOrdersFilter || 'all';
-    const searchTerm = state.filters?.customerSearch || '';
+    const ordersFilter = state.filters?.customerOrdersFilter || "all";
+    const searchTerm = state.filters?.customerSearch || "";
     const customers = getCustomersForDisplay();
 
     // ===== STATE: EMPTY =====
@@ -7465,23 +8578,24 @@ function renderCustomers() {
         let message;
         if (normalizedSearch) {
             message = `لا توجد نتائج للبحث عن "${state.filters.customerSearch}"`;
-        } else if (ordersFilter === 'withOrders') {
-            message = 'لا يوجد عملاء لديهم طلبات حالياً';
+        } else if (ordersFilter === "withOrders") {
+            message = "لا يوجد عملاء لديهم طلبات حالياً";
         } else {
-            message = 'لا يوجد عملاء حالياً';
+            message = "لا يوجد عملاء حالياً";
         }
 
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.colSpan = '6';
-        emptyCell.style.cssText = 'padding: 40px; text-align: center;';
+        const emptyRow = document.createElement("tr");
+        const emptyCell = document.createElement("td");
+        emptyCell.colSpan = "6";
+        emptyCell.style.cssText = "padding: 40px; text-align: center;";
 
-        const emptyIcon = document.createElement('i');
-        emptyIcon.className = 'fas fa-users';
-        emptyIcon.style.cssText = 'font-size: 24px; color: #95a5a6; display: block;';
+        const emptyIcon = document.createElement("i");
+        emptyIcon.className = "fas fa-users";
+        emptyIcon.style.cssText =
+            "font-size: 24px; color: #95a5a6; display: block;";
 
-        const emptyText = document.createElement('p');
-        emptyText.style.cssText = 'margin-top: 10px;';
+        const emptyText = document.createElement("p");
+        emptyText.style.cssText = "margin-top: 10px;";
         emptyText.textContent = message;
 
         emptyCell.appendChild(emptyIcon);
@@ -7496,55 +8610,55 @@ function renderCustomers() {
 
     customers.forEach((customer, index) => {
         const customerId = customer._id || customer.id;
-        const row = document.createElement('tr');
+        const row = document.createElement("tr");
         row.dataset.id = customerId; // Preserve data-id for external selection/filtering
 
         // Column 1: Index (#)
-        const indexCell = document.createElement('td');
+        const indexCell = document.createElement("td");
         indexCell.textContent = String(index + 1);
 
         // Column 2: Name
-        const nameCell = document.createElement('td');
-        nameCell.textContent = customer.name || '-';
+        const nameCell = document.createElement("td");
+        nameCell.textContent = customer.name || "-";
 
         // Column 3: Email
-        const emailCell = document.createElement('td');
-        emailCell.textContent = customer.email || '-';
+        const emailCell = document.createElement("td");
+        emailCell.textContent = customer.email || "-";
 
         // Column 4: Phone
-        const phoneCell = document.createElement('td');
-        phoneCell.textContent = customer.phone || '-';
+        const phoneCell = document.createElement("td");
+        phoneCell.textContent = customer.phone || "-";
 
         // Column 5: Last Order
-        const lastOrderCell = document.createElement('td');
-        lastOrderCell.textContent = customer.lastOrder || '-';
+        const lastOrderCell = document.createElement("td");
+        lastOrderCell.textContent = customer.lastOrder || "-";
 
         // Column 6: Actions (Eye + Cart icons)
-        const actionsCell = document.createElement('td');
+        const actionsCell = document.createElement("td");
 
         // Action Button 1: View Details (Eye Icon)
-        const viewDetailsBtn = document.createElement('button');
-        viewDetailsBtn.className = 'action-btn';
-        viewDetailsBtn.title = 'عرض التفاصيل';
-        viewDetailsBtn.dataset.action = 'view-details';
+        const viewDetailsBtn = document.createElement("button");
+        viewDetailsBtn.className = "action-btn";
+        viewDetailsBtn.title = "عرض التفاصيل";
+        viewDetailsBtn.dataset.action = "view-details";
         viewDetailsBtn.dataset.customerId = customerId;
 
-        const eyeIcon = document.createElement('i');
-        eyeIcon.className = 'fas fa-eye';
-        eyeIcon.setAttribute('aria-hidden', 'true');
+        const eyeIcon = document.createElement("i");
+        eyeIcon.className = "fas fa-eye";
+        eyeIcon.setAttribute("aria-hidden", "true");
 
         viewDetailsBtn.appendChild(eyeIcon);
 
         // Action Button 2: View Orders (Cart Icon)
-        const viewOrdersBtn = document.createElement('button');
-        viewOrdersBtn.className = 'action-btn';
-        viewOrdersBtn.title = 'عرض الطلبات';
-        viewOrdersBtn.dataset.action = 'view-orders';
+        const viewOrdersBtn = document.createElement("button");
+        viewOrdersBtn.className = "action-btn";
+        viewOrdersBtn.title = "عرض الطلبات";
+        viewOrdersBtn.dataset.action = "view-orders";
         viewOrdersBtn.dataset.customerId = customerId;
 
-        const cartIcon = document.createElement('i');
-        cartIcon.className = 'fas fa-shopping-cart';
-        cartIcon.setAttribute('aria-hidden', 'true');
+        const cartIcon = document.createElement("i");
+        cartIcon.className = "fas fa-shopping-cart";
+        cartIcon.setAttribute("aria-hidden", "true");
 
         viewOrdersBtn.appendChild(cartIcon);
 
@@ -7577,38 +8691,38 @@ function renderCustomers() {
  * Ensures compatibility with dynamic content and prevents zombie listeners
  */
 function attachCustomersTableEventListeners() {
-    const body = document.getElementById('customersTableBody');
+    const body = document.getElementById("customersTableBody");
     if (!body) return;
 
     // Remove old listener (if exists) to prevent duplicate handlers
     const oldListener = body.__customersTableListener;
     if (oldListener) {
-        body.removeEventListener('click', oldListener);
+        body.removeEventListener("click", oldListener);
     }
 
     // New event handler
     const clickHandler = (event) => {
-        const btn = event.target.closest('button[data-action]');
+        const btn = event.target.closest("button[data-action]");
         if (!btn) return;
 
         const action = btn.dataset.action;
         const customerId = btn.dataset.customerId;
 
         if (!customerId) {
-            console.warn('⚠️ Missing customerId in action button');
+            console.warn("⚠️ Missing customerId in action button");
             return;
         }
 
         // Execute appropriate action
-        if (action === 'view-details') {
+        if (action === "view-details") {
             viewCustomerDetails(customerId);
-        } else if (action === 'view-orders') {
+        } else if (action === "view-orders") {
             viewCustomerOrders(customerId);
         }
     };
 
     // Attach listener and cache it for removal later
-    body.addEventListener('click', clickHandler);
+    body.addEventListener("click", clickHandler);
     body.__customersTableListener = clickHandler;
 }
 
@@ -7618,31 +8732,45 @@ function renderTopProducts() {
 }
 
 function renderAnalyticsFilters() {
-    const select = document.getElementById('analyticsTimeFilter');
+    const select = document.getElementById("analyticsTimeFilter");
     if (!select) return;
 
-    select.innerHTML = mockData.analyticsRangeOptions.map(option => `
-            <option value="${option.value}" ${state.filters.analyticsRange === option.value ? 'selected' : ''}>${option.label}</option>
-        `).join('');
+    select.innerHTML = mockData.analyticsRangeOptions
+        .map(
+            (option) => `
+            <option value="${option.value}" ${state.filters.analyticsRange === option.value ? "selected" : ""}>${option.label}</option>
+        `,
+        )
+        .join("");
 }
 
 function renderAuditLogs() {
-    const tableBody = document.getElementById('auditLogsTableBody');
+    const tableBody = document.getElementById("auditLogsTableBody");
     if (!tableBody) return;
 
-    const actionFilter = state.filters.auditAction !== 'all'
-        ? item => item.action === state.filters.auditAction
-        : () => true;
+    const actionFilter =
+        state.filters.auditAction !== "all"
+            ? (item) => item.action === state.filters.auditAction
+            : () => true;
 
     const dateFilter = state.filters.auditDate
-        ? item => item.createdAt.startsWith(state.filters.auditDate)
+        ? (item) => item.createdAt.startsWith(state.filters.auditDate)
         : () => true;
 
-    const searchFilter = filterBySearch(state.filters.auditSearch, ['user', 'message']);
+    const searchFilter = filterBySearch(state.filters.auditSearch, [
+        "user",
+        "message",
+    ]);
 
-    const filtered = applyFilters(mockData.auditLogs, [actionFilter, dateFilter, searchFilter]);
+    const filtered = applyFilters(mockData.auditLogs, [
+        actionFilter,
+        dateFilter,
+        searchFilter,
+    ]);
 
-    tableBody.innerHTML = filtered.map(log => `
+    tableBody.innerHTML = filtered
+        .map(
+            (log) => `
             <tr>
                 <td>${log.createdAt}</td>
                 <td>${log.user}</td>
@@ -7650,40 +8778,54 @@ function renderAuditLogs() {
                 <td>${log.message}</td>
                 <td>${log.ip}</td>
             </tr>
-        `).join('');
+        `,
+        )
+        .join("");
 }
 
 async function handleChangePasswordSubmit(event) {
     event.preventDefault();
 
     if (!window.adminAuth?.getUser) {
-        showToast('error', 'تغيير كلمة المرور', 'حدثت مشكلة في المصادقة. يرجى إعادة تسجيل الدخول.');
+        showToast(
+            "error",
+            "تغيير كلمة المرور",
+            "حدثت مشكلة في المصادقة. يرجى إعادة تسجيل الدخول.",
+        );
         return;
     }
 
     const form = event.currentTarget;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const currentPasswordInput = form.querySelector('#currentPassword');
-    const newPasswordInput = form.querySelector('#newPassword');
-    const confirmPasswordInput = form.querySelector('#confirmPassword');
+    const currentPasswordInput = form.querySelector("#currentPassword");
+    const newPasswordInput = form.querySelector("#newPassword");
+    const confirmPasswordInput = form.querySelector("#confirmPassword");
 
     const currentPassword = currentPasswordInput?.value?.trim();
     const newPassword = newPasswordInput?.value?.trim();
     const confirmPassword = confirmPasswordInput?.value?.trim();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-        showToast('error', 'تغيير كلمة المرور', 'يرجى ملء جميع الحقول المطلوبة.');
+        showToast("error", "تغيير كلمة المرور", "يرجى ملء جميع الحقول المطلوبة.");
         return;
     }
 
     if (newPassword.length < 8) {
-        showToast('error', 'تغيير كلمة المرور', 'كلمة المرور الجديدة يجب أن لا تقل عن 8 أحرف.');
+        showToast(
+            "error",
+            "تغيير كلمة المرور",
+            "كلمة المرور الجديدة يجب أن لا تقل عن 8 أحرف.",
+        );
         newPasswordInput?.focus();
         return;
     }
 
     if (newPassword !== confirmPassword) {
-        showToast('error', 'تغيير كلمة المرور', 'تأكيد كلمة المرور لا يطابق الكلمة الجديدة.');
+        showToast(
+            "error",
+            "تغيير كلمة المرور",
+            "تأكيد كلمة المرور لا يطابق الكلمة الجديدة.",
+        );
         confirmPasswordInput?.focus();
         return;
     }
@@ -7695,43 +8837,51 @@ async function handleChangePasswordSubmit(event) {
     }
 
     if (!userId) {
-        showToast('error', 'تغيير كلمة المرور', 'تعذر تحديد حساب المدير. يرجى إعادة تسجيل الدخول.');
+        showToast(
+            "error",
+            "تغيير كلمة المرور",
+            "تعذر تحديد حساب المدير. يرجى إعادة تسجيل الدخول.",
+        );
         return;
     }
 
     const setLoading = (loading) => {
         if (!submitBtn) return;
         submitBtn.disabled = loading;
-        submitBtn.classList.toggle('is-loading', loading);
+        submitBtn.classList.toggle("is-loading", loading);
     };
 
     setLoading(true);
 
     try {
-        const response = await authorizedFetch(`${USERS_ENDPOINT}/${encodeURIComponent(userId)}/change-password`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json'
+        const response = await authorizedFetch(
+            `${USERS_ENDPOINT}/${encodeURIComponent(userId)}/change-password`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                    passwordConfirm: confirmPassword,
+                }),
             },
-            body: JSON.stringify({
-                currentPassword,
-                newPassword,
-                passwordConfirm: confirmPassword
-            })
-        });
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
-            const message = errorBody?.message || errorBody?.msg || `HTTP ${response.status}`;
+            const message =
+                errorBody?.message || errorBody?.msg || `HTTP ${response.status}`;
             throw new Error(message);
         }
 
-        showToast('success', 'تغيير كلمة المرور', 'تم تحديث كلمة المرور بنجاح.');
+        showToast("success", "تغيير كلمة المرور", "تم تحديث كلمة المرور بنجاح.");
         form.reset();
     } catch (error) {
-        console.error('❌ Failed to change password:', error);
-        const message = error?.message || 'حدث خطأ أثناء تغيير كلمة المرور.';
-        showToast('error', 'تغيير كلمة المرور', message);
+        console.error("❌ Failed to change password:", error);
+        const message = error?.message || "حدث خطأ أثناء تغيير كلمة المرور.";
+        showToast("error", "تغيير كلمة المرور", message);
     } finally {
         setLoading(false);
     }
@@ -7744,40 +8894,52 @@ async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
 
     const normalizedStatus = normalizeStatusKey(nextStatus);
     if (!normalizedStatus || !ORDER_STATUS_FLOW.includes(normalizedStatus)) {
-        showToast('error', 'تحديث حالة الطلب', 'الحالة الجديدة غير مدعومة.');
+        showToast("error", "تحديث حالة الطلب", "الحالة الجديدة غير مدعومة.");
         return;
     }
 
     const targetOrder = getOrderById(orderId);
     if (!targetOrder) {
-        showToast('error', 'تحديث حالة الطلب', 'تعذر العثور على الطلب المحدد.');
+        showToast("error", "تحديث حالة الطلب", "تعذر العثور على الطلب المحدد.");
         return;
     }
 
-    const currentStatus = normalizeStatusKey(targetOrder.status) || 'new';
+    const currentStatus = normalizeStatusKey(targetOrder.status) || "new";
     if (currentStatus === normalizedStatus) {
-        if (triggerElement && triggerElement.tagName === 'SELECT') {
+        if (triggerElement && triggerElement.tagName === "SELECT") {
             triggerElement.value = normalizedStatus;
         }
-        showToast('info', 'تحديث حالة الطلب', 'الحالة المختارة هي نفس الحالة الحالية.');
+        showToast(
+            "info",
+            "تحديث حالة الطلب",
+            "الحالة المختارة هي نفس الحالة الحالية.",
+        );
         return;
     }
 
-    const previousValue = triggerElement && triggerElement.tagName === 'SELECT'
-        ? triggerElement.value
-        : null;
+    const previousValue =
+        triggerElement && triggerElement.tagName === "SELECT"
+            ? triggerElement.value
+            : null;
 
     if (triggerElement) {
         triggerElement.disabled = true;
-        triggerElement.dataset.loading = 'true';
+        triggerElement.dataset.loading = "true";
     }
 
-    showToast('info', 'تحديث حالة الطلب', 'جاري تحديث حالة الطلب، يرجى الانتظار...');
+    showToast(
+        "info",
+        "تحديث حالة الطلب",
+        "جاري تحديث حالة الطلب، يرجى الانتظار...",
+    );
 
     try {
-        const response = await authorizedFetch(`${ORDER_ENDPOINT}/${encodeURIComponent(orderId)}/status/${encodeURIComponent(normalizedStatus)}`, {
-            method: 'PATCH'
-        });
+        const response = await authorizedFetch(
+            `${ORDER_ENDPOINT}/${encodeURIComponent(orderId)}/status/${encodeURIComponent(normalizedStatus)}`,
+            {
+                method: "PATCH",
+            },
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -7786,12 +8948,13 @@ async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
 
         const result = await response.json().catch(() => null);
 
-
-        const orderIndex = state.orders.findIndex(o => String(o.id) === String(orderId));
+        const orderIndex = state.orders.findIndex(
+            (o) => String(o.id) === String(orderId),
+        );
         if (orderIndex !== -1) {
             state.orders[orderIndex].status = normalizedStatus;
-            state.orders[orderIndex].isDelivered = normalizedStatus === 'delivered';
-            state.orders[orderIndex].isCanceled = normalizedStatus === 'cancelled';
+            state.orders[orderIndex].isDelivered = normalizedStatus === "delivered";
+            state.orders[orderIndex].isCanceled = normalizedStatus === "cancelled";
         }
 
         renderOrders();
@@ -7800,15 +8963,22 @@ async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
             updateCustomersOrdersInfo();
         }
 
-        showToast('success', 'تحديث حالة الطلب', `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`);;
+        showToast(
+            "success",
+            "تحديث حالة الطلب",
+            `تم تحديث حالة الطلب ${orderId} بنجاح إلى "${getStatusLabel(normalizedStatus)}"`,
+        );
     } catch (error) {
-        console.error('❌ Failed to change order status:', error);
-        showToast('error', 'تحديث حالة الطلب', error.message || 'حدث خطأ أثناء تحديث حالة الطلب.');
-        if (triggerElement && triggerElement.tagName === 'SELECT') {
+        console.error("❌ Failed to change order status:", error);
+        showToast(
+            "error",
+            "تحديث حالة الطلب",
+            error.message || "حدث خطأ أثناء تحديث حالة الطلب.",
+        );
+        if (triggerElement && triggerElement.tagName === "SELECT") {
             triggerElement.value = currentStatus;
         }
-    }
-    finally {
+    } finally {
         if (triggerElement) {
             triggerElement.disabled = false;
             delete triggerElement.dataset.loading;
@@ -7817,10 +8987,14 @@ async function changeOrderStatus(orderId, nextStatus, triggerElement = null) {
 }
 
 function renderUsers(users = []) {
-    const tableBody = document.getElementById('usersTableBody');
+    const tableBody = document.getElementById("usersTableBody");
     if (!tableBody) return;
 
-    safeHTML(tableBody, users.map(user => `
+    safeHTML(
+        tableBody,
+        users
+            .map(
+                (user) => `
             <tr data-id="${user.id}">
                 <td>${user.name}</td>
                 <td>${user.email}</td>
@@ -7832,12 +9006,15 @@ function renderUsers(users = []) {
                     <button class="action-btn" data-action="permissions" data-entity="user" data-entity-id="${user.id}"><i class="fas fa-key"></i></button>
                 </td>
             </tr>
-        `).join(''));
+        `,
+            )
+            .join(""),
+    );
 }
 
 // ===== Brand Functions =====
 async function hydrateBrandOptions() {
-    const select = document.getElementById('productBrand');
+    const select = document.getElementById("productBrand");
     if (!select) return;
 
     try {
@@ -7850,50 +9027,51 @@ async function hydrateBrandOptions() {
         const currentValue = select.value;
 
         // مسح الخيارات الحالية
-        select.innerHTML = '';
+        select.innerHTML = "";
 
         // إضافة الخيار الافتراضي
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = 'اختر العلامة التجارية';
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "اختر العلامة التجارية";
         select.appendChild(defaultOption);
 
         // إضافة العلامات التجارية المتاحة
         if (state.brands && state.brands.length > 0) {
-            state.brands.forEach(brand => {
-                const option = document.createElement('option');
+            state.brands.forEach((brand) => {
+                const option = document.createElement("option");
                 option.value = brand._id || brand.id;
                 option.textContent = brand.name;
                 select.appendChild(option);
             });
 
             // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-            if (currentValue && state.brands.some(b => (b._id || b.id) === currentValue)) {
+            if (
+                currentValue &&
+                state.brands.some((b) => (b._id || b.id) === currentValue)
+            ) {
                 select.value = currentValue;
             }
         }
     } catch (error) {
-        console.error('❌ Failed to populate brand options:', error);
+        console.error("❌ Failed to populate brand options:", error);
     }
 }
 
 // ===== Subcategory Functions =====
 function populateSubcategoryOptions(categoryId) {
-    const subcategorySelect = document.getElementById('productSubcategory');
+    const subcategorySelect = document.getElementById("productSubcategory");
     if (!subcategorySelect) return;
-
-
 
     // حفظ القيمة المحددة حالياً
     const currentValue = subcategorySelect.value;
 
     // مسح الخيارات الحالية
-    subcategorySelect.innerHTML = '';
+    subcategorySelect.innerHTML = "";
 
     // إضافة الخيار الافتراضي
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'اختر الفئة الفرعية';
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "اختر الفئة الفرعية";
     subcategorySelect.appendChild(defaultOption);
 
     if (!categoryId) {
@@ -7904,47 +9082,47 @@ function populateSubcategoryOptions(categoryId) {
     // تفعيل حقل الفئة الفرعية
     subcategorySelect.disabled = false;
 
-
-
     // الحصول على الفئات الفرعية
     const categorySubcategories = [];
 
     // البحث في state.subcategories
     if (state.subcategories && state.subcategories[categoryId]) {
         categorySubcategories.push(...state.subcategories[categoryId]);
-
     }
 
     // البحث في كائن الفئة
     if (state.categories) {
-        const category = state.categories.find(cat => cat.id === categoryId);
+        const category = state.categories.find((cat) => cat.id === categoryId);
         if (category && category.subcategories) {
             categorySubcategories.push(...category.subcategories);
-
         }
     }
 
     // إزالة التكرارات
-    const uniqueSubcategories = Array.from(new Map(categorySubcategories.map(item => [item.id, item])).values());
-
+    const uniqueSubcategories = Array.from(
+        new Map(categorySubcategories.map((item) => [item.id, item])).values(),
+    );
 
     if (uniqueSubcategories.length === 0) {
-        const noOption = document.createElement('option');
-        noOption.value = '';
-        noOption.textContent = 'لا توجد فئات فرعية متاحة';
+        const noOption = document.createElement("option");
+        noOption.value = "";
+        noOption.textContent = "لا توجد فئات فرعية متاحة";
         noOption.disabled = true;
         subcategorySelect.appendChild(noOption);
         subcategorySelect.disabled = true;
     } else {
-        uniqueSubcategories.forEach(subcategory => {
-            const option = document.createElement('option');
+        uniqueSubcategories.forEach((subcategory) => {
+            const option = document.createElement("option");
             option.value = subcategory.id;
             option.textContent = subcategory.name;
             subcategorySelect.appendChild(option);
         });
 
         // استعادة القيمة المحددة إذا كانت لا تزال صالحة
-        if (currentValue && uniqueSubcategories.some(s => s.id === currentValue)) {
+        if (
+            currentValue &&
+            uniqueSubcategories.some((s) => s.id === currentValue)
+        ) {
             subcategorySelect.value = currentValue;
         }
     }
@@ -7952,20 +9130,28 @@ function populateSubcategoryOptions(categoryId) {
 
 function hydrateSubcategoryCategoryOptions() {
     const categories = state.categories;
-    const filterSelect = document.getElementById('subcategoryCategoryFilter');
-    const formSelect = document.getElementById('subcategoryCategory');
+    const filterSelect = document.getElementById("subcategoryCategoryFilter");
+    const formSelect = document.getElementById("subcategoryCategory");
 
-    const optionsMarkup = categories.map(category => `<option value="${category.id}">${category.name}</option>`).join('');
-    const availableIds = new Set(categories.map(category => category.id));
+    const optionsMarkup = categories
+        .map(
+            (category) => `<option value="${category.id}">${category.name}</option>`,
+        )
+        .join("");
+    const availableIds = new Set(categories.map((category) => category.id));
 
     if (filterSelect) {
         const currentFilter = state.filters.subcategoryCategory;
         filterSelect.innerHTML = `<option value="all">جميع الفئات</option>${optionsMarkup}`;
-        if (currentFilter && currentFilter !== 'all' && availableIds.has(currentFilter)) {
+        if (
+            currentFilter &&
+            currentFilter !== "all" &&
+            availableIds.has(currentFilter)
+        ) {
             filterSelect.value = currentFilter;
         } else {
-            filterSelect.value = 'all';
-            state.filters.subcategoryCategory = 'all';
+            filterSelect.value = "all";
+            state.filters.subcategoryCategory = "all";
         }
     }
 
@@ -7973,95 +9159,123 @@ function hydrateSubcategoryCategoryOptions() {
         const previousValue = formSelect.value;
         formSelect.innerHTML = `<option value="">اختر الفئة الرئيسية</option>${optionsMarkup}`;
 
-        const filteredSelection = state.filters.subcategoryCategory !== 'all'
-            ? state.filters.subcategoryCategory
-            : '';
+        const filteredSelection =
+            state.filters.subcategoryCategory !== "all"
+                ? state.filters.subcategoryCategory
+                : "";
 
-        const preferredValue = previousValue && availableIds.has(previousValue)
-            ? previousValue
-            : (filteredSelection && availableIds.has(filteredSelection)
-                ? filteredSelection
-                : categories[0]?.id || '');
+        const preferredValue =
+            previousValue && availableIds.has(previousValue)
+                ? previousValue
+                : filteredSelection && availableIds.has(filteredSelection)
+                    ? filteredSelection
+                    : categories[0]?.id || "";
 
         formSelect.value = preferredValue;
     }
 }
 
 function hydrateFilters() {
-    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    const productCategoryFilter = document.getElementById(
+        "productCategoryFilter",
+    );
     if (productCategoryFilter) {
         // استخدام جميع الفئات من state.categories
         const categories = state.categories || [];
 
         const categoryOptions = [
-            { value: 'all', label: 'كل الفئات' },
-            ...categories.map(cat => ({
+            { value: "all", label: "كل الفئات" },
+            ...categories.map((cat) => ({
                 value: cat._id || cat.id || cat.slug,
-                label: cat.name
-            }))
+                label: cat.name,
+            })),
         ];
 
-        productCategoryFilter.innerHTML = categoryOptions.map(option => `
+        productCategoryFilter.innerHTML = categoryOptions
+            .map(
+                (option) => `
                 <option value="${option.value}">${option.label}</option>
-            `).join('');
+            `,
+            )
+            .join("");
 
-        const hasSelectedCategory = categoryOptions.some(option => option.value === state.filters.productCategory);
-        productCategoryFilter.value = hasSelectedCategory ? state.filters.productCategory : 'all';
+        const hasSelectedCategory = categoryOptions.some(
+            (option) => option.value === state.filters.productCategory,
+        );
+        productCategoryFilter.value = hasSelectedCategory
+            ? state.filters.productCategory
+            : "all";
         state.filters.productCategory = productCategoryFilter.value;
     }
 
-    const categorySearchInput = document.getElementById('categorySearch');
+    const categorySearchInput = document.getElementById("categorySearch");
     if (categorySearchInput) {
         categorySearchInput.value = state.filters.categorySearch;
-        categorySearchInput.addEventListener('input', event => {
+        categorySearchInput.addEventListener("input", (event) => {
             state.filters.categorySearch = event.target.value;
             renderCategories();
         });
     }
 
-    const subcategorySearchInput = document.getElementById('subcategorySearch');
+    const subcategorySearchInput = document.getElementById("subcategorySearch");
     if (subcategorySearchInput) {
         subcategorySearchInput.value = state.filters.subcategorySearch;
-        subcategorySearchInput.addEventListener('input', event => {
+        subcategorySearchInput.addEventListener("input", (event) => {
             state.filters.subcategorySearch = event.target.value;
             renderSubcategories();
         });
     }
 
-    const subcategoryCategoryFilter = document.getElementById('subcategoryCategoryFilter');
+    const subcategoryCategoryFilter = document.getElementById(
+        "subcategoryCategoryFilter",
+    );
     if (subcategoryCategoryFilter) {
-        subcategoryCategoryFilter.value = state.filters.subcategoryCategory || 'all';
-        subcategoryCategoryFilter.addEventListener('change', event => {
-            state.filters.subcategoryCategory = event.target.value || 'all';
-            renderSubcategories(event.target.value || 'all');
+        subcategoryCategoryFilter.value =
+            state.filters.subcategoryCategory || "all";
+        subcategoryCategoryFilter.addEventListener("change", (event) => {
+            state.filters.subcategoryCategory = event.target.value || "all";
+            renderSubcategories(event.target.value || "all");
         });
     }
 
-    const customerOrdersFilter = document.getElementById('customerOrdersFilter');
+    const customerOrdersFilter = document.getElementById("customerOrdersFilter");
     if (customerOrdersFilter) {
-        customerOrdersFilter.value = state.filters.customerOrdersFilter || 'all';
+        customerOrdersFilter.value = state.filters.customerOrdersFilter || "all";
     }
 
-    const orderStatusFilter = document.getElementById('orderStatusFilter');
+    const orderStatusFilter = document.getElementById("orderStatusFilter");
     if (orderStatusFilter) {
-        const statusOptions = [`<option value="all">كل الحالات</option>`, ...getOrderStatusOptions().map(option => `
+        const statusOptions = [
+            `<option value="all">كل الحالات</option>`,
+            ...getOrderStatusOptions().map(
+                (option) => `
                 <option value="${option.value}">${option.label}</option>
-            `)];
-        orderStatusFilter.innerHTML = statusOptions.join('');
-        orderStatusFilter.value = state.filters.orderStatus || 'all';
+            `,
+            ),
+        ];
+        orderStatusFilter.innerHTML = statusOptions.join("");
+        orderStatusFilter.value = state.filters.orderStatus || "all";
     }
 
-    const customerSegmentFilter = document.getElementById('customerSegmentFilter');
+    const customerSegmentFilter = document.getElementById(
+        "customerSegmentFilter",
+    );
     if (customerSegmentFilter) {
-        const segments = [...new Set(mockData.customers.map(c => c.segment))];
+        const segments = [...new Set(mockData.customers.map((c) => c.segment))];
         customerSegmentFilter.innerHTML = `
                 <option value="all">كل الشرائح</option>
-                ${segments.map(segment => `<option value="${segment}">${getCustomerSegmentLabel(segment)
-            }</option>`).join('')}
+                ${segments
+                .map(
+                    (segment) =>
+                        `<option value="${segment}">${getCustomerSegmentLabel(
+                            segment,
+                        )}</option>`,
+                )
+                .join("")}
             `;
     }
 
-    const auditActionFilter = document.getElementById('auditActionFilter');
+    const auditActionFilter = document.getElementById("auditActionFilter");
     if (auditActionFilter) {
         auditActionFilter.innerHTML = `
                 <option value="all">كل الإجراءات</option>
@@ -8074,26 +9288,28 @@ function hydrateFilters() {
 }
 
 function setupProductFilters() {
-    const productSearchInput = document.getElementById('productSearchInput');
+    const productSearchInput = document.getElementById("productSearchInput");
     if (productSearchInput) {
         productSearchInput.value = state.filters.productSearch;
-        productSearchInput.addEventListener('input', event => {
+        productSearchInput.addEventListener("input", (event) => {
             state.filters.productSearch = event.target.value;
             renderProducts();
         });
     }
 
-    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    const productCategoryFilter = document.getElementById(
+        "productCategoryFilter",
+    );
     if (productCategoryFilter) {
-        productCategoryFilter.addEventListener('change', event => {
+        productCategoryFilter.addEventListener("change", (event) => {
             state.filters.productCategory = event.target.value;
             renderProducts();
         });
     }
 
-    const productStatusFilter = document.getElementById('productStatusFilter');
+    const productStatusFilter = document.getElementById("productStatusFilter");
     if (productStatusFilter) {
-        productStatusFilter.addEventListener('change', event => {
+        productStatusFilter.addEventListener("change", (event) => {
             state.filters.productStatus = event.target.value;
             renderProducts();
         });
@@ -8101,14 +9317,14 @@ function setupProductFilters() {
 }
 
 function setupCustomerFilters() {
-    const filtersBar = document.querySelector('#customers .filters-bar');
+    const filtersBar = document.querySelector("#customers .filters-bar");
     if (!filtersBar) return;
 
-    let ordersFilterSelect = document.getElementById('customerOrdersFilter');
+    let ordersFilterSelect = document.getElementById("customerOrdersFilter");
     if (!ordersFilterSelect) {
-        ordersFilterSelect = document.createElement('select');
-        ordersFilterSelect.id = 'customerOrdersFilter';
-        ordersFilterSelect.className = 'filter-select';
+        ordersFilterSelect = document.createElement("select");
+        ordersFilterSelect.id = "customerOrdersFilter";
+        ordersFilterSelect.className = "filter-select";
         ordersFilterSelect.innerHTML = `
                 <option value="all">كل العملاء </option>
                 <option value="withOrders">عملاء لديهم طلبات فقط</option>
@@ -8116,17 +9332,17 @@ function setupCustomerFilters() {
         filtersBar.appendChild(ordersFilterSelect);
     }
 
-    ordersFilterSelect.value = state.filters.customerOrdersFilter || 'all';
+    ordersFilterSelect.value = state.filters.customerOrdersFilter || "all";
 
     if (!ordersFilterSelect.dataset.bound) {
-        ordersFilterSelect.addEventListener('change', (event) => {
+        ordersFilterSelect.addEventListener("change", (event) => {
             state.filters.customerOrdersFilter = event.target.value;
             renderCustomers();
-            if (state.currentSection === 'overview') {
+            if (state.currentSection === "overview") {
                 updateOverviewStats();
             }
         });
-        ordersFilterSelect.dataset.bound = 'true';
+        ordersFilterSelect.dataset.bound = "true";
     }
 }
 
@@ -8148,12 +9364,12 @@ function renderDashboard() {
 }
 
 function setupModalCancels(root = document) {
-    const closeButtons = root.querySelectorAll('[data-close-modal]');
-    closeButtons.forEach(button => {
+    const closeButtons = root.querySelectorAll("[data-close-modal]");
+    closeButtons.forEach((button) => {
         if (button.dataset.closeBound) return;
-        button.addEventListener('click', () => {
-            const modal = button.closest('.modal');
-            const form = button.closest('form');
+        button.addEventListener("click", () => {
+            const modal = button.closest(".modal");
+            const form = button.closest("form");
             if (form) {
                 form.reset();
             }
@@ -8161,34 +9377,40 @@ function setupModalCancels(root = document) {
                 closeModal(modal.id);
             }
         });
-        button.dataset.closeBound = 'true';
+        button.dataset.closeBound = "true";
     });
 }
 
 // ===== Theme Toggle =====
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.body.classList.toggle("dark-mode", savedTheme === "dark");
     updateThemeIcon();
 }
 
 function toggleTheme() {
-    document.body.classList.toggle('dark-mode');
-    const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-    localStorage.setItem('theme', theme);
+    document.body.classList.toggle("dark-mode");
+    const theme = document.body.classList.contains("dark-mode")
+        ? "dark"
+        : "light";
+    localStorage.setItem("theme", theme);
     updateThemeIcon();
-    showToast('success', 'تم تغيير الوضع', `تم التبديل إلى الوضع ${theme === 'dark' ? 'الداكن' : 'الفاتح'}`);
+    showToast(
+        "success",
+        "تم تغيير الوضع",
+        `تم التبديل إلى الوضع ${theme === "dark" ? "الداكن" : "الفاتح"}`,
+    );
 }
 
 function updateThemeIcon() {
-    const themeToggle = document.getElementById('themeToggle');
+    const themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
-        const icon = themeToggle.querySelector('i');
+        const icon = themeToggle.querySelector("i");
         if (icon) {
-            if (document.body.classList.contains('dark-mode')) {
-                icon.className = 'fas fa-sun';
+            if (document.body.classList.contains("dark-mode")) {
+                icon.className = "fas fa-sun";
             } else {
-                icon.className = 'fas fa-moon';
+                icon.className = "fas fa-moon";
             }
         }
     }
@@ -8197,45 +9419,46 @@ function updateThemeIcon() {
 // ===== Navigation =====
 // تفعيل القسم المطلوب في التنقل الجانبي وإعداد الرسوم البيانية عند الحاجة
 function switchSection(targetSection) {
-
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
 
     if (sidebar && sidebarOverlay && window.innerWidth <= 992) {
-        sidebar.classList.remove('mobile-active');
+        sidebar.classList.remove("mobile-active");
         sidebarOverlay.hidden = true;
-        sidebarOverlay.style.opacity = '0';
-        document.body.classList.remove('sidebar-open');
+        sidebarOverlay.style.opacity = "0";
+        document.body.classList.remove("sidebar-open");
         if (mobileMenuBtn) {
             mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
         }
     }
 
-    const navItems = document.querySelectorAll('.nav-item');
-    const contentSections = document.querySelectorAll('.content-section');
+    const navItems = document.querySelectorAll(".nav-item");
+    const contentSections = document.querySelectorAll(".content-section");
 
-    navItems.forEach(item => item.classList.remove('active'));
-    contentSections.forEach(section => section.classList.remove('active'));
+    navItems.forEach((item) => item.classList.remove("active"));
+    contentSections.forEach((section) => section.classList.remove("active"));
 
-    const clickedNav = document.querySelector(`[data-section="${targetSection}"]`);
+    const clickedNav = document.querySelector(
+        `[data-section="${targetSection}"]`,
+    );
     if (clickedNav) {
-        clickedNav.classList.add('active');
+        clickedNav.classList.add("active");
     }
 
     const targetSectionEl = document.getElementById(targetSection);
     if (targetSectionEl) {
-        targetSectionEl.classList.add('active');
+        targetSectionEl.classList.add("active");
 
         // ===== LAZY LOAD SECTION DATA =====
         // Load section content only when accessed
-        loadSectionData(targetSection).catch(error => {
+        loadSectionData(targetSection).catch((error) => {
             console.error(`❌ Failed to load section ${targetSection}:`, error);
-            showToast('error', 'خطأ', `حدث خطأ عند تحميل قسم ${targetSection}`);
+            showToast("error", "خطأ", `حدث خطأ عند تحميل قسم ${targetSection}`);
         });
 
         // تحميل الرسوم البيانية بشكل lazy عند الحاجة
-        if (targetSection === 'overview') {
+        if (targetSection === "overview") {
             // تحميل الرسومات
             if (!chartsLoaded.overview) {
                 setTimeout(() => {
@@ -8243,12 +9466,12 @@ function switchSection(targetSection) {
                     chartsLoaded.overview = true;
                 }, 100);
             }
-        } else if (targetSection === 'analytics') {
+        } else if (targetSection === "analytics") {
             if (!state.filters) state.filters = {};
 
             // ضبط القيمة الافتراضية للفلتر إذا لم تكن موجودة
             if (!state.filters.analyticsDays) {
-                const select = document.getElementById('analyticsTimeFilter');
+                const select = document.getElementById("analyticsTimeFilter");
                 const defaultValue = select ? parseInt(select.value) : 30;
                 state.filters.analyticsDays = defaultValue || 30;
             }
@@ -8274,7 +9497,7 @@ function switchSection(targetSection) {
  * Centralized lazy loading function for all dashboard sections
  * Loads section data ONLY when accessed, preventing initial load overhead
  * Prevents duplicate loading with state flags
- * 
+ *
  * @param {string} sectionKey - The section to load (overview, products, customers, etc.)
  * @returns {Promise<void>}
  */
@@ -8294,7 +9517,7 @@ async function loadSectionData(sectionKey) {
 
     try {
         switch (sectionKey) {
-            case 'overview':
+            case "overview":
                 // Overview requires categories and orders to be loaded
                 if (!state.sectionLoaded.overview) {
                     if (!state.categories.length) await fetchCategories();
@@ -8303,7 +9526,7 @@ async function loadSectionData(sectionKey) {
                 updateOverviewStats();
                 break;
 
-            case 'products':
+            case "products":
                 // Load products if not already loaded
                 if (!state.products.length && !state.productsLoading) {
                     await fetchProducts();
@@ -8311,7 +9534,7 @@ async function loadSectionData(sectionKey) {
                 renderProducts();
                 break;
 
-            case 'categories':
+            case "categories":
                 // Load categories if not already loaded
                 if (!state.categories.length && !state.categoriesLoading) {
                     await fetchCategories();
@@ -8319,11 +9542,14 @@ async function loadSectionData(sectionKey) {
                 renderCategories();
                 break;
 
-            case 'subcategories':
+            case "subcategories":
                 // Load subcategories for the selected category
                 const selectedCategoryId = state.filters?.subcategoryCategory;
-                if (!state.subcategoriesLoading[selectedCategoryId] && !state.subcategories[selectedCategoryId]) {
-                    if (selectedCategoryId && selectedCategoryId !== 'all') {
+                if (
+                    !state.subcategoriesLoading[selectedCategoryId] &&
+                    !state.subcategories[selectedCategoryId]
+                ) {
+                    if (selectedCategoryId && selectedCategoryId !== "all") {
                         await fetchSubcategories(selectedCategoryId, { force: true });
                     } else {
                         // Load all if no category selected
@@ -8333,7 +9559,7 @@ async function loadSectionData(sectionKey) {
                 renderSubcategories();
                 break;
 
-            case 'brands':
+            case "brands":
                 // Load brands if not already loaded
                 if (!state.brands.length && !state.brandsLoading) {
                     await fetchBrands({ force: true });
@@ -8341,7 +9567,7 @@ async function loadSectionData(sectionKey) {
                 renderBrands();
                 break;
 
-            case 'orders':
+            case "orders":
                 // Load orders if not already loaded
                 if (!state.orders.length && !state.ordersLoading) {
                     await fetchOrders();
@@ -8349,7 +9575,7 @@ async function loadSectionData(sectionKey) {
                 renderOrders();
                 break;
 
-            case 'customers':
+            case "customers":
                 // Load customers if not already loaded
                 if (!state.customers.length && !state.customersLoading) {
                     await fetchCustomers();
@@ -8357,7 +9583,7 @@ async function loadSectionData(sectionKey) {
                 renderCustomers();
                 break;
 
-            case 'cms':
+            case "cms":
                 // Load messages when CMS section is opened
                 if (!state.messagesLoaded && !state.messagesLoading) {
                     await fetchMessages({ force: true });
@@ -8365,12 +9591,12 @@ async function loadSectionData(sectionKey) {
                 renderMessages();
                 break;
 
-            case 'payments':
+            case "payments":
                 // Load payment methods
                 await renderPaymentMethods();
                 break;
 
-            case 'analytics':
+            case "analytics":
                 // Load analytics data and charts
                 if (!state.sectionLoaded.analytics) {
                     // Analytics charts are loaded in switchSection via chartsLoaded flags
@@ -8378,24 +9604,24 @@ async function loadSectionData(sectionKey) {
                 }
                 break;
 
-            case 'collections':
+            case "collections":
                 // Load and render collections
                 renderCollections();
                 break;
 
-            case 'promotions':
+            case "promotions":
                 // Load and render promotions
                 renderPromotions();
                 break;
 
-            case 'settings':
+            case "settings":
                 // Load settings if hydration function exists
-                if (typeof hydrateSettingsForms === 'function') {
+                if (typeof hydrateSettingsForms === "function") {
                     hydrateSettingsForms();
                 }
                 break;
 
-            case 'users':
+            case "users":
                 // Users are rendered in renderDashboard
                 // Additional loading can be added here if needed
                 break;
@@ -8417,42 +9643,44 @@ async function loadSectionData(sectionKey) {
 
 function refreshSectionData(sectionKey) {
     switch (sectionKey) {
-        case 'overview':
+        case "overview":
             updateOverviewStats();
             break;
-        case 'products':
+        case "products":
             fetchProducts();
             break;
-        case 'categories':
+        case "categories":
             fetchCategories();
             break;
-        case 'subcategories':
+        case "subcategories":
             if (state.filters?.subcategoryCategory) {
                 fetchSubcategories(state.filters.subcategoryCategory, { force: true });
             } else {
                 fetchSubcategories();
             }
             break;
-        case 'brands':
-            fetchBrands({ force: true }).then(() => renderBrands()).catch(console.error);
+        case "brands":
+            fetchBrands({ force: true })
+                .then(() => renderBrands())
+                .catch(console.error);
             break;
-        case 'orders':
+        case "orders":
             fetchOrders();
             break;
-        case 'customers':
+        case "customers":
             fetchCustomers();
             break;
-        case 'cms':
+        case "cms":
             fetchMessages({ force: true }).catch(console.error);
             break;
-        case 'payments':
+        case "payments":
             renderPaymentMethods();
             break;
-        case 'analytics':
+        case "analytics":
             loadAnalyticsCharts();
             break;
-        case 'settings':
-            if (typeof hydrateSettingsForms === 'function') {
+        case "settings":
+            if (typeof hydrateSettingsForms === "function") {
                 hydrateSettingsForms();
             }
             break;
@@ -8462,13 +9690,13 @@ function refreshSectionData(sectionKey) {
 }
 
 // ===== Modals =====
-function openModal(modalId, mode = 'create', entity = null) {
+function openModal(modalId, mode = "create", entity = null) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
-    modal.classList.add('active');
+    modal.classList.add("active");
 
-    const form = modal.querySelector('form');
+    const form = modal.querySelector("form");
     if (form) {
         form.dataset.mode = mode;
         form.reset();
@@ -8478,17 +9706,18 @@ function openModal(modalId, mode = 'create', entity = null) {
         populateModal(modalId, entity, mode);
     }
 
-    const title = modal.querySelector('[data-modal-title]');
+    const title = modal.querySelector("[data-modal-title]");
     if (title) {
         if (!title.dataset.defaultTitle) {
             title.dataset.defaultTitle = title.textContent.trim();
         }
         const defaultTitle = title.dataset.defaultTitle;
-        const editTitle = title.getAttribute('data-modal-edit-title') || defaultTitle;
-        title.textContent = mode === 'edit' ? editTitle : defaultTitle;
+        const editTitle =
+            title.getAttribute("data-modal-edit-title") || defaultTitle;
+        title.textContent = mode === "edit" ? editTitle : defaultTitle;
     }
 
-    if (modalId === 'brandModal' && mode === 'create') {
+    if (modalId === "brandModal" && mode === "create") {
         prepareBrandCreateForm();
     }
 
@@ -8499,29 +9728,27 @@ function openModal(modalId, mode = 'create', entity = null) {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
+        modal.classList.remove("active");
     }
 }
 
 function closeAllModals() {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => modal.classList.remove('active'));
+    const modals = document.querySelectorAll(".modal");
+    modals.forEach((modal) => modal.classList.remove("active"));
 }
 
 // ===== Toast Notifications =====
 function showToast(type, title, message) {
-
-
-    const toastContainer = document.getElementById('toastContainer');
+    const toastContainer = document.getElementById("toastContainer");
     if (!toastContainer) return;
 
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.className = `toast ${type}`;
 
     const iconMap = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
+        success: "fa-check-circle",
+        error: "fa-exclamation-circle",
+        info: "fa-info-circle",
     };
 
     toast.innerHTML = `
@@ -8535,8 +9762,8 @@ function showToast(type, title, message) {
     toastContainer.appendChild(toast);
 
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-100px)';
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-100px)";
         setTimeout(() => {
             if (toastContainer.contains(toast)) {
                 toastContainer.removeChild(toast);
@@ -8551,19 +9778,19 @@ function showToast(type, title, message) {
  * @param {string} message - محتوى الرسالة
  * @param {string} type - نوع الرسالة: "success" | "error" | "warning" | "info"
  */
-function showPopup(title, message, type = 'info') {
-    const modal = document.getElementById('customPopupModal');
-    const headerEl = document.getElementById('popupTitle');
-    const messageEl = document.getElementById('popupMessage');
-    const iconEl = document.getElementById('popupIcon');
-    const footer = document.getElementById('popupFooter');
-    const overlay = document.getElementById('popupOverlay');
-    const closeBtn = document.getElementById('popupCloseBtn');
+function showPopup(title, message, type = "info") {
+    const modal = document.getElementById("customPopupModal");
+    const headerEl = document.getElementById("popupTitle");
+    const messageEl = document.getElementById("popupMessage");
+    const iconEl = document.getElementById("popupIcon");
+    const footer = document.getElementById("popupFooter");
+    const overlay = document.getElementById("popupOverlay");
+    const closeBtn = document.getElementById("popupCloseBtn");
 
     if (!modal || !headerEl || !messageEl || !iconEl) return;
 
     // Remove any existing confirm buttons
-    footer.innerHTML = '';
+    footer.innerHTML = "";
 
     // Set content
     headerEl.textContent = title;
@@ -8571,29 +9798,29 @@ function showPopup(title, message, type = 'info') {
 
     // Set icon based on type
     const iconMap = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        warning: 'fas fa-exclamation-triangle',
-        info: 'fas fa-info-circle'
+        success: "fas fa-check-circle",
+        error: "fas fa-exclamation-circle",
+        warning: "fas fa-exclamation-triangle",
+        info: "fas fa-info-circle",
     };
 
     iconEl.className = `popup-icon ${type}`;
     iconEl.innerHTML = `<i class="${iconMap[type]}"></i>`;
 
     // Add dismiss button
-    const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'btn-secondary popup-btn-dismiss';
-    dismissBtn.textContent = 'حسناً';
-    dismissBtn.addEventListener('click', closePopup);
+    const dismissBtn = document.createElement("button");
+    dismissBtn.className = "btn-secondary popup-btn-dismiss";
+    dismissBtn.textContent = "حسناً";
+    dismissBtn.addEventListener("click", closePopup);
     footer.appendChild(dismissBtn);
 
     // Show modal
-    modal.classList.add('active');
+    modal.classList.add("active");
 
     // Close handlers
     const closeHandler = () => closePopup();
-    overlay.addEventListener('click', closeHandler);
-    closeBtn.addEventListener('click', closeHandler);
+    overlay.addEventListener("click", closeHandler);
+    closeBtn.addEventListener("click", closeHandler);
 }
 
 /**
@@ -8605,41 +9832,48 @@ function showPopup(title, message, type = 'info') {
  * @param {string} confirmText - نص زر التأكيد (افتراضي: "تأكيد")
  * @param {string} cancelText - نص زر الإلغاء (افتراضي: "إلغاء")
  */
-function confirmPopup(title, message, onConfirm, onCancel = null, confirmText = 'تأكيد', cancelText = 'إلغاء') {
-    const modal = document.getElementById('customPopupModal');
-    const headerEl = document.getElementById('popupTitle');
-    const messageEl = document.getElementById('popupMessage');
-    const iconEl = document.getElementById('popupIcon');
-    const footer = document.getElementById('popupFooter');
-    const overlay = document.getElementById('popupOverlay');
-    const closeBtn = document.getElementById('popupCloseBtn');
+function confirmPopup(
+    title,
+    message,
+    onConfirm,
+    onCancel = null,
+    confirmText = "تأكيد",
+    cancelText = "إلغاء",
+) {
+    const modal = document.getElementById("customPopupModal");
+    const headerEl = document.getElementById("popupTitle");
+    const messageEl = document.getElementById("popupMessage");
+    const iconEl = document.getElementById("popupIcon");
+    const footer = document.getElementById("popupFooter");
+    const overlay = document.getElementById("popupOverlay");
+    const closeBtn = document.getElementById("popupCloseBtn");
 
     if (!modal || !headerEl || !messageEl || !iconEl) return;
 
     // Remove any existing handlers
-    footer.innerHTML = '';
+    footer.innerHTML = "";
 
     // Set content
     headerEl.textContent = title;
     messageEl.textContent = message;
 
     // Set warning icon for confirmations
-    iconEl.className = 'popup-icon warning';
+    iconEl.className = "popup-icon warning";
     iconEl.innerHTML = '<i class="fas fa-question-circle"></i>';
 
     // Create buttons
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'btn-secondary popup-btn-cancel';
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn-secondary popup-btn-cancel";
     cancelBtn.textContent = cancelText;
 
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'btn-primary popup-btn-confirm';
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = "btn-primary popup-btn-confirm";
     confirmBtn.textContent = confirmText;
 
     // Handle confirm
     const handleConfirm = () => {
         closePopup();
-        if (typeof onConfirm === 'function') {
+        if (typeof onConfirm === "function") {
             onConfirm();
         }
     };
@@ -8647,37 +9881,37 @@ function confirmPopup(title, message, onConfirm, onCancel = null, confirmText = 
     // Handle cancel
     const handleCancel = () => {
         closePopup();
-        if (typeof onCancel === 'function') {
+        if (typeof onCancel === "function") {
             onCancel();
         }
     };
 
-    cancelBtn.addEventListener('click', handleCancel);
-    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener("click", handleCancel);
+    confirmBtn.addEventListener("click", handleConfirm);
 
     footer.appendChild(cancelBtn);
     footer.appendChild(confirmBtn);
 
     // Show modal
-    modal.classList.add('active');
+    modal.classList.add("active");
 
     // Close handlers
     const closeHandler = handleCancel;
-    overlay.addEventListener('click', closeHandler);
-    closeBtn.addEventListener('click', closeHandler);
+    overlay.addEventListener("click", closeHandler);
+    closeBtn.addEventListener("click", closeHandler);
 }
 
 /**
  * إغلاق النافذة المنبثقة
  */
 function closePopup() {
-    const modal = document.getElementById('customPopupModal');
+    const modal = document.getElementById("customPopupModal");
     if (modal) {
-        modal.classList.remove('active');
+        modal.classList.remove("active");
         // Remove event listeners by clearing and resetting footer
-        const footer = document.getElementById('popupFooter');
+        const footer = document.getElementById("popupFooter");
         if (footer) {
-            footer.innerHTML = '';
+            footer.innerHTML = "";
         }
     }
 }
@@ -8709,19 +9943,39 @@ function calculateMonthlySales() {
     const hasCustomRange = rangeStart && rangeEnd;
 
     if (hasCustomRange) {
-        const startMonth = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
+        const startMonth = new Date(
+            rangeStart.getFullYear(),
+            rangeStart.getMonth(),
+            1,
+        );
         const endMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
         let current = new Date(startMonth);
         let safetyCounter = 0;
         while (current <= endMonth && safetyCounter < 36) {
-            const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            const monthName = current.toLocaleDateString("ar-EG", {
+                month: "long",
+                year: "numeric",
+            });
             months.push(monthName);
             const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
-            const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthEnd = new Date(
+                current.getFullYear(),
+                current.getMonth() + 1,
+                0,
+                23,
+                59,
+                59,
+                999,
+            );
             const monthSales = orders
-                .filter(order => {
+                .filter((order) => {
                     const orderDate = getOrderDate(order);
-                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
+                    return (
+                        orderDate &&
+                        orderDate >= monthStart &&
+                        orderDate <= monthEnd &&
+                        order.status !== "cancelled"
+                    );
                 })
                 .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
             sales.push(monthSales);
@@ -8732,20 +9986,32 @@ function calculateMonthlySales() {
         const now = new Date();
         for (let i = 5; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthName = date.toLocaleDateString('ar-EG', { month: 'long' });
+            const monthName = date.toLocaleDateString("ar-EG", { month: "long" });
             months.push(monthName);
             const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-            const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthEnd = new Date(
+                date.getFullYear(),
+                date.getMonth() + 1,
+                0,
+                23,
+                59,
+                59,
+                999,
+            );
             const monthSales = orders
-                .filter(order => {
+                .filter((order) => {
                     const orderDate = getOrderDate(order);
-                    return orderDate && orderDate >= monthStart && orderDate <= monthEnd && order.status !== 'cancelled';
+                    return (
+                        orderDate &&
+                        orderDate >= monthStart &&
+                        orderDate <= monthEnd &&
+                        order.status !== "cancelled"
+                    );
                 })
                 .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
             sales.push(monthSales);
         }
     }
-
 
     return { labels: months, values: sales };
 }
@@ -8758,12 +10024,12 @@ function calculateTopProducts() {
     const productSales = {};
 
     // جمع مبيعات كل منتج
-    orders.forEach(order => {
-        if (order.status === 'cancelled') return;
+    orders.forEach((order) => {
+        if (order.status === "cancelled") return;
 
         const items = order.itemsDetails || order.cartItems || [];
-        items.forEach(item => {
-            const productName = item.name || item.product?.name || 'منتج غير معروف';
+        items.forEach((item) => {
+            const productName = item.name || item.product?.name || "منتج غير معروف";
             const quantity = item.quantity || item.qty || 0;
 
             if (!productSales[productName]) {
@@ -8780,107 +10046,109 @@ function calculateTopProducts() {
 
     if (sorted.length === 0) {
         return {
-            labels: ['لا توجد مبيعات'],
-            values: [1]
+            labels: ["لا توجد مبيعات"],
+            values: [1],
         };
     }
 
     return {
         labels: sorted.map(([name]) => name),
-        values: sorted.map(([, count]) => count)
+        values: sorted.map(([, count]) => count),
     };
 }
 
 function loadOverviewCharts() {
-
     // رسم المبيعات الشهرية
-    const salesCtx = document.getElementById('salesChart');
+    const salesCtx = document.getElementById("salesChart");
     if (salesCtx) {
         const salesData = calculateMonthlySales();
 
-
-        createChartInstance('overview', 'sales', salesCtx, {
-            type: 'line',
+        createChartInstance("overview", "sales", salesCtx, {
+            type: "line",
             data: {
                 labels: salesData.labels,
-                datasets: [{
-                    label: 'المبيعات',
-                    data: salesData.values,
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
+                datasets: [
+                    {
+                        label: "المبيعات",
+                        data: salesData.values,
+                        borderColor: "#e74c3c",
+                        backgroundColor: "rgba(231, 76, 60, 0.1)",
+                        tension: 0.4,
+                        fill: true,
+                    },
+                ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        display: false
-                    }
+                        display: false,
+                    },
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
                             callback: function (value) {
-                                return value.toLocaleString() + ' ريال';
-                            }
-                        }
-                    }
-                }
-            }
+                                return value.toLocaleString() + " ريال";
+                            },
+                        },
+                    },
+                },
+            },
         });
     }
 
     // رسم أفضل المنتجات مبيعاً
-    const productsCtx = document.getElementById('productsChart');
+    const productsCtx = document.getElementById("productsChart");
     if (productsCtx) {
         const topProductsData = calculateTopProducts();
 
-        createChartInstance('overview', 'products', productsCtx, {
-            type: 'doughnut',
+        createChartInstance("overview", "products", productsCtx, {
+            type: "doughnut",
             data: {
                 labels: topProductsData.labels,
-                datasets: [{
-                    data: topProductsData.values,
-                    backgroundColor: [
-                        '#e74c3c',
-                        '#3498db',
-                        '#2ecc71',
-                        '#f1c40f',
-                        '#9b59b6',
-                        '#1abc9c',
-                        '#e67e22',
-                        '#34495e',
-                        '#16a085',
-                        '#8e44ad'
-                    ],
-                    borderColor: [
-                        '#e74c3c',
-                        '#3498db',
-                        '#2ecc71',
-                        '#f1c40f',
-                        '#9b59b6',
-                        '#1abc9c',
-                        '#e67e22',
-                        '#34495e',
-                        '#16a085',
-                        '#8e44ad'
-                    ],
-                    borderWidth: 1
-                }]
+                datasets: [
+                    {
+                        data: topProductsData.values,
+                        backgroundColor: [
+                            "#e74c3c",
+                            "#3498db",
+                            "#2ecc71",
+                            "#f1c40f",
+                            "#9b59b6",
+                            "#1abc9c",
+                            "#e67e22",
+                            "#34495e",
+                            "#16a085",
+                            "#8e44ad",
+                        ],
+                        borderColor: [
+                            "#e74c3c",
+                            "#3498db",
+                            "#2ecc71",
+                            "#f1c40f",
+                            "#9b59b6",
+                            "#1abc9c",
+                            "#e67e22",
+                            "#34495e",
+                            "#16a085",
+                            "#8e44ad",
+                        ],
+                        borderWidth: 1,
+                    },
+                ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
+                        position: "bottom",
+                    },
+                },
+            },
         });
     }
 }
@@ -8893,13 +10161,33 @@ function calculateAnalyticsData() {
     const rangeStart = parseDateValue(state.filters?.analyticsStart);
     const rangeEnd = parseDateValue(state.filters?.analyticsEnd);
 
-    const hasCustomRange = rangeStart instanceof Date && !isNaN(rangeStart) && rangeEnd instanceof Date && !isNaN(rangeEnd);
-    const startDate = hasCustomRange ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()) : null;
-    const endDate = hasCustomRange ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999) : null;
+    const hasCustomRange =
+        rangeStart instanceof Date &&
+        !isNaN(rangeStart) &&
+        rangeEnd instanceof Date &&
+        !isNaN(rangeEnd);
+    const startDate = hasCustomRange
+        ? new Date(
+            rangeStart.getFullYear(),
+            rangeStart.getMonth(),
+            rangeStart.getDate(),
+        )
+        : null;
+    const endDate = hasCustomRange
+        ? new Date(
+            rangeEnd.getFullYear(),
+            rangeEnd.getMonth(),
+            rangeEnd.getDate(),
+            23,
+            59,
+            59,
+            999,
+        )
+        : null;
 
-    const filteredOrders = orders.filter(order => {
+    const filteredOrders = orders.filter((order) => {
         const orderDate = getOrderDate(order);
-        if (!orderDate || order.status === 'cancelled') return false;
+        if (!orderDate || order.status === "cancelled") return false;
 
         if (hasCustomRange) {
             return orderDate >= startDate && orderDate <= endDate;
@@ -8909,30 +10197,53 @@ function calculateAnalyticsData() {
     });
 
     // 1. إجمالي الإيرادات
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+    const totalRevenue = filteredOrders.reduce(
+        (sum, order) => sum + (Number(order.total) || 0),
+        0,
+    );
 
     // 2. متوسط قيمة السلة
-    const avgBasket = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
+    const avgBasket =
+        filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
 
     const ordersCount = filteredOrders.length;
-    const totalItems = filteredOrders.reduce((sum, order) => sum + (Number(order.items) || Number(order.totalItems) || 0), 0);
+    const totalItems = filteredOrders.reduce(
+        (sum, order) =>
+            sum + (Number(order.items) || Number(order.totalItems) || 0),
+        0,
+    );
 
     // 3. الإيرادات الشهرية (آخر 8 أشهر)
     const monthlyRevenue = [];
     const monthLabels = [];
     const monthsToInclude = 8;
     if (hasCustomRange) {
-        const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+        const startMonth = new Date(
+            startDate.getFullYear(),
+            startDate.getMonth(),
+            1,
+        );
         const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
         let current = new Date(startMonth);
         let safetyCounter = 0;
         while (current <= endMonth && safetyCounter < 36) {
-            const monthName = current.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            const monthName = current.toLocaleDateString("ar-EG", {
+                month: "long",
+                year: "numeric",
+            });
             monthLabels.push(monthName);
             const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
-            const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthEnd = new Date(
+                current.getFullYear(),
+                current.getMonth() + 1,
+                0,
+                23,
+                59,
+                59,
+                999,
+            );
             const monthRevenue = filteredOrders
-                .filter(order => {
+                .filter((order) => {
                     const orderDate = getOrderDate(order);
                     return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
                 })
@@ -8945,12 +10256,26 @@ function calculateAnalyticsData() {
         const now = new Date();
         for (let i = monthsToInclude - 1; i >= 0; i--) {
             const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthName = monthDate.toLocaleDateString('ar-EG', { month: 'long' });
+            const monthName = monthDate.toLocaleDateString("ar-EG", {
+                month: "long",
+            });
             monthLabels.push(monthName);
-            const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59, 999);
+            const monthStart = new Date(
+                monthDate.getFullYear(),
+                monthDate.getMonth(),
+                1,
+            );
+            const monthEnd = new Date(
+                monthDate.getFullYear(),
+                monthDate.getMonth() + 1,
+                0,
+                23,
+                59,
+                59,
+                999,
+            );
             const monthRevenue = filteredOrders
-                .filter(order => {
+                .filter((order) => {
                     const orderDate = getOrderDate(order);
                     return orderDate && orderDate >= monthStart && orderDate <= monthEnd;
                 })
@@ -8961,10 +10286,10 @@ function calculateAnalyticsData() {
 
     // 4. أكثر المنتجات مبيعاً
     const productStats = {};
-    filteredOrders.forEach(order => {
+    filteredOrders.forEach((order) => {
         const items = order.itemsDetails || order.cartItems || [];
-        items.forEach(item => {
-            const productName = item.name || item.product?.name || 'منتج غير معروف';
+        items.forEach((item) => {
+            const productName = item.name || item.product?.name || "منتج غير معروف";
             const quantity = Number(item.quantity || item.qty || 0);
             const price = Number(item.price || 0);
             const revenue = quantity * price;
@@ -8988,7 +10313,7 @@ function calculateAnalyticsData() {
         ordersCount,
         totalItems,
         monthlyRevenue: { labels: monthLabels, values: monthlyRevenue },
-        topProducts
+        topProducts,
     };
 }
 
@@ -8999,26 +10324,26 @@ function updateAnalyticsStats() {
     const data = calculateAnalyticsData();
 
     // تحديث الإحصائيات
-    const revenueEl = document.getElementById('analyticsRevenue');
-    const avgBasketEl = document.getElementById('analyticsAvgBasket');
+    const revenueEl = document.getElementById("analyticsRevenue");
+    const avgBasketEl = document.getElementById("analyticsAvgBasket");
 
     if (revenueEl) revenueEl.textContent = formatCurrency(data.totalRevenue);
     if (avgBasketEl) avgBasketEl.textContent = formatCurrency(data.avgBasket);
 
     // تحديث جدول المنتجات
     renderTopProductsTable(data.topProducts);
-
-
 }
 
 /**
  * عرض جدول أكثر المنتجات مبيعاً
  */
 function renderTopProductsTable(products) {
-    const tbody = document.getElementById('topProductsTableBody');
+    const tbody = document.getElementById("topProductsTableBody");
     if (!tbody) return;
 
-    const filteredProducts = products.filter(product => Number(product.quantity) >= 5);
+    const filteredProducts = products.filter(
+        (product) => Number(product.quantity) >= 5,
+    );
 
     if (filteredProducts.length === 0) {
         tbody.innerHTML = `
@@ -9031,53 +10356,57 @@ function renderTopProductsTable(products) {
         return;
     }
 
-    tbody.innerHTML = filteredProducts.map((product, index) => `
+    tbody.innerHTML = filteredProducts
+        .map(
+            (product, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${product.name}</td>
                 <td>${formatNumber(product.quantity)}</td>
                 <td>${formatCurrency(product.revenue)}</td>
             </tr>
-        `).join('');
+        `,
+        )
+        .join("");
 }
 
 // ... (rest of the code remains the same)
 function loadAnalyticsCharts() {
-
-
     const data = calculateAnalyticsData();
 
-    const revenueCtx = document.getElementById('revenueChart');
+    const revenueCtx = document.getElementById("revenueChart");
     if (revenueCtx) {
-        createChartInstance('analytics', 'revenue', revenueCtx, {
-            type: 'bar',
+        createChartInstance("analytics", "revenue", revenueCtx, {
+            type: "bar",
             data: {
                 labels: data.monthlyRevenue.labels,
-                datasets: [{
-                    label: 'الإيرادات',
-                    data: data.monthlyRevenue.values,
-                    backgroundColor: '#e74c3c'
-                }]
+                datasets: [
+                    {
+                        label: "الإيرادات",
+                        data: data.monthlyRevenue.values,
+                        backgroundColor: "#e74c3c",
+                    },
+                ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        display: false
-                    }
+                        display: false,
+                    },
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
                             callback: function (value) {
-                                return value.toLocaleString() + ' ريال';
-                            }
-                        }
-                    }
-                }
-            }
+                                return value.toLocaleString() + " ريال";
+                            },
+                        },
+                    },
+                },
+            },
         });
     }
 
@@ -9088,10 +10417,10 @@ function loadAnalyticsCharts() {
 // ===== Mobile Menu =====
 function createMobileMenu() {
     if (window.innerWidth <= 992) {
-        let menuBtn = document.getElementById('mobileMenuBtn');
+        let menuBtn = document.getElementById("mobileMenuBtn");
         if (!menuBtn) {
-            menuBtn = document.createElement('button');
-            menuBtn.id = 'mobileMenuBtn';
+            menuBtn = document.createElement("button");
+            menuBtn.id = "mobileMenuBtn";
             menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
             menuBtn.style.cssText = `
                     position: fixed;
@@ -9114,48 +10443,48 @@ function createMobileMenu() {
                 `;
             document.body.appendChild(menuBtn);
         }
-        const overlay = document.getElementById('sidebarOverlay');
+        const overlay = document.getElementById("sidebarOverlay");
         if (overlay) {
             overlay.hidden = true;
-            overlay.style.opacity = '0';
+            overlay.style.opacity = "0";
         }
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.getElementById("sidebar");
         if (sidebar) {
-            sidebar.classList.remove('mobile-active');
+            sidebar.classList.remove("mobile-active");
         }
-        document.body.classList.remove('sidebar-open');
+        document.body.classList.remove("sidebar-open");
     } else {
-        const menuBtn = document.getElementById('mobileMenuBtn');
+        const menuBtn = document.getElementById("mobileMenuBtn");
         if (menuBtn) {
             menuBtn.remove();
         }
-        const sidebar = document.getElementById('sidebar');
+        const sidebar = document.getElementById("sidebar");
         if (sidebar) {
-            sidebar.classList.remove('mobile-active');
+            sidebar.classList.remove("mobile-active");
         }
-        document.body.classList.remove('sidebar-open');
-        const overlay = document.getElementById('sidebarOverlay');
+        document.body.classList.remove("sidebar-open");
+        const overlay = document.getElementById("sidebarOverlay");
         if (overlay) {
             overlay.hidden = true;
-            overlay.style.opacity = '0';
+            overlay.style.opacity = "0";
         }
     }
 }
 
 function toggleSidebar(forceState = null) {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const menuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    const menuBtn = document.getElementById("mobileMenuBtn");
 
     if (!sidebar || !overlay) return;
 
-    const isActive = sidebar.classList.contains('mobile-active');
+    const isActive = sidebar.classList.contains("mobile-active");
     const targetState = forceState !== null ? Boolean(forceState) : !isActive;
 
-    sidebar.classList.toggle('mobile-active', targetState);
+    sidebar.classList.toggle("mobile-active", targetState);
     overlay.hidden = !targetState;
-    overlay.style.opacity = targetState ? '1' : '0';
-    document.body.classList.toggle('sidebar-open', targetState);
+    overlay.style.opacity = targetState ? "1" : "0";
+    document.body.classList.toggle("sidebar-open", targetState);
 
     if (menuBtn) {
         menuBtn.innerHTML = targetState
@@ -9165,19 +10494,19 @@ function toggleSidebar(forceState = null) {
 }
 
 // ===== Event Delegation =====
-document.addEventListener('click', function (e) {
+document.addEventListener("click", function (e) {
     // Theme Toggle
-    if (e.target.closest('#themeToggle')) {
+    if (e.target.closest("#themeToggle")) {
         e.preventDefault();
         toggleTheme();
         return;
     }
 
     // Navigation Items
-    const navItem = e.target.closest('.nav-item');
+    const navItem = e.target.closest(".nav-item");
     if (navItem) {
         e.preventDefault();
-        const section = navItem.getAttribute('data-section');
+        const section = navItem.getAttribute("data-section");
         if (section) {
             switchSection(section);
         }
@@ -9185,39 +10514,56 @@ document.addEventListener('click', function (e) {
     }
 
     // Toggle sidebar (mobile FAB)
-    if (e.target.closest('#mobileMenuBtn')) {
+    if (e.target.closest("#mobileMenuBtn")) {
         e.preventDefault();
         toggleSidebar();
         return;
     }
 
     // Delete Subcategory
-    const deleteSubcategoryBtn = e.target.closest('[data-action="delete-subcategory"]');
+    const deleteSubcategoryBtn = e.target.closest(
+        '[data-action="delete-subcategory"]',
+    );
     if (deleteSubcategoryBtn) {
         e.preventDefault();
-        const subcategoryId = deleteSubcategoryBtn.getAttribute('data-entity-id');
-        const categoryId = deleteSubcategoryBtn.getAttribute('data-category-id')
-            || state.filters.subcategoryCategory;
+        const subcategoryId = deleteSubcategoryBtn.getAttribute("data-entity-id");
+        const categoryId =
+            deleteSubcategoryBtn.getAttribute("data-category-id") ||
+            state.filters.subcategoryCategory;
 
         if (!subcategoryId || !categoryId) {
-            showToast('error', 'حذف الفئة الفرعية', 'تعذر تحديد الفئة الفرعية أو الفئة الأصلية.');
+            showToast(
+                "error",
+                "حذف الفئة الفرعية",
+                "تعذر تحديد الفئة الفرعية أو الفئة الأصلية.",
+            );
             return;
         }
 
-        const subcategoryName = deleteSubcategoryBtn.getAttribute('data-entity-name')
-            || getSubcategoryById(categoryId, subcategoryId)?.name
-            || 'هذه الفئة الفرعية';
+        const subcategoryName =
+            deleteSubcategoryBtn.getAttribute("data-entity-name") ||
+            getSubcategoryById(categoryId, subcategoryId)?.name ||
+            "هذه الفئة الفرعية";
 
-        confirmPopup('تأكيد حذف الفئة الفرعية', `هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`, () => {
-            deleteSubcategory(categoryId, subcategoryId).catch(() => {
-                // يتم التعامل مع رسائل الخطأ داخل deleteSubcategory بالفعل
-            });
-        }, null, 'حذف', 'إلغاء');
+        confirmPopup(
+            "تأكيد حذف الفئة الفرعية",
+            `هل أنت متأكد من حذف الفئة الفرعية "${subcategoryName}"؟`,
+            () => {
+                deleteSubcategory(categoryId, subcategoryId).catch(() => {
+                    // يتم التعامل مع رسائل الخطأ داخل deleteSubcategory بالفعل
+                });
+            },
+            null,
+            "حذف",
+            "إلغاء",
+        );
         return;
     }
 
     // Refresh Categories
-    const refreshCategoriesBtn = e.target.closest('[data-action="refresh-categories"]');
+    const refreshCategoriesBtn = e.target.closest(
+        '[data-action="refresh-categories"]',
+    );
     if (refreshCategoriesBtn) {
         e.preventDefault();
         fetchCategories();
@@ -9225,52 +10571,56 @@ document.addEventListener('click', function (e) {
     }
 
     // Modal Close Buttons
-    if (e.target.closest('.modal-close')) {
+    if (e.target.closest(".modal-close")) {
         e.preventDefault();
-        const modal = e.target.closest('.modal');
+        const modal = e.target.closest(".modal");
         if (modal) {
-            modal.classList.remove('active');
+            modal.classList.remove("active");
         }
         return;
     }
 
     // Modal Overlays
-    if (e.target.classList.contains('modal-overlay')) {
+    if (e.target.classList.contains("modal-overlay")) {
         e.preventDefault();
-        const modal = e.target.closest('.modal');
+        const modal = e.target.closest(".modal");
         if (modal) {
-            modal.classList.remove('active');
+            modal.classList.remove("active");
         }
         return;
     }
 
     // Generic Modal Triggers
-    const modalTrigger = e.target.closest('[data-open-modal]');
+    const modalTrigger = e.target.closest("[data-open-modal]");
     if (modalTrigger) {
         e.preventDefault();
-        const modalId = modalTrigger.getAttribute('data-open-modal');
-        const mode = modalTrigger.getAttribute('data-modal-mode') || 'create';
-        const entity = modalTrigger.getAttribute('data-entity');
-        const customerId = modalTrigger.getAttribute('data-customer-id');
-        const entityId = modalTrigger.getAttribute('data-entity-id');
-        const categoryIdAttr = modalTrigger.getAttribute('data-category-id');
+        const modalId = modalTrigger.getAttribute("data-open-modal");
+        const mode = modalTrigger.getAttribute("data-modal-mode") || "create";
+        const entity = modalTrigger.getAttribute("data-entity");
+        const customerId = modalTrigger.getAttribute("data-customer-id");
+        const entityId = modalTrigger.getAttribute("data-entity-id");
+        const categoryIdAttr = modalTrigger.getAttribute("data-category-id");
 
         openModal(modalId, mode);
 
-        if (modalId === 'categoryModal') {
-            populateCategoryModal(mode === 'edit' ? entityId : null);
-        } else if (modalId === 'addProductModal') {
-            populateProductModal(mode === 'edit' ? entityId : null);
-        } else if (modalId === 'subcategoryModal') {
-            const contextCategoryId = categoryIdAttr
-                || state.filters.subcategoryCategory
-                || state.categories[0]?.id
-                || '';
-            populateSubcategoryModal(contextCategoryId, mode === 'edit' ? entityId : null);
-        } else if (modalId === 'paymentSettingsModal' && entityId) {
+        if (modalId === "categoryModal") {
+            populateCategoryModal(mode === "edit" ? entityId : null);
+        } else if (modalId === "addProductModal") {
+            populateProductModal(mode === "edit" ? entityId : null);
+        } else if (modalId === "subcategoryModal") {
+            const contextCategoryId =
+                categoryIdAttr ||
+                state.filters.subcategoryCategory ||
+                state.categories[0]?.id ||
+                "";
+            populateSubcategoryModal(
+                contextCategoryId,
+                mode === "edit" ? entityId : null,
+            );
+        } else if (modalId === "paymentSettingsModal" && entityId) {
             populatePaymentSettingsModal(entityId);
-        } else if (modalId === 'bannerModal') {
-            if (mode === 'edit' && entityId) {
+        } else if (modalId === "bannerModal") {
+            if (mode === "edit" && entityId) {
                 populateBannerModal(entityId);
             } else {
                 prepareBannerCreateForm();
@@ -9279,84 +10629,89 @@ document.addEventListener('click', function (e) {
 
         if (entity) {
             const labels = {
-                product: 'منتج',
-                category: 'فئة',
-                promotion: 'عرض ترويجي',
-                coupon: 'قسيمة',
-                banner: 'بانر',
-                feature: 'ميزة',
-                user: 'مستخدم',
-                payment: 'طريقة دفع'
+                product: "منتج",
+                category: "فئة",
+                promotion: "عرض ترويجي",
+                coupon: "قسيمة",
+                banner: "بانر",
+                feature: "ميزة",
+                user: "مستخدم",
+                payment: "طريقة دفع",
             };
-            const actionLabel = mode === 'edit' ? `تعديل ${labels[entity] || 'عنصر'}` : `إضافة ${labels[entity] || 'عنصر'} جديد`;
-            showToast('info', actionLabel, 'تم فتح النموذج بنجاح');
+            const actionLabel =
+                mode === "edit"
+                    ? `تعديل ${labels[entity] || "عنصر"}`
+                    : `إضافة ${labels[entity] || "عنصر"} جديد`;
+            showToast("info", actionLabel, "تم فتح النموذج بنجاح");
         }
 
-        if (modalId === 'customerProfileModal' && customerId) {
+        if (modalId === "customerProfileModal" && customerId) {
             populateCustomerProfile(customerId);
-            showToast('info', 'ملف العميل', 'تم عرض ملف العميل بنجاح');
-        } else if (modalId === 'customerOrdersModal' && customerId) {
+            showToast("info", "ملف العميل", "تم عرض ملف العميل بنجاح");
+        } else if (modalId === "customerOrdersModal" && customerId) {
             populateCustomerOrders(customerId);
-            showToast('info', 'طلبات العميل', 'تم تحميل طلبات العميل');
+            showToast("info", "طلبات العميل", "تم تحميل طلبات العميل");
         }
         return;
     }
 
     // Export Buttons
-    if (e.target.closest('#exportOrdersBtn')) {
+    if (e.target.closest("#exportOrdersBtn")) {
         e.preventDefault();
         exportOrders();
         return;
     }
 
-    if (e.target.closest('#exportCustomersBtn')) {
+    if (e.target.closest("#exportCustomersBtn")) {
         e.preventDefault();
         exportCustomers();
         return;
     }
 
-    if (e.target.closest('#exportReportBtn')) {
+    if (e.target.closest("#exportReportBtn")) {
         e.preventDefault();
         exportAnalyticsReport();
         return;
     }
 
-    if (e.target.closest('#exportAuditBtn')) {
+    if (e.target.closest("#exportAuditBtn")) {
         e.preventDefault();
         exportAuditLogs();
         return;
     }
 
     // View Order Details
-    if (e.target.closest('.view-order')) {
+    if (e.target.closest(".view-order")) {
         e.preventDefault();
-        const btn = e.target.closest('.view-order');
-        const orderIdAttr = btn?.getAttribute('data-order-id');
-        const row = btn?.closest('tr');
-        const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
+        const btn = e.target.closest(".view-order");
+        const orderIdAttr = btn?.getAttribute("data-order-id");
+        const row = btn?.closest("tr");
+        const fallbackId =
+            row?.dataset.id || row?.querySelector("td:first-child")?.textContent;
         const orderId = normalizeOrderId(orderIdAttr || fallbackId);
 
         if (!orderId) {
-            showToast('error', 'تفاصيل الطلب', 'تعذر تحديد رقم الطلب');
+            showToast("error", "تفاصيل الطلب", "تعذر تحديد رقم الطلب");
             return;
         }
 
         viewOrderDetails(orderId);
-        showToast('info', 'تفاصيل الطلب', `عرض تفاصيل الطلب ${orderId}`);
+        showToast("info", "تفاصيل الطلب", `عرض تفاصيل الطلب ${orderId}`);
         return;
     }
 
     // Print Order Invoice
-    if (e.target.closest('.print-order')) {
+    if (e.target.closest(".print-order")) {
         e.preventDefault();
-        const btn = e.target.closest('.print-order');
-        const orderIdAttr = btn?.getAttribute('data-order-id');
-        const row = btn?.closest('tr');
-        const fallbackId = row?.dataset.id || row?.querySelector('td:first-child')?.textContent;
+        const btn = e.target.closest(".print-order");
+        const orderIdAttr = btn?.getAttribute("data-order-id");
+        const row = btn?.closest("tr");
+        const fallbackId =
+            row?.dataset.id || row?.querySelector("td:first-child")?.textContent;
         const orderId = normalizeOrderId(orderIdAttr || fallbackId);
 
         if (!orderId) {
-            showToast('error', 'طباعة الفاتورة', 'تعذر تحديد رقم الطلب للطباعة');
+            showToast("error", "طباعة الفاتورة", "تعذر تحديد رقم الطلب للطباعة");
             return;
         }
 
@@ -9368,51 +10723,71 @@ document.addEventListener('click', function (e) {
     const refreshBannersBtn = e.target.closest('[data-action="refresh-banners"]');
     if (refreshBannersBtn) {
         e.preventDefault();
-        fetchBanners({ force: true }).then(renderBanners).catch(error => {
-            console.error('❌ Failed to refresh banners:', error);
-            showToast('error', 'تحديث البانرات', 'تعذر تحديث قائمة البانرات.');
-        });
+        fetchBanners({ force: true })
+            .then(renderBanners)
+            .catch((error) => {
+                console.error("❌ Failed to refresh banners:", error);
+                showToast("error", "تحديث البانرات", "تعذر تحديث قائمة البانرات.");
+            });
         return;
     }
 
     const deleteBannerBtn = e.target.closest('[data-action="delete-banner"]');
     if (deleteBannerBtn) {
         e.preventDefault();
-        const bannerId = deleteBannerBtn.getAttribute('data-entity-id');
+        const bannerId = deleteBannerBtn.getAttribute("data-entity-id");
         if (!bannerId) {
-            showToast('error', 'حذف البانر', 'تعذر تحديد البانر المطلوب حذفه');
+            showToast("error", "حذف البانر", "تعذر تحديد البانر المطلوب حذفه");
             return;
         }
 
-        confirmPopup('تأكيد حذف البانر', 'هل أنت متأكد من حذف هذا البانر؟', () => {
-            deleteBanner(bannerId)
-                .then(() => {
-                    showToast('success', 'حذف البانر', 'تم حذف البانر بنجاح');
-                    return fetchBanners({ force: true });
-                })
-                .catch(error => {
-                    console.error('❌ Delete banner error:', error);
-                    showToast('error', 'حذف البانر', error?.message || 'حدث خطأ أثناء حذف البانر');
-                });
-        }, null, 'حذف', 'إلغاء');
+        confirmPopup(
+            "تأكيد حذف البانر",
+            "هل أنت متأكد من حذف هذا البانر؟",
+            () => {
+                deleteBanner(bannerId)
+                    .then(() => {
+                        showToast("success", "حذف البانر", "تم حذف البانر بنجاح");
+                        return fetchBanners({ force: true });
+                    })
+                    .catch((error) => {
+                        console.error("❌ Delete banner error:", error);
+                        showToast(
+                            "error",
+                            "حذف البانر",
+                            error?.message || "حدث خطأ أثناء حذف البانر",
+                        );
+                    });
+            },
+            null,
+            "حذف",
+            "إلغاء",
+        );
         return;
     }
 
     const deleteCategoryBtn = e.target.closest('[data-action="delete-category"]');
     if (deleteCategoryBtn) {
         e.preventDefault();
-        const categoryId = deleteCategoryBtn.getAttribute('data-entity-id');
+        const categoryId = deleteCategoryBtn.getAttribute("data-entity-id");
         if (!categoryId) return;
 
         const category = getCategoryById(categoryId);
         if (!category) {
-            showToast('error', 'حذف الفئة', 'لم يتم العثور على الفئة المحددة');
+            showToast("error", "حذف الفئة", "لم يتم العثور على الفئة المحددة");
             return;
         }
 
-        confirmPopup('تأكيد حذف الفئة', `هل أنت متأكد من حذف الفئة "${category.name}"؟`, () => {
-            deleteCategory(categoryId);
-        }, null, 'حذف', 'إلغاء');
+        confirmPopup(
+            "تأكيد حذف الفئة",
+            `هل أنت متأكد من حذف الفئة "${category.name}"؟`,
+            () => {
+                deleteCategory(categoryId);
+            },
+            null,
+            "حذف",
+            "إلغاء",
+        );
         return;
     }
 
@@ -9420,12 +10795,12 @@ document.addEventListener('click', function (e) {
     const deleteProductBtn = e.target.closest('[data-action="delete-product"]');
     if (deleteProductBtn) {
         e.preventDefault();
-        const productId = deleteProductBtn.getAttribute('data-entity-id');
+        const productId = deleteProductBtn.getAttribute("data-entity-id");
         if (!productId) return;
 
         const product = getProductById(productId);
         if (!product) {
-            showToast('error', 'حذف المنتج', 'لم يتم العثور على المنتج المحدد');
+            showToast("error", "حذف المنتج", "لم يتم العثور على المنتج المحدد");
             return;
         }
 
@@ -9437,10 +10812,10 @@ document.addEventListener('click', function (e) {
     const previewProductBtn = e.target.closest('[data-action="preview-product"]');
     if (previewProductBtn) {
         e.preventDefault();
-        const productId = previewProductBtn.getAttribute('data-entity-id');
+        const productId = previewProductBtn.getAttribute("data-entity-id");
         const product = getProductById(productId);
         if (!product) {
-            showToast('error', 'عرض المنتج', 'لم يتم العثور على المنتج المحدد');
+            showToast("error", "عرض المنتج", "لم يتم العثور على المنتج المحدد");
             return;
         }
 
@@ -9449,80 +10824,88 @@ document.addEventListener('click', function (e) {
     }
 
     // Close mobile sidebar when clicking outside
-    const sidebar = document.getElementById('sidebar');
-    if (window.innerWidth <= 992 && sidebar && sidebar.classList.contains('mobile-active')) {
-        if (!sidebar.contains(e.target) && !e.target.closest('#mobileMenuBtn')) {
-            sidebar.classList.remove('mobile-active');
-            const menuBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById("sidebar");
+    if (
+        window.innerWidth <= 992 &&
+        sidebar &&
+        sidebar.classList.contains("mobile-active")
+    ) {
+        if (!sidebar.contains(e.target) && !e.target.closest("#mobileMenuBtn")) {
+            sidebar.classList.remove("mobile-active");
+            const menuBtn = document.getElementById("mobileMenuBtn");
             if (menuBtn) {
                 menuBtn.innerHTML = '<i class="fas fa-bars"></i>';
             }
-            document.body.classList.remove('sidebar-open');
-            const overlay = document.getElementById('sidebarOverlay');
+            document.body.classList.remove("sidebar-open");
+            const overlay = document.getElementById("sidebarOverlay");
             if (overlay) {
                 overlay.hidden = true;
-                overlay.style.opacity = '0';
+                overlay.style.opacity = "0";
             }
         }
     }
 
-    if (e.target.closest('#sidebarOverlay')) {
+    if (e.target.closest("#sidebarOverlay")) {
         e.preventDefault();
         toggleSidebar(false);
         return;
     }
 
     // Toggle messages panel
-    if (e.target.closest('#messagesBtn')) {
+    if (e.target.closest("#messagesBtn")) {
         e.preventDefault();
         toggleMessagesPanel();
         return;
     }
 
-    if (e.target.closest('#closeMessagesPanel')) {
+    if (e.target.closest("#closeMessagesPanel")) {
         e.preventDefault();
         toggleMessagesPanel(false);
         return;
     }
 
-    if (e.target.closest('#markAllMessagesRead')) {
+    if (e.target.closest("#markAllMessagesRead")) {
         e.preventDefault();
         markMessagesAsRead();
-        showToast('success', 'الرسائل', 'تم تعيين جميع الرسائل كمقروءة');
+        showToast("success", "الرسائل", "تم تعيين جميع الرسائل كمقروءة");
         return;
     }
 
-    if (e.target.id === 'messagesOverlay') {
+    if (e.target.id === "messagesOverlay") {
         toggleMessagesPanel(false);
         return;
     }
 
     if (window.innerWidth > 992) {
-        const panel = document.getElementById('messagesPanel');
-        if (panel?.classList.contains('active') && !panel.contains(e.target) && !e.target.closest('#messagesBtn')) {
+        const panel = document.getElementById("messagesPanel");
+        if (
+            panel?.classList.contains("active") &&
+            !panel.contains(e.target) &&
+            !e.target.closest("#messagesBtn")
+        ) {
             toggleMessagesPanel(false);
         }
     }
 
-    const messageActionBtn = e.target.closest('[data-action][data-message-id]');
+    const messageActionBtn = e.target.closest("[data-action][data-message-id]");
     if (messageActionBtn) {
-        const action = messageActionBtn.getAttribute('data-action');
-        const messageId = messageActionBtn.getAttribute('data-message-id');
+        const action = messageActionBtn.getAttribute("data-action");
+        const messageId = messageActionBtn.getAttribute("data-message-id");
         handleMessageAction(action, messageId);
         return;
     }
 });
 
-document.addEventListener('input', function (e) {
-    if (e.target.id === 'messagesSearchInput') {
-        renderMessagesList(e.target.value || '');
+document.addEventListener("input", function (e) {
+    if (e.target.id === "messagesSearchInput") {
+        renderMessagesList(e.target.value || "");
     }
 });
 
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-        const panel = document.getElementById('messagesPanel');
-        if (panel?.classList.contains('active')) {
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+        const panel = document.getElementById("messagesPanel");
+        if (panel?.classList.contains("active")) {
             toggleMessagesPanel(false);
         }
     }
@@ -9532,17 +10915,17 @@ document.addEventListener('keydown', function (e) {
 async function uploadImages(files) {
     if (!files || !files.length) return [];
 
-    const UPLOAD_ENDPOINT = '/api/upload';
+    const UPLOAD_ENDPOINT = "/api/upload";
     const uploadedUrls = [];
 
     try {
         for (const file of files) {
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append("image", file);
 
             const response = await authorizedFetch(UPLOAD_ENDPOINT, {
-                method: 'POST',
-                body: formData
+                method: "POST",
+                body: formData,
             });
 
             if (!response.ok) {
@@ -9554,22 +10937,26 @@ async function uploadImages(files) {
                 uploadedUrls.push({
                     url: result.url,
                     alt: file.name,
-                    isMain: uploadedUrls.length === 0 // أول صورة تكون رئيسية
+                    isMain: uploadedUrls.length === 0, // أول صورة تكون رئيسية
                 });
             }
         }
 
         return uploadedUrls;
     } catch (error) {
-        console.error('❌ Failed to upload images:', error);
-        showToast('error', 'خطأ في رفع الصور', error.message || 'حدث خطأ أثناء رفع الصور');
+        console.error("❌ Failed to upload images:", error);
+        showToast(
+            "error",
+            "خطأ في رفع الصور",
+            error.message || "حدث خطأ أثناء رفع الصور",
+        );
         throw error;
     }
 }
 
 // ===== Toggle Switches =====
-document.addEventListener('change', async function (e) {
-    if (e.target.matches('#subcategoryCategoryFilter')) {
+document.addEventListener("change", async function (e) {
+    if (e.target.matches("#subcategoryCategoryFilter")) {
         const selectedCategoryId = e.target.value;
         state.filters.subcategoryCategory = selectedCategoryId;
         if (selectedCategoryId) {
@@ -9579,40 +10966,57 @@ document.addEventListener('change', async function (e) {
         return;
     }
 
-    if (e.target.matches('#subcategoryImage')) {
+    if (e.target.matches("#subcategoryImage")) {
         handleSubcategoryImageChange(e);
         return;
     }
 
-    if (e.target.matches('.toggle-switch input')) {
+    if (e.target.matches(".toggle-switch input")) {
         const toggleInput = e.target;
-        const parent = toggleInput.closest('.payment-method-card');
+        const parent = toggleInput.closest(".payment-method-card");
         if (!parent) return;
 
-        const paymentId = parent.getAttribute('data-payment-id');
+        const paymentId = parent.getAttribute("data-payment-id");
         if (!paymentId) {
-            console.warn('⚠️ لم يتم تحديد معرف طريقة الدفع للزر.', parent);
+            console.warn("⚠️ لم يتم تحديد معرف طريقة الدفع للزر.", parent);
             return;
         }
 
-        const methodName = parent.querySelector('h3')?.textContent || 'طريقة الدفع';
+        const methodName = parent.querySelector("h3")?.textContent || "طريقة الدفع";
         const enabled = toggleInput.checked;
         const previousStateAttr = parent.dataset.enabled;
-        const previousState = typeof previousStateAttr === 'string'
-            ? previousStateAttr === 'true'
-            : !enabled;
+        const previousState =
+            typeof previousStateAttr === "string"
+                ? previousStateAttr === "true"
+                : !enabled;
 
         toggleInput.disabled = true;
-        showToast('info', 'جاري التحديث', `يتم الآن ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName}...`);
+        showToast(
+            "info",
+            "جاري التحديث",
+            `يتم الآن ${enabled ? "تفعيل" : "إلغاء تفعيل"} ${methodName}...`,
+        );
 
         try {
             await togglePaymentMethod(paymentId, enabled);
             setPaymentToggleState(toggleInput, enabled);
-            showToast('success', 'تم التحديث', `تم ${enabled ? 'تفعيل' : 'إلغاء تفعيل'} ${methodName} بنجاح`);
+            showToast(
+                "success",
+                "تم التحديث",
+                `تم ${enabled ? "تفعيل" : "إلغاء تفعيل"} ${methodName} بنجاح`,
+            );
         } catch (error) {
-            console.error('❌ فشل تحديث حالة طريقة الدفع:', { paymentId, enabled, error });
+            console.error("❌ فشل تحديث حالة طريقة الدفع:", {
+                paymentId,
+                enabled,
+                error,
+            });
             setPaymentToggleState(toggleInput, previousState);
-            showToast('error', 'خطأ في التحديث', error?.message || 'تعذر تحديث حالة طريقة الدفع. يرجى المحاولة مرة أخرى');
+            showToast(
+                "error",
+                "خطأ في التحديث",
+                error?.message || "تعذر تحديث حالة طريقة الدفع. يرجى المحاولة مرة أخرى",
+            );
         } finally {
             toggleInput.disabled = false;
         }
@@ -9620,8 +11024,8 @@ document.addEventListener('change', async function (e) {
 });
 
 // ===== Image Upload Areas =====
-document.addEventListener('click', function (e) {
-    const uploadArea = e.target.closest('.image-upload-area');
+document.addEventListener("click", function (e) {
+    const uploadArea = e.target.closest(".image-upload-area");
     if (uploadArea && !e.target.matches('input[type="file"]')) {
         const input = uploadArea.querySelector('input[type="file"]');
         if (input) {
@@ -9630,19 +11034,18 @@ document.addEventListener('click', function (e) {
     }
 });
 
-document.addEventListener('change', function (e) {
+document.addEventListener("change", function (e) {
     if (e.target.matches('.image-upload-area input[type="file"]')) {
         const files = e.target.files;
         if (files.length > 0) {
-            showToast('success', 'تحميل الصور', `تم اختيار ${files.length} صورة`);
+            showToast("success", "تحميل الصور", `تم اختيار ${files.length} صورة`);
         }
     }
 });
 
 // ===== Initialize =====
 // نقطة البداية الرئيسية عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function () {
-
+document.addEventListener("DOMContentLoaded", function () {
     // تهيئة السمة (الوضع الفاتح/الداكن)
     initTheme();
 
@@ -9652,7 +11055,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // تحميل الرسوم البيانية الأولية بعد تأخير قصير
     setTimeout(() => {
-        if (state.currentSection === 'overview') {
+        if (state.currentSection === "overview") {
             loadOverviewCharts();
             chartsLoaded.overview = true;
         }
@@ -9661,7 +11064,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // تهيئة الفلاتر والبيانات
     hydrateFilters();
     // ⭐ LAZY LOADING: Render HTML structure but data loads lazily
-    renderDashboard();  // Sets up empty HTML structure for all sections
+    renderDashboard(); // Sets up empty HTML structure for all sections
     setupProductFilters();
 
     // جلب الفئات مباشرة عند التهيئة (لـ product form)
@@ -9669,93 +11072,106 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchBrands();
 
     // ربط حدث إرسال نموذج الفئة
-    const categoryForm = document.getElementById('categoryForm');
+    const categoryForm = document.getElementById("categoryForm");
     if (categoryForm) {
-        categoryForm.addEventListener('submit', handleCategoryFormSubmit);
+        categoryForm.addEventListener("submit", handleCategoryFormSubmit);
     }
 
     // ربط حدث تغيير صورة الفئة
-    const categoryImageInput = document.getElementById('categoryImage');
+    const categoryImageInput = document.getElementById("categoryImage");
     if (categoryImageInput) {
-        categoryImageInput.addEventListener('change', handleCategoryImageChange);
+        categoryImageInput.addEventListener("change", handleCategoryImageChange);
     }
 
-    const subcategoryForm = document.getElementById('subcategoryForm');
+    const subcategoryForm = document.getElementById("subcategoryForm");
     if (subcategoryForm) {
-        subcategoryForm.addEventListener('submit', handleSubcategoryFormSubmit);
+        subcategoryForm.addEventListener("submit", handleSubcategoryFormSubmit);
     }
 
-    const subcategoryImageInput = document.getElementById('subcategoryImage');
+    const subcategoryImageInput = document.getElementById("subcategoryImage");
     if (subcategoryImageInput) {
-        subcategoryImageInput.addEventListener('change', handleSubcategoryImageChange);
+        subcategoryImageInput.addEventListener(
+            "change",
+            handleSubcategoryImageChange,
+        );
     }
 
     // ربط حدث إرسال نموذج العلامة التجارية
-    const brandForm = document.getElementById('brandForm');
+    const brandForm = document.getElementById("brandForm");
     if (brandForm) {
-        brandForm.addEventListener('submit', handleBrandFormSubmit);
+        brandForm.addEventListener("submit", handleBrandFormSubmit);
     }
 
     // ربط حدث تغيير صورة العلامة التجارية
-    const brandImageInput = document.getElementById('brandImage');
+    const brandImageInput = document.getElementById("brandImage");
     if (brandImageInput) {
-        brandImageInput.addEventListener('change', handleBrandImageChange);
+        brandImageInput.addEventListener("change", handleBrandImageChange);
     }
 
-    const bannerForm = document.getElementById('bannerForm');
+    const bannerForm = document.getElementById("bannerForm");
     if (bannerForm) {
-        bannerForm.addEventListener('submit', handleBannerFormSubmit);
+        bannerForm.addEventListener("submit", handleBannerFormSubmit);
     }
 
-    const bannerImageInput = document.getElementById('bannerImage');
+    const bannerImageInput = document.getElementById("bannerImage");
     if (bannerImageInput) {
-        bannerImageInput.addEventListener('change', handleBannerImageChange);
+        bannerImageInput.addEventListener("change", handleBannerImageChange);
     }
 
     prepareBannerCreateForm();
 
     // ربط حدث البحث في العلامات التجارية
-    const brandSearchInput = document.getElementById('brandSearch');
+    const brandSearchInput = document.getElementById("brandSearch");
     if (brandSearchInput) {
-        brandSearchInput.addEventListener('input', (e) => {
+        brandSearchInput.addEventListener("input", (e) => {
             state.filters.brandSearch = e.target.value;
             renderBrands();
         });
     }
 
-    const productForm = document.getElementById('productForm');
+    const productForm = document.getElementById("productForm");
     if (productForm) {
-        productForm.addEventListener('submit', handleProductFormSubmit);
-        const productImageInput = productForm.querySelector('#productImage');
+        productForm.addEventListener("submit", handleProductFormSubmit);
+        const productImageInput = productForm.querySelector("#productImage");
         if (productImageInput) {
-            productImageInput.addEventListener('change', handleProductImageChange);
+            productImageInput.addEventListener("change", handleProductImageChange);
         }
     }
 
-    const changePasswordForm = document.getElementById('changePasswordForm');
+    const changePasswordForm = document.getElementById("changePasswordForm");
     if (changePasswordForm) {
-        changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
+        changePasswordForm.addEventListener("submit", handleChangePasswordSubmit);
     }
 
-    const createAdminForm = document.getElementById('createAdminForm');
+    const createAdminForm = document.getElementById("createAdminForm");
     if (createAdminForm) {
-        createAdminForm.addEventListener('submit', handleCreateAdminSubmit);
+        createAdminForm.addEventListener("submit", handleCreateAdminSubmit);
     }
 
-    const shippingSettingsForm = document.getElementById('shippingSettingsForm');
-    const shippingZoneSelect = document.getElementById('shippingZoneSelect');
-    const shippingZoneDeleteBtn = document.getElementById('shippingZoneDeleteBtn');
-    const shippingZoneCreateContainer = document.getElementById('shippingZoneCreateContainer');
-    const shippingZoneCreateToggle = document.getElementById('shippingZoneCreateToggle');
-    const shippingZoneCreateCancel = document.getElementById('shippingZoneCreateCancel');
+    const shippingSettingsForm = document.getElementById("shippingSettingsForm");
+    const shippingZoneSelect = document.getElementById("shippingZoneSelect");
+    const shippingZoneDeleteBtn = document.getElementById(
+        "shippingZoneDeleteBtn",
+    );
+    const shippingZoneCreateContainer = document.getElementById(
+        "shippingZoneCreateContainer",
+    );
+    const shippingZoneCreateToggle = document.getElementById(
+        "shippingZoneCreateToggle",
+    );
+    const shippingZoneCreateCancel = document.getElementById(
+        "shippingZoneCreateCancel",
+    );
 
     if (shippingZoneSelect) {
-        shippingZoneSelect.addEventListener('change', (event) => {
+        shippingZoneSelect.addEventListener("change", (event) => {
             const zoneId = event.target.value;
             state.selectedShippingZoneId = zoneId;
             const zone = getShippingZoneById(zoneId);
-            const rateInput = document.getElementById('shippingZoneRate');
-            const installationCheckbox = document.getElementById('shippingZoneInstallation');
+            const rateInput = document.getElementById("shippingZoneRate");
+            const installationCheckbox = document.getElementById(
+                "shippingZoneInstallation",
+            );
             if (zone && rateInput && document.activeElement !== rateInput) {
                 rateInput.value = zone.shippingRate;
             }
@@ -9767,7 +11183,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (shippingSettingsForm) {
-        shippingSettingsForm.addEventListener('submit', handleShippingSettingsSubmit);
+        shippingSettingsForm.addEventListener(
+            "submit",
+            handleShippingSettingsSubmit,
+        );
     }
 
     const setCreateZoneVisibility = (visible = false) => {
@@ -9775,107 +11194,144 @@ document.addEventListener('DOMContentLoaded', function () {
         shippingZoneCreateContainer.hidden = !visible;
 
         if (shippingZoneCreateToggle) {
-            shippingZoneCreateToggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
+            shippingZoneCreateToggle.setAttribute(
+                "aria-expanded",
+                visible ? "true" : "false",
+            );
             shippingZoneCreateToggle.innerHTML = visible
                 ? '<i class="fas fa-times"></i> إخفاء نموذج الإضافة'
                 : '<i class="fas fa-plus"></i> إضافة منطقة جديدة';
         }
 
         if (!visible) {
-            const form = shippingZoneCreateContainer.querySelector('#shippingZoneCreateForm');
+            const form = shippingZoneCreateContainer.querySelector(
+                "#shippingZoneCreateForm",
+            );
             form?.reset();
         }
     };
 
     if (shippingZoneCreateToggle) {
-        shippingZoneCreateToggle.addEventListener('click', () => {
+        shippingZoneCreateToggle.addEventListener("click", () => {
             const shouldShow = shippingZoneCreateContainer?.hidden !== false;
             setCreateZoneVisibility(shouldShow);
             if (shouldShow) {
-                shippingZoneCreateContainer?.querySelector('#newShippingZoneNameAr')?.focus();
+                shippingZoneCreateContainer
+                    ?.querySelector("#newShippingZoneNameAr")
+                    ?.focus();
             }
         });
         setCreateZoneVisibility(false);
     }
 
     if (shippingZoneCreateCancel) {
-        shippingZoneCreateCancel.addEventListener('click', () => {
+        shippingZoneCreateCancel.addEventListener("click", () => {
             setCreateZoneVisibility(false);
         });
     }
 
     if (shippingZoneDeleteBtn) {
-        shippingZoneDeleteBtn.addEventListener('click', async () => {
+        shippingZoneDeleteBtn.addEventListener("click", async () => {
             const zoneId = state.selectedShippingZoneId || shippingZoneSelect?.value;
             if (!zoneId) {
-                showToast('error', 'حذف منطقة الشحن', 'يرجى اختيار المنطقة المراد حذفها');
+                showToast(
+                    "error",
+                    "حذف منطقة الشحن",
+                    "يرجى اختيار المنطقة المراد حذفها",
+                );
                 return;
             }
 
             const zone = getShippingZoneById(zoneId);
-            const zoneLabel = zone?.zoneName || 'هذه المنطقة';
+            const zoneLabel = zone?.zoneName || "هذه المنطقة";
 
-            confirmPopup('تأكيد حذف منطقة الشحن', `هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`, async () => {
-                shippingZoneDeleteBtn.disabled = true;
-                shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
+            confirmPopup(
+                "تأكيد حذف منطقة الشحن",
+                `هل أنت متأكد من حذف "${zoneLabel}"؟ لا يمكن التراجع عن هذه العملية.`,
+                async () => {
+                    shippingZoneDeleteBtn.disabled = true;
+                    shippingZoneDeleteBtn.innerHTML =
+                        '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
 
-                try {
-                    await deleteShippingZone(zoneId);
-                } catch (error) {
-                    console.error('❌ Delete shipping zone failed:', error);
-                } finally {
-                    shippingZoneDeleteBtn.disabled = false;
-                    shippingZoneDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف المنطقة';
-                }
-            }, null, 'حذف', 'إلغاء');
+                    try {
+                        await deleteShippingZone(zoneId);
+                    } catch (error) {
+                        console.error("❌ Delete shipping zone failed:", error);
+                    } finally {
+                        shippingZoneDeleteBtn.disabled = false;
+                        shippingZoneDeleteBtn.innerHTML =
+                            '<i class="fas fa-trash"></i> حذف المنطقة';
+                    }
+                },
+                null,
+                "حذف",
+                "إلغاء",
+            );
         });
     }
 
-    const shippingZoneCreateForm = document.getElementById('shippingZoneCreateForm');
+    const shippingZoneCreateForm = document.getElementById(
+        "shippingZoneCreateForm",
+    );
     if (shippingZoneCreateForm) {
-        shippingZoneCreateForm.addEventListener('submit', async (event) => {
+        shippingZoneCreateForm.addEventListener("submit", async (event) => {
             event.preventDefault();
 
             const form = event.target;
-            const nameArInput = form.querySelector('#newShippingZoneNameAr');
-            const nameEnInput = form.querySelector('#newShippingZoneNameEn');
-            const rateInput = form.querySelector('#newShippingZoneRate');
-            const submitBtn = form.querySelector('#shippingZoneCreateSubmit');
+            const nameArInput = form.querySelector("#newShippingZoneNameAr");
+            const nameEnInput = form.querySelector("#newShippingZoneNameEn");
+            const rateInput = form.querySelector("#newShippingZoneRate");
+            const submitBtn = form.querySelector("#shippingZoneCreateSubmit");
 
             const nameAr = nameArInput?.value?.trim();
             const nameEn = nameEnInput?.value?.trim();
             const shippingRate = rateInput?.value;
 
             if (!nameAr) {
-                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالعربية');
+                showToast(
+                    "error",
+                    "إضافة منطقة الشحن",
+                    "يرجى إدخال اسم المنطقة بالعربية",
+                );
                 nameArInput?.focus();
                 return;
             }
 
             if (!nameEn) {
-                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال اسم المنطقة بالإنجليزية');
+                showToast(
+                    "error",
+                    "إضافة منطقة الشحن",
+                    "يرجى إدخال اسم المنطقة بالإنجليزية",
+                );
                 nameEnInput?.focus();
                 return;
             }
 
             const numericRate = Number(shippingRate);
             if (!Number.isFinite(numericRate) || numericRate < 0) {
-                showToast('error', 'إضافة منطقة الشحن', 'يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)');
+                showToast(
+                    "error",
+                    "إضافة منطقة الشحن",
+                    "يرجى إدخال تكلفة شحن صحيحة (0 أو أكبر)",
+                );
                 rateInput?.focus();
                 return;
             }
 
-            const originalState = submitBtn ? { disabled: submitBtn.disabled, label: submitBtn.innerHTML } : null;
+            const originalState = submitBtn
+                ? { disabled: submitBtn.disabled, label: submitBtn.innerHTML }
+                : null;
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإضافة...';
+                submitBtn.innerHTML =
+                    '<i class="fas fa-spinner fa-spin"></i> جاري الإضافة...';
             }
 
             try {
                 await createShippingZone(nameAr, nameEn, numericRate);
                 setCreateZoneVisibility(false);
             } catch (error) {
-                console.error('❌ Create shipping zone failed:', error);
+                console.error("❌ Create shipping zone failed:", error);
             } finally {
                 if (submitBtn && originalState) {
                     submitBtn.disabled = originalState.disabled;
@@ -9885,19 +11341,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.querySelectorAll('.toggle-password').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.getAttribute('data-target');
-            const input = targetId ? document.getElementById(targetId) : btn.previousElementSibling;
+    document.querySelectorAll(".toggle-password").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-target");
+            const input = targetId
+                ? document.getElementById(targetId)
+                : btn.previousElementSibling;
             if (!input) return;
-            const isPassword = input.type === 'password';
-            input.type = isPassword ? 'text' : 'password';
-            const icon = btn.querySelector('i');
+            const isPassword = input.type === "password";
+            input.type = isPassword ? "text" : "password";
+            const icon = btn.querySelector("i");
             if (icon) {
-                icon.classList.toggle('fa-eye', !isPassword);
-                icon.classList.toggle('fa-eye-slash', isPassword);
+                icon.classList.toggle("fa-eye", !isPassword);
+                icon.classList.toggle("fa-eye-slash", isPassword);
             }
-            btn.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
+            btn.setAttribute("aria-pressed", isPassword ? "true" : "false");
         });
     });
 
@@ -9914,15 +11372,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // عرض رسالة ترحيب بعد تأخير قصير
     setTimeout(() => {
-        showToast('success', 'مرحباً بك', 'تم تسجيل الدخول بنجاح إلى لوحة التحكم');
+        showToast("success", "مرحباً بك", "تم تسجيل الدخول بنجاح إلى لوحة التحكم");
     }, 500);
 
-    const authBtn = document.getElementById('authBtn');
+    const authBtn = document.getElementById("authBtn");
     if (authBtn && window.adminAuth) {
-        authBtn.addEventListener('click', () => {
+        authBtn.addEventListener("click", () => {
             authBtn.disabled = true;
-            authBtn.classList.add('is-loading');
-            showToast('info', 'تسجيل الخروج', 'جاري إنهاء الجلسة...');
+            authBtn.classList.add("is-loading");
+            showToast("info", "تسجيل الخروج", "جاري إنهاء الجلسة...");
             setTimeout(() => {
                 window.adminAuth.logout();
             }, 300);
@@ -9934,8 +11392,7 @@ window.updateOrderStatusOptions = getOrderStatusOptions;
 window.changeOrderStatus = changeOrderStatus;
 
 // ===== Window Resize Handler =====
-window.addEventListener('resize', createMobileMenu);
-
+window.addEventListener("resize", createMobileMenu);
 
 // ========================================
 // ===== 10. دوال معالجة الطلبات =====
@@ -9947,8 +11404,6 @@ window.addEventListener('resize', createMobileMenu);
  * @returns {Array} - مصفوفة الطلبات المطبعة
  */
 function normalizeOrdersPayload(payload) {
-
-
     if (!payload) return [];
 
     // محاولة استخراج المصفوفة من أماكن مختلفة في الاستجابة
@@ -9958,13 +11413,12 @@ function normalizeOrdersPayload(payload) {
         payload?.orders,
         payload?.documents,
         payload?.data,
-        Array.isArray(payload) ? payload : null
+        Array.isArray(payload) ? payload : null,
     ];
 
     const source = candidates.find(Array.isArray) || [];
 
-
-    return source.map(order => normalizeOrderEntity(order)).filter(Boolean);
+    return source.map((order) => normalizeOrderEntity(order)).filter(Boolean);
 }
 
 /**
@@ -9973,7 +11427,7 @@ function normalizeOrdersPayload(payload) {
  * @returns {Object|null} - الطلب المطبع
  */
 function normalizeOrderEntity(order = {}) {
-    if (!order || typeof order !== 'object') return null;
+    if (!order || typeof order !== "object") return null;
 
     const id = order._id || order.id || order.orderId || order.order_id;
 
@@ -9988,44 +11442,52 @@ function normalizeOrderEntity(order = {}) {
     // استخراج عناصر الطلب وتحويلها للتنسيق المطلوب
     const items = extractOrderItems(order);
 
-    const totalSource = order.totalOrderPrice
-        ?? order.totalAmount
-        ?? order.total
-        ?? order.amount
-        ?? order.summary?.total
-        ?? order.raw?.total
-        ?? 0;
+    const totalSource =
+        order.totalOrderPrice ??
+        order.totalAmount ??
+        order.total ??
+        order.amount ??
+        order.summary?.total ??
+        order.raw?.total ??
+        0;
     const total = Number(totalSource);
 
     // تحويل cartItems إلى itemsDetails بالتنسيق الصحيح
     const itemsDetails = Array.isArray(order.cartItems)
-        ? order.cartItems.map(item => ({
-            name: item.productId?.name || item.name || 'منتج',
+        ? order.cartItems.map((item) => ({
+            name: item.productId?.name || item.name || "منتج",
             quantity: item.qty || item.quantity || 1,
             price: item.unitPrice || item.price || 0,
-            image: item.productId?.images?.[0]?.secure_url || '',
+            image: item.productId?.images?.[0]?.secure_url || "",
             product: {
-                name: item.productId?.name || item.name || 'منتج',
-                _id: item.productId?._id || item.productId || ''
-            }
+                name: item.productId?.name || item.name || "منتج",
+                _id: item.productId?._id || item.productId || "",
+            },
         }))
         : [];
 
     const status = resolveOrderStatus(order);
-    const payment = order.paymentMethod || order.payment_method || order.payment || 'نقدي';
-    const createdAtSource = order.createdAt || order.created_at || order.date || order.createdDate;
+    const payment =
+        order.paymentMethod || order.payment_method || order.payment || "نقدي";
+    const createdAtSource =
+        order.createdAt || order.created_at || order.date || order.createdDate;
     const createdAtDate = parseDateValue(createdAtSource);
-    const dateDisplay = createdAtDate ? formatDate(createdAtDate) : '-';
-    const dateValue = createdAtDate ? createdAtDate.toISOString() : '';
+    const dateDisplay = createdAtDate ? formatDate(createdAtDate) : "-";
+    const dateValue = createdAtDate ? createdAtDate.toISOString() : "";
 
-    const shippingSource = order.shippingAddress || order.shipping || order.deliveryAddress || order.raw?.shippingAddress || order.raw?.shipping;
+    const shippingSource =
+        order.shippingAddress ||
+        order.shipping ||
+        order.deliveryAddress ||
+        order.raw?.shippingAddress ||
+        order.raw?.shipping;
     const shipping = normalizeOrderShipping(shippingSource, order);
 
     return {
         id: String(id),
-        customer: customer.name || 'غير معروف',
-        customerEmail: customer.email || '',
-        customerPhone: customer.phone || '',
+        customer: customer.name || "غير معروف",
+        customerEmail: customer.email || "",
+        customerPhone: customer.phone || "",
         total: Number(total) || 0,
         items: items.totalCount,
         itemsDetails: itemsDetails,
@@ -10042,16 +11504,20 @@ function normalizeOrderEntity(order = {}) {
         isPaid: order.isPaid || false,
         isDelivered: order.isDelivered || false,
         isCanceled: order.isCanceled || false,
-        raw: order
+        raw: order,
     };
 }
 
 function resolveShippingText(value) {
-    if (value === null || value === undefined) return '';
+    if (value === null || value === undefined) return "";
 
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+    ) {
         const text = String(value).trim();
-        if (!text || text === '[object Object]') return '';
+        if (!text || text === "[object Object]") return "";
         return text;
     }
 
@@ -10060,18 +11526,39 @@ function resolveShippingText(value) {
             const resolved = resolveShippingText(entry);
             if (resolved) return resolved;
         }
-        return '';
+        return "";
     }
 
-    if (typeof value === 'object') {
+    if (typeof value === "object") {
         const candidates = [
-            value.zoneName, value.nameAr, value.name_ar, value['name-ar'], value.nameAR,
-            value.nameEn, value.name_en, value['name-en'], value.name,
-            value.label, value.title, value.displayName, value.display_name,
-            value.ar, value.arabic, value.en, value.english,
-            value.city, value.cityName, value.region, value.regionName, value.country,
-            value.details, value.address, value.addressLine1, value.addressLine2,
-            value.street, value.value
+            value.zoneName,
+            value.nameAr,
+            value.name_ar,
+            value["name-ar"],
+            value.nameAR,
+            value.nameEn,
+            value.name_en,
+            value["name-en"],
+            value.name,
+            value.label,
+            value.title,
+            value.displayName,
+            value.display_name,
+            value.ar,
+            value.arabic,
+            value.en,
+            value.english,
+            value.city,
+            value.cityName,
+            value.region,
+            value.regionName,
+            value.country,
+            value.details,
+            value.address,
+            value.addressLine1,
+            value.addressLine2,
+            value.street,
+            value.value,
         ];
 
         for (const candidate of candidates) {
@@ -10080,40 +11567,57 @@ function resolveShippingText(value) {
         }
     }
 
-    return '';
+    return "";
 }
 
 function resolveShippingZone(rawOrder = {}, shippingObj = {}) {
-    const directZone = shippingObj.shippingZone || shippingObj.zone || shippingObj.area || shippingObj.region || shippingObj.shipping;
-    const rawZone = rawOrder.shippingZone || rawOrder.zone || rawOrder.shipping_area;
+    const directZone =
+        shippingObj.shippingZone ||
+        shippingObj.zone ||
+        shippingObj.area ||
+        shippingObj.region ||
+        shippingObj.shipping;
+    const rawZone =
+        rawOrder.shippingZone || rawOrder.zone || rawOrder.shipping_area;
 
     const zoneCandidate = directZone || rawZone;
     if (!zoneCandidate) {
-        return { zoneName: '', shippingRate: null, zoneId: '' };
+        return { zoneName: "", shippingRate: null, zoneId: "" };
     }
 
-    const zoneName = resolveShippingText(zoneCandidate) || resolveShippingText(zoneCandidate?.name) || '';
-    const rateCandidate = zoneCandidate?.shippingRate
-        ?? zoneCandidate?.rate
-        ?? zoneCandidate?.price
-        ?? zoneCandidate?.cost
-        ?? shippingObj?.shippingRate
-        ?? shippingObj?.shippingCost
-        ?? rawOrder.shippingCost
-        ?? rawOrder.shippingFee
-        ?? rawOrder.deliveryFee
-        ?? rawOrder.deliveryCost
-        ?? null;
+    const zoneName =
+        resolveShippingText(zoneCandidate) ||
+        resolveShippingText(zoneCandidate?.name) ||
+        "";
+    const rateCandidate =
+        zoneCandidate?.shippingRate ??
+        zoneCandidate?.rate ??
+        zoneCandidate?.price ??
+        zoneCandidate?.cost ??
+        shippingObj?.shippingRate ??
+        shippingObj?.shippingCost ??
+        rawOrder.shippingCost ??
+        rawOrder.shippingFee ??
+        rawOrder.deliveryFee ??
+        rawOrder.deliveryCost ??
+        null;
 
     const numericRate = Number(rateCandidate);
-    const shippingRate = Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
+    const shippingRate =
+        Number.isFinite(numericRate) && numericRate >= 0 ? numericRate : null;
 
-    const zoneId = zoneCandidate?.id || zoneCandidate?._id || shippingObj?.zoneId || rawOrder.shippingZoneId || rawOrder.zoneId || '';
+    const zoneId =
+        zoneCandidate?.id ||
+        zoneCandidate?._id ||
+        shippingObj?.zoneId ||
+        rawOrder.shippingZoneId ||
+        rawOrder.zoneId ||
+        "";
 
     return {
         zoneName,
         shippingRate,
-        zoneId
+        zoneId,
     };
 }
 
@@ -10125,40 +11629,62 @@ function normalizeOrderShipping(shippingSource, rawOrder = {}) {
         return firstEntry ? normalizeOrderShipping(firstEntry, rawOrder) : null;
     }
 
-    if (typeof shippingSource === 'string' || typeof shippingSource === 'number') {
-        const details = resolveShippingText(shippingSource) || String(shippingSource).trim();
+    if (
+        typeof shippingSource === "string" ||
+        typeof shippingSource === "number"
+    ) {
+        const details =
+            resolveShippingText(shippingSource) || String(shippingSource).trim();
         const zone = resolveShippingZone(rawOrder, {});
         return {
             details,
-            city: '',
-            region: '',
-            postalCode: '',
-            phone: '',
+            city: "",
+            region: "",
+            postalCode: "",
+            phone: "",
             zoneName: zone.zoneName,
             shippingRate: zone.shippingRate,
-            zoneId: zone.zoneId
+            zoneId: zone.zoneId,
         };
     }
 
-    if (typeof shippingSource !== 'object') {
+    if (typeof shippingSource !== "object") {
         return null;
     }
 
     const details = resolveShippingText([
         shippingSource.details,
         shippingSource.address,
-        shippingSource.addressLine1 && `${shippingSource.addressLine1} ${shippingSource.addressLine2 || ''}`.trim(),
+        shippingSource.addressLine1 &&
+        `${shippingSource.addressLine1} ${shippingSource.addressLine2 || ""}`.trim(),
         shippingSource.street,
         shippingSource.location,
         shippingSource.description,
         shippingSource.fullAddress,
-        shippingSource.notes
+        shippingSource.notes,
     ]);
 
-    const city = resolveShippingText([shippingSource.city, shippingSource.cityName, shippingSource.cityAr, shippingSource.cityEn]);
-    const region = resolveShippingText([shippingSource.region, shippingSource.state, shippingSource.governorate, shippingSource.zone, shippingSource.area]);
-    const postalCode = resolveShippingText(shippingSource.postalCode || shippingSource.zip || shippingSource.zipCode);
-    const phone = resolveShippingText(shippingSource.phone || shippingSource.mobile || shippingSource.contactPhone);
+    const city = resolveShippingText([
+        shippingSource.city,
+        shippingSource.cityName,
+        shippingSource.cityAr,
+        shippingSource.cityEn,
+    ]);
+    const region = resolveShippingText([
+        shippingSource.region,
+        shippingSource.state,
+        shippingSource.governorate,
+        shippingSource.zone,
+        shippingSource.area,
+    ]);
+    const postalCode = resolveShippingText(
+        shippingSource.postalCode || shippingSource.zip || shippingSource.zipCode,
+    );
+    const phone = resolveShippingText(
+        shippingSource.phone ||
+        shippingSource.mobile ||
+        shippingSource.contactPhone,
+    );
 
     const zone = resolveShippingZone(rawOrder, shippingSource);
 
@@ -10170,7 +11696,7 @@ function normalizeOrderShipping(shippingSource, rawOrder = {}) {
         phone,
         zoneName: zone.zoneName,
         shippingRate: zone.shippingRate,
-        zoneId: zone.zoneId
+        zoneId: zone.zoneId,
     };
 }
 
@@ -10180,10 +11706,10 @@ function extractOrderIdentifiers(order = {}) {
     const phones = new Set();
 
     const normalizePhone = (phone) => {
-        if (!phone) return '';
+        if (!phone) return "";
         return String(phone)
-            .replace(/[^0-9+]/g, '')
-            .replace(/^[^0-9+]*/, '');
+            .replace(/[^0-9+]/g, "")
+            .replace(/^[^0-9+]*/, "");
     };
 
     const pushId = (value) => {
@@ -10209,14 +11735,14 @@ function extractOrderIdentifiers(order = {}) {
         order.customer,
         order.customerId,
         order.user_id,
-        order.customer_id
+        order.customer_id,
     ];
 
-    possibleUserRefs.forEach(ref => {
+    possibleUserRefs.forEach((ref) => {
         if (!ref) return;
-        if (typeof ref === 'string' || typeof ref === 'number') {
+        if (typeof ref === "string" || typeof ref === "number") {
             pushId(ref);
-        } else if (typeof ref === 'object') {
+        } else if (typeof ref === "object") {
             pushId(ref._id || ref.id || ref.userId || ref.customerId);
             pushEmail(ref.email);
             pushPhone(ref.phone);
@@ -10260,7 +11786,7 @@ function doesOrderBelongToCustomer(order, customer) {
     addCustomerId(customer._id);
     addCustomerId(customer.id);
     addCustomerId(customer.userId);
-    if (customer.user && typeof customer.user === 'object') {
+    if (customer.user && typeof customer.user === "object") {
         addCustomerId(customer.user._id || customer.user.id);
     }
 
@@ -10283,7 +11809,7 @@ function doesOrderBelongToCustomer(order, customer) {
     // المرحلة 2: المقارنة بناءً على اسم المستخدم (name)
     // ============================================
     const normalizeText = (text) => {
-        if (!text) return '';
+        if (!text) return "";
         return String(text).trim().toLowerCase();
     };
 
@@ -10293,11 +11819,11 @@ function doesOrderBelongToCustomer(order, customer) {
             customer.name,
             customer.fullName,
             customer.user?.name,
-            customer.user?.fullName
+            customer.user?.fullName,
         ]
             .filter(Boolean)
             .map(normalizeText)
-            .filter(name => name.length > 0)
+            .filter((name) => name.length > 0),
     );
 
     // مقارنة أسماء من الطلب
@@ -10306,8 +11832,10 @@ function doesOrderBelongToCustomer(order, customer) {
         .filter(Boolean);
 
     // أيضاً محاولة استخراج اسم من order.customer
-    if (order.customer && typeof order.customer === 'object') {
-        const custName = normalizeText(order.customer.name || order.customer.fullName);
+    if (order.customer && typeof order.customer === "object") {
+        const custName = normalizeText(
+            order.customer.name || order.customer.fullName,
+        );
         if (custName) orderUsernames.push(custName);
     }
 
@@ -10328,11 +11856,11 @@ function doesOrderBelongToCustomer(order, customer) {
             customer.username,
             customer.account,
             customer.user?.username,
-            customer.user?.account
+            customer.user?.account,
         ]
             .filter(Boolean)
             .map(normalizeText)
-            .filter(acc => acc.length > 0)
+            .filter((acc) => acc.length > 0),
     );
 
     // مقارنة الحسابات من الطلب
@@ -10341,8 +11869,10 @@ function doesOrderBelongToCustomer(order, customer) {
         .filter(Boolean);
 
     // أيضاً محاولة استخراج حساب من order.customer
-    if (order.customer && typeof order.customer === 'object') {
-        const custAccount = normalizeText(order.customer.username || order.customer.account);
+    if (order.customer && typeof order.customer === "object") {
+        const custAccount = normalizeText(
+            order.customer.username || order.customer.account,
+        );
         if (custAccount) orderAccounts.push(custAccount);
     }
 
@@ -10361,33 +11891,33 @@ function doesOrderBelongToCustomer(order, customer) {
 
 function extractOrderCustomer(order = {}) {
     // إذا كان userId موجود وهو كائن
-    if (order.userId && typeof order.userId === 'object') {
+    if (order.userId && typeof order.userId === "object") {
         return {
-            name: order.userId.name || '',
-            email: order.userId.email || '',
-            phone: order.userId.phone || order.shippingAddress?.phone || ''
+            name: order.userId.name || "",
+            email: order.userId.email || "",
+            phone: order.userId.phone || order.shippingAddress?.phone || "",
         };
     }
 
     // إذا كان user موجود
-    if (order.user && typeof order.user === 'object') {
+    if (order.user && typeof order.user === "object") {
         return {
-            name: order.user.name || '',
-            email: order.user.email || '',
-            phone: order.user.phone || order.shippingAddress?.phone || ''
+            name: order.user.name || "",
+            email: order.user.email || "",
+            phone: order.user.phone || order.shippingAddress?.phone || "",
         };
     }
 
     // إذا كان customer موجود
     if (order.customer) {
-        if (typeof order.customer === 'string') {
-            return { name: order.customer, email: '', phone: '' };
+        if (typeof order.customer === "string") {
+            return { name: order.customer, email: "", phone: "" };
         }
-        if (typeof order.customer === 'object') {
+        if (typeof order.customer === "object") {
             return {
-                name: order.customer.name || order.customer.fullName || '',
-                email: order.customer.email || '',
-                phone: order.customer.phone || order.shippingAddress?.phone || ''
+                name: order.customer.name || order.customer.fullName || "",
+                email: order.customer.email || "",
+                phone: order.customer.phone || order.shippingAddress?.phone || "",
             };
         }
     }
@@ -10395,13 +11925,13 @@ function extractOrderCustomer(order = {}) {
     // محاولة استخراج من shippingAddress
     if (order.shippingAddress) {
         return {
-            name: order.shippingAddress.name || order.shippingAddress.fullName || '',
-            email: order.shippingAddress.email || '',
-            phone: order.shippingAddress.phone || ''
+            name: order.shippingAddress.name || order.shippingAddress.fullName || "",
+            email: order.shippingAddress.email || "",
+            phone: order.shippingAddress.phone || "",
         };
     }
 
-    return { name: '', email: '', phone: '' };
+    return { name: "", email: "", phone: "" };
 }
 
 function extractOrderItems(order = {}) {
@@ -10409,22 +11939,22 @@ function extractOrderItems(order = {}) {
 
     if (!cartItems.length && Array.isArray(order.items)) {
         const totalCount = order.items.reduce((sum, item) => {
-            return sum + (Number(item.quantity || item.qty || 0));
+            return sum + Number(item.quantity || item.qty || 0);
         }, 0);
         return { list: order.items, totalCount };
     }
 
     const totalCount = cartItems.reduce((sum, item) => {
-        return sum + (Number(item.qty || item.quantity || 0));
+        return sum + Number(item.qty || item.quantity || 0);
     }, 0);
 
     return { list: cartItems, totalCount };
 }
 
 function resolveOrderStatus(order = {}) {
-    if (!order || typeof order !== 'object') return 'new';
+    if (!order || typeof order !== "object") return "new";
 
-    const raw = (order.raw && typeof order.raw === 'object') ? order.raw : null;
+    const raw = order.raw && typeof order.raw === "object" ? order.raw : null;
 
     const isCancelledFlags = [
         order.isCanceled,
@@ -10432,10 +11962,10 @@ function resolveOrderStatus(order = {}) {
         order.cancelled,
         raw?.isCanceled,
         raw?.isCancelled,
-        raw?.cancelled
+        raw?.cancelled,
     ];
     if (isCancelledFlags.some(Boolean)) {
-        return 'cancelled';
+        return "cancelled";
     }
 
     const candidateStatuses = [
@@ -10454,7 +11984,7 @@ function resolveOrderStatus(order = {}) {
         raw?.state,
         raw?.deliveryStatus,
         raw?.delivery_status,
-        raw?.liveryStatus
+        raw?.liveryStatus,
     ];
 
     for (const candidate of candidateStatuses) {
@@ -10466,15 +11996,15 @@ function resolveOrderStatus(order = {}) {
 
     const isDeliveredFlags = [order.isDelivered, raw?.isDelivered];
     if (isDeliveredFlags.some(Boolean)) {
-        return 'delivered';
+        return "delivered";
     }
 
     const isPaidFlags = [order.isPaid, raw?.isPaid];
     if (isPaidFlags.some(Boolean)) {
-        return 'processing';
+        return "processing";
     }
 
-    return 'new';
+    return "new";
 }
 
 /**
@@ -10487,17 +12017,15 @@ async function fetchOrders(options = {}) {
         state.ordersLoading = true;
     }
 
-
     state.ordersError = null;
     renderOrders();
 
     try {
-        const url = ORDER_ENDPOINT.startsWith('http')
+        const url = ORDER_ENDPOINT.startsWith("http")
             ? `${ORDER_ENDPOINT}?page=${page}`
             : `${ORDER_ENDPOINT}?page=${page}`;
 
         const response = await authorizedFetch(url);
-
 
         const handled = handleUnauthorized(response);
         if (handled !== response) return; // تم إعادة التوجيه للتسجيل
@@ -10508,15 +12036,13 @@ async function fetchOrders(options = {}) {
 
         const payload = await response.json();
 
-
         const normalized = normalizeOrdersPayload(payload);
 
-
         if (append) {
-            const existingIds = new Set(state.orders.map(order => order.id));
+            const existingIds = new Set(state.orders.map((order) => order.id));
             const merged = [
                 ...state.orders,
-                ...normalized.filter(order => !existingIds.has(order.id))
+                ...normalized.filter((order) => !existingIds.has(order.id)),
             ];
             state.orders = merged;
         } else {
@@ -10527,7 +12053,7 @@ async function fetchOrders(options = {}) {
         state.ordersPagination = {
             currentPage: Number(payload?.currentPage || page || 1),
             totalPages: Number(payload?.totalPages || 1),
-            totalOrders: Number(payload?.totalOrders || state.orders.length)
+            totalOrders: Number(payload?.totalOrders || state.orders.length),
         };
 
         // إعادة جلب العملاء لضمان ظهور أي عملاء جدد
@@ -10537,8 +12063,8 @@ async function fetchOrders(options = {}) {
             createCustomersFromOrders();
 
             // إذا كانت بيانات العملاء محملة، نعيد جلبها لتحديثها (بصمت)
-            fetchCustomers(true).catch(err => {
-                console.warn('⚠️ Failed to refresh customers:', err);
+            fetchCustomers(true).catch((err) => {
+                console.warn("⚠️ Failed to refresh customers:", err);
                 // في حالة الفشل، نحدث البيانات الموجودة فقط
                 updateCustomersOrdersInfo();
             });
@@ -10554,14 +12080,18 @@ async function fetchOrders(options = {}) {
             loadOverviewCharts();
         }
 
-        showToast('success', 'تحميل الطلبات', append
-            ? `تم إضافة ${normalized.length} طلب`
-            : `تم تحميل ${normalized.length} طلب بنجاح`);
+        showToast(
+            "success",
+            "تحميل الطلبات",
+            append
+                ? `تم إضافة ${normalized.length} طلب`
+                : `تم تحميل ${normalized.length} طلب بنجاح`,
+        );
     } catch (error) {
-        console.error('❌ Failed to fetch orders:', error);
+        console.error("❌ Failed to fetch orders:", error);
         state.orders = [];
-        state.ordersError = error?.message || 'تعذر تحميل الطلبات. حاول مرة أخرى.';
-        showToast('error', 'خطأ في تحميل الطلبات', state.ordersError);
+        state.ordersError = error?.message || "تعذر تحميل الطلبات. حاول مرة أخرى.";
+        showToast("error", "خطأ في تحميل الطلبات", state.ordersError);
     } finally {
         if (!append) {
             state.ordersLoading = false;
@@ -10583,12 +12113,13 @@ async function fetchOrders(options = {}) {
 async function updateOrderDeliveryStatus(orderId) {
     if (!orderId) return;
 
-
-
     try {
-        const response = await authorizedFetch(`${ORDER_ENDPOINT}/${orderId}/deliver`, {
-            method: 'PATCH'
-        });
+        const response = await authorizedFetch(
+            `${ORDER_ENDPOINT}/${orderId}/deliver`,
+            {
+                method: "PATCH",
+            },
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -10598,10 +12129,10 @@ async function updateOrderDeliveryStatus(orderId) {
         const result = await response.json();
 
         // تحديث الطلب في الحالة المحلية
-        const orderIndex = state.orders.findIndex(o => o.id === orderId);
+        const orderIndex = state.orders.findIndex((o) => o.id === orderId);
         if (orderIndex !== -1) {
             state.orders[orderIndex].isDelivered = true;
-            state.orders[orderIndex].status = 'delivered';
+            state.orders[orderIndex].status = "delivered";
         }
 
         // إعادة عرض الطلبات
@@ -10613,10 +12144,18 @@ async function updateOrderDeliveryStatus(orderId) {
             updateCustomersOrdersInfo();
         }
 
-        showToast('success', 'تحديث حالة التسليم', `تم تحديث حالة الطلب ${orderId} إلى "تم التسليم"`);
+        showToast(
+            "success",
+            "تحديث حالة التسليم",
+            `تم تحديث حالة الطلب ${orderId} إلى "تم التسليم"`,
+        );
     } catch (error) {
-        console.error('❌ Failed to update delivery status:', error);
-        showToast('error', 'خطأ في التحديث', error.message || 'حدث خطأ أثناء تحديث حالة التسليم');
+        console.error("❌ Failed to update delivery status:", error);
+        showToast(
+            "error",
+            "خطأ في التحديث",
+            error.message || "حدث خطأ أثناء تحديث حالة التسليم",
+        );
     }
 }
 
@@ -10626,14 +12165,14 @@ function getOrdersSource() {
 
 function getOrderById(orderId) {
     const normalizedId = String(orderId).trim();
-    return getOrdersSource().find(order => String(order.id) === normalizedId);
+    return getOrdersSource().find((order) => String(order.id) === normalizedId);
 }
 
 function getOrdersPagination() {
     return {
         currentPage: state.ordersPagination.currentPage || 1,
         totalPages: state.ordersPagination.totalPages || 1,
-        totalOrders: state.ordersPagination.totalOrders || state.orders.length
+        totalOrders: state.ordersPagination.totalOrders || state.orders.length,
     };
 }
 
@@ -10644,7 +12183,7 @@ function hasMoreOrders() {
 
 async function loadMoreOrders() {
     if (!hasMoreOrders()) {
-        showToast('info', 'الطلبات', 'تم عرض جميع الطلبات.');
+        showToast("info", "الطلبات", "تم عرض جميع الطلبات.");
         return;
     }
 
@@ -10652,7 +12191,7 @@ async function loadMoreOrders() {
     try {
         await fetchOrders({ page: nextPage, append: true });
     } catch (error) {
-        console.error('❌ Failed to load more orders:', error);
+        console.error("❌ Failed to load more orders:", error);
     }
 }
 
@@ -10662,25 +12201,29 @@ function filterOrders() {
     // Filter by search
     if (state.filters.orderSearch) {
         const search = state.filters.orderSearch.toLowerCase().trim();
-        filtered = filtered.filter(order => {
+        filtered = filtered.filter((order) => {
             const idMatch = String(order.id).toLowerCase().includes(search);
-            const nameMatch = (order.customer || '').toLowerCase().includes(search);
-            const emailMatch = (order.customerEmail || '').toLowerCase().includes(search);
+            const nameMatch = (order.customer || "").toLowerCase().includes(search);
+            const emailMatch = (order.customerEmail || "")
+                .toLowerCase()
+                .includes(search);
             return idMatch || nameMatch || emailMatch;
         });
     }
 
     // Filter by status
-    if (state.filters.orderStatus !== 'all') {
+    if (state.filters.orderStatus !== "all") {
         const targetStatus = normalizeStatusKey(state.filters.orderStatus);
-        filtered = filtered.filter(order => normalizeStatusKey(order.status) === targetStatus);
+        filtered = filtered.filter(
+            (order) => normalizeStatusKey(order.status) === targetStatus,
+        );
     }
 
     // Filter by date
     if (state.filters.orderDate) {
         const selectedDate = parseDateValue(state.filters.orderDate);
         if (selectedDate) {
-            filtered = filtered.filter(order => {
+            filtered = filtered.filter((order) => {
                 const orderDate = getOrderDate(order);
                 return isSameDay(orderDate, selectedDate);
             });
@@ -10695,8 +12238,8 @@ function filterOrders() {
  * يعرض قائمة الطلبات مع الفلاتر المطبقة
  */
 function renderOrders() {
-    const body = document.getElementById('ordersTableBody');
-    const loadMoreRowId = 'ordersLoadMoreRow';
+    const body = document.getElementById("ordersTableBody");
+    const loadMoreRowId = "ordersLoadMoreRow";
     if (!body) return;
 
     // حالة التحميل
@@ -10741,16 +12284,17 @@ function renderOrders() {
         return;
     }
 
-    const rows = filtered.map((order, index) => {
-        const orderIdLiteral = JSON.stringify(order?.id ?? '');
+    const rows = filtered
+        .map((order, index) => {
+            const orderIdLiteral = JSON.stringify(order?.id ?? "");
 
-        return `
+            return `
                 <tr data-id="${order.id}">
                     <td>${index + 1}</td>
                     <td>${order.id}</td>
                     <td>
                         <div>${order.customer}</div>
-                        ${order.customerEmail ? `<small style="color: #7a7a7a;">${order.customerEmail}</small>` : ''}
+                        ${order.customerEmail ? `<small style="color: #7a7a7a;">${order.customerEmail}</small>` : ""}
                     </td>
                     <td>${order.items}</td>
                     <td><strong>${formatCurrency(order.total)}</strong></td>
@@ -10767,7 +12311,8 @@ function renderOrders() {
                     </td>
                 </tr>
             `;
-    }).join('');
+        })
+        .join("");
 
     const pagination = getOrdersPagination();
     const showLoadMore = hasMoreOrders();
@@ -10775,7 +12320,7 @@ function renderOrders() {
     body.innerHTML = showLoadMore
         ? `${rows}
                 <tr id="${loadMoreRowId}">
-                    <td colspan="8" style="text-align: center; padding: 20px;">
+                    <td colspan="9" style="text-align: center; padding: 20px;">
                         <button id="ordersLoadMoreBtn" class="btn-secondary" style="padding: 10px 24px;">
                             <i class="fas fa-plus-circle"></i> تحميل المزيد (${pagination.currentPage}/${pagination.totalPages})
                         </button>
@@ -10786,11 +12331,12 @@ function renderOrders() {
                 </tr>`
         : rows;
 
-    const loadMoreBtn = document.getElementById('ordersLoadMoreBtn');
+    const loadMoreBtn = document.getElementById("ordersLoadMoreBtn");
     if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', () => {
+        loadMoreBtn.addEventListener("click", () => {
             loadMoreBtn.disabled = true;
-            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+            loadMoreBtn.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
             loadMoreOrders().finally(() => {
                 loadMoreBtn.disabled = false;
             });
@@ -10807,10 +12353,9 @@ function renderOrders() {
 function viewOrderDetails(orderId) {
     const order = getOrderById(orderId);
     if (!order) {
-        showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
+        showToast("error", "خطأ", "لم يتم العثور على الطلب");
         return;
     }
-
 
     const orderDetails = getOrderDetails(order.id) || {};
     let summary = orderDetails.summary || {
@@ -10819,7 +12364,14 @@ function viewOrderDetails(orderId) {
             const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
             return sum + quantity * price;
         }, 0),
-        shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+        shipping:
+            Number(
+                order.raw?.shippingCost ??
+                order.raw?.shippingPrice ??
+                order.raw?.deliveryFee ??
+                order.shipping?.shippingRate ??
+                0,
+            ) || 0,
         discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
         total: (() => {
             const totalValue = Number(order.total);
@@ -10827,33 +12379,41 @@ function viewOrderDetails(orderId) {
                 return totalValue;
             }
             return (
-                ((order.itemsDetails || []).reduce((sum, item) => {
+                (order.itemsDetails || []).reduce((sum, item) => {
                     const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
                     const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
                     return sum + quantity * price;
-                }, 0))
-                + (Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0)
-                - (Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0)
+                }, 0) +
+                (Number(
+                    order.raw?.shippingCost ??
+                    order.raw?.shippingPrice ??
+                    order.raw?.deliveryFee ??
+                    order.shipping?.shippingRate ??
+                    0,
+                ) || 0) -
+                (Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0)
             );
-        })()
+        })(),
     };
 
-    const installationAmount = Number(
-        summary.installation
-        ?? order.raw?.totalInstallationPrice
-        ?? order.raw?.installationCost
-        ?? order.raw?.installation_price
-        ?? order.raw?.installationFee
-        ?? order.installationCost
-        ?? order.totalInstallationPrice
-        ?? 0
-    ) || 0;
+    const installationAmount =
+        Number(
+            summary.installation ??
+            order.raw?.totalInstallationPrice ??
+            order.raw?.installationCost ??
+            order.raw?.installation_price ??
+            order.raw?.installationFee ??
+            order.installationCost ??
+            order.totalInstallationPrice ??
+            0,
+        ) || 0;
 
     const subtotalValue = Number(summary.subtotal) || 0;
     const shippingValue = Number(summary.shipping) || 0;
     const discountValue = Number(summary.discount) || 0;
     const totalValue = Number(summary.total);
-    const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+    const recalculatedTotal =
+        subtotalValue + shippingValue + installationAmount - discountValue;
 
     summary = {
         ...summary,
@@ -10861,12 +12421,12 @@ function viewOrderDetails(orderId) {
         subtotal: subtotalValue,
         shipping: shippingValue,
         discount: discountValue,
-        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
+        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal,
     };
 
     // إنشاء النافذة المنبثقة
-    const modal = document.createElement('div');
-    modal.className = 'order-details-modal';
+    const modal = document.createElement("div");
+    modal.className = "order-details-modal";
     modal.style.cssText = `
             position: fixed;
             top: 0;
@@ -10886,7 +12446,7 @@ function viewOrderDetails(orderId) {
 
     // محتوى النافذة
     const statusOptions = getOrderStatusOptions();
-    const normalizedStatus = normalizeStatusKey(order.status) || 'new';
+    const normalizedStatus = normalizeStatusKey(order.status) || "new";
 
     modal.innerHTML = `
             <div class="order-details-content" style="
@@ -10930,8 +12490,8 @@ function viewOrderDetails(orderId) {
                             <i class="fas fa-user"></i> معلومات العميل
                         </h3>
                         <p><strong>الاسم:</strong> ${order.customer}</p>
-                        <p><strong>البريد:</strong> ${order.customerEmail || '-'}</p>
-                        <p><strong>الهاتف:</strong> ${order.customerPhone || order.shipping?.phone || '-'}</p>
+                        <p><strong>البريد:</strong> ${order.customerEmail || "-"}</p>
+                        <p><strong>الهاتف:</strong> ${order.customerPhone || order.shipping?.phone || "-"}</p>
                     </div>
                     
                     <div>
@@ -10958,9 +12518,13 @@ function viewOrderDetails(orderId) {
                         <div>
                             <label for="orderStatusSelect" style="display:block; margin-bottom:6px; font-size: 13px; color: var(--text-muted);">تغيير الحالة</label>
                             <select id="orderStatusSelect" class="order-status-select" data-order-id="${order.id}">
-                                ${statusOptions.map(option => `
-                                    <option value="${option.value}"${option.value === normalizedStatus ? ' selected' : ''}>${option.label}</option>
-                                `).join('')}
+                                ${statusOptions
+            .map(
+                (option) => `
+                                    <option value="${option.value}"${option.value === normalizedStatus ? " selected" : ""}>${option.label}</option>
+                                `,
+            )
+            .join("")}
                             </select>
                         </div>
                         <button id="orderStatusUpdateBtn" class="btn-primary" style="height: 42px; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -10969,51 +12533,72 @@ function viewOrderDetails(orderId) {
                     </div>
                 </div>
                 
-                ${order.shipping ? `
+                ${order.shipping
+            ? `
                     <div style="margin-bottom: 25px; padding: 20px; background: var(--bg-light); border-radius: 10px; border-right: 4px solid var(--primary);">
                         <h3 style="color: #e74c3c; margin-bottom: 15px; font-size: 1.1em;">
                             <i class="fas fa-map-marker-alt"></i> عنوان الشحن
                         </h3>
                         <div style="background: var(--bg-base); color: var(--text-main); padding: 15px; border-radius: 8px; line-height: 1.8;">
-                            ${order.shipping.details ? `
+                            ${order.shipping.details
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-home" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>التفاصيل:</strong> ${order.shipping.details}
                                 </p>
-                            ` : ''}
-                            ${order.shipping.zoneName ? `
+                            `
+                : ""
+            }
+                            ${order.shipping.zoneName
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-map-pin" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>منطقة الشحن:</strong> ${order.shipping.zoneName}
                                 </p>
-                            ` : ''}
-                            ${Number.isFinite(order.shipping.shippingRate) ? `
+                            `
+                : ""
+            }
+                            ${Number.isFinite(order.shipping.shippingRate)
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-shipping-fast" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>تكلفة الشحن:</strong> ${formatCurrency(order.shipping.shippingRate)}
                                 </p>
-                            ` : ''}
-                            ${order.shipping.city ? `
+                            `
+                : ""
+            }
+                            ${order.shipping.city
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-city" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>المدينة:</strong> ${order.shipping.city}
                                 </p>
-                            ` : ''}
-                            ${order.shipping.postalCode ? `
+                            `
+                : ""
+            }
+                            ${order.shipping.postalCode
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-mail-bulk" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>الرمز البريدي:</strong> ${order.shipping.postalCode}
                                 </p>
-                            ` : ''}
-                            ${order.shipping.phone ? `
+                            `
+                : ""
+            }
+                            ${order.shipping.phone
+                ? `
                                 <p style="margin: 8px 0; color: var(--text-main);">
                                     <i class="fas fa-phone" style="color: #e74c3c; margin-left: 8px; width: 20px;"></i>
                                     <strong>رقم الهاتف:</strong> <a href="tel:${order.shipping.phone}" style="color: #27ae60; text-decoration: none;">${order.shipping.phone}</a>
                                 </p>
-                            ` : ''}
+                            `
+                : ""
+            }
                         </div>
                     </div>
-                ` : ''}
+                `
+            : ""
+        }
                 
                 <div style="margin-bottom: 25px;">
                     <h3 style="color: #e74c3c; margin-bottom: 10px;">
@@ -11028,14 +12613,19 @@ function viewOrderDetails(orderId) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${order.itemsDetails && order.itemsDetails.length > 0
-            ? order.itemsDetails.map(item => `
+                            ${order.itemsDetails &&
+            order.itemsDetails.length > 0
+            ? order.itemsDetails
+                .map(
+                    (item) => `
                                     <tr>
-                                        <td style="padding: 10px; border: 1px solid var(--border); color: var(--text-main);">${item.name || item.product?.name || 'منتج'}</td>
+                                        <td style="padding: 10px; border: 1px solid var(--border); color: var(--text-main);">${item.name || item.product?.name || "منتج"}</td>
                                         <td style="padding: 10px; text-align: center; border: 1px solid var(--border); color: var(--text-main);">${item.quantity || item.qty || 1}</td>
                                         <td style="padding: 10px; border: 1px solid var(--border); color: var(--text-main);">${formatCurrency(item.price || 0)}</td>
                                     </tr>
-                                `).join('')
+                                `,
+                )
+                .join("")
             : '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #999;">لا توجد تفاصيل المنتجات</td></tr>'
         }
                         </tbody>
@@ -11047,7 +12637,7 @@ function viewOrderDetails(orderId) {
                     <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
                     <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
                     <p style="margin: 6px 0;"><strong>التركيب:</strong> ${formatCurrency(summary.installation)}</p>
-                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
+                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ""}
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);">
                         <p style="font-size: 1.4em; font-weight: bold; color: #27ae60; margin: 0;"><strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}</p>
                     </div>
@@ -11058,25 +12648,26 @@ function viewOrderDetails(orderId) {
     document.body.appendChild(modal);
 
     const rootStyles = getComputedStyle(document.documentElement);
-    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
+    const sidebarWidth =
+        rootStyles.getPropertyValue("--sidebar-width").trim() || "0px";
 
     const applyModalPadding = () => {
         if (window.innerWidth > 992) {
             modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
         } else {
-            modal.style.paddingRight = '20px';
+            modal.style.paddingRight = "20px";
         }
     };
 
     applyModalPadding();
     const handleResize = () => applyModalPadding();
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     const cleanupHandlers = () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('resize', handleResize);
+        document.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("resize", handleResize);
     };
     const fadeOutAndRemove = () => {
-        modal.style.opacity = '0';
+        modal.style.opacity = "0";
         setTimeout(() => {
             cleanupHandlers();
             if (modal.parentNode) {
@@ -11087,17 +12678,17 @@ function viewOrderDetails(orderId) {
 
     // إظهار النافذة
     setTimeout(() => {
-        modal.style.opacity = '1';
+        modal.style.opacity = "1";
     }, 10);
 
     // إغلاق النافذة
-    const closeBtn = modal.querySelector('.close-btn');
+    const closeBtn = modal.querySelector(".close-btn");
     if (closeBtn) {
-        closeBtn.addEventListener('click', fadeOutAndRemove);
+        closeBtn.addEventListener("click", fadeOutAndRemove);
     }
 
     // إغلاق عند النقر خارج المحتوى
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener("click", (e) => {
         if (e.target === modal) {
             fadeOutAndRemove();
         }
@@ -11105,21 +12696,21 @@ function viewOrderDetails(orderId) {
 
     // إغلاق بمفتاح ESC
     const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === "Escape") {
             fadeOutAndRemove();
         }
     };
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
-    const statusSelect = modal.querySelector('#orderStatusSelect');
-    const updateStatusBtn = modal.querySelector('#orderStatusUpdateBtn');
+    const statusSelect = modal.querySelector("#orderStatusSelect");
+    const updateStatusBtn = modal.querySelector("#orderStatusUpdateBtn");
 
     if (statusSelect && updateStatusBtn) {
-        updateStatusBtn.addEventListener('click', async () => {
+        updateStatusBtn.addEventListener("click", async () => {
             const selectedStatus = statusSelect.value;
             await changeOrderStatus(order.id, selectedStatus, statusSelect);
             // تحديث الشارة المعروضة بعد الحفظ
-            const badgeWrapper = modal.querySelector('.order-status-badge-wrapper');
+            const badgeWrapper = modal.querySelector(".order-status-badge-wrapper");
             if (badgeWrapper) {
                 badgeWrapper.innerHTML = getStatusBadge(selectedStatus);
             }
@@ -11134,14 +12725,14 @@ function viewOrderDetails(orderId) {
 function printOrder(orderId) {
     const order = getOrderById(orderId);
     if (!order) {
-        showToast('error', 'خطأ', 'لم يتم العثور على الطلب');
+        showToast("error", "خطأ", "لم يتم العثور على الطلب");
         return;
     }
 
     // فتح نافذة الطباعة
-    const win = window.open('', '_blank', 'width=900,height=700');
+    const win = window.open("", "_blank", "width=900,height=700");
     if (!win) {
-        showToast('error', 'طباعة الفاتورة', 'يبدو أن النوافذ المنبثقة محظورة');
+        showToast("error", "طباعة الفاتورة", "يبدو أن النوافذ المنبثقة محظورة");
         return;
     }
 
@@ -11153,27 +12744,36 @@ function printOrder(orderId) {
             const price = Number(item.price ?? item.unitPrice ?? 0) || 0;
             return sum + quantity * price;
         }, 0),
-        shipping: Number(order.raw?.shippingCost ?? order.raw?.shippingPrice ?? order.raw?.deliveryFee ?? order.shipping?.shippingRate ?? 0) || 0,
+        shipping:
+            Number(
+                order.raw?.shippingCost ??
+                order.raw?.shippingPrice ??
+                order.raw?.deliveryFee ??
+                order.shipping?.shippingRate ??
+                0,
+            ) || 0,
         discount: Number(order.raw?.discount ?? order.raw?.discountValue ?? 0) || 0,
-        total: Number(order.total) || 0
+        total: Number(order.total) || 0,
     };
 
-    const installationAmount = Number(
-        summary.installation
-        ?? order.raw?.totalInstallationPrice
-        ?? order.raw?.installationCost
-        ?? order.raw?.installation_price
-        ?? order.raw?.installationFee
-        ?? order.installationCost
-        ?? order.totalInstallationPrice
-        ?? 0
-    ) || 0;
+    const installationAmount =
+        Number(
+            summary.installation ??
+            order.raw?.totalInstallationPrice ??
+            order.raw?.installationCost ??
+            order.raw?.installation_price ??
+            order.raw?.installationFee ??
+            order.installationCost ??
+            order.totalInstallationPrice ??
+            0,
+        ) || 0;
 
     const subtotalValue = Number(summary.subtotal) || 0;
     const shippingValue = Number(summary.shipping) || 0;
     const discountValue = Number(summary.discount) || 0;
     const totalValue = Number(summary.total);
-    const recalculatedTotal = subtotalValue + shippingValue + installationAmount - discountValue;
+    const recalculatedTotal =
+        subtotalValue + shippingValue + installationAmount - discountValue;
 
     summary = {
         ...summary,
@@ -11181,7 +12781,7 @@ function printOrder(orderId) {
         subtotal: subtotalValue,
         shipping: shippingValue,
         discount: discountValue,
-        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal
+        total: Number.isFinite(totalValue) ? totalValue : recalculatedTotal,
     };
 
     win.document.write(`
@@ -11274,8 +12874,8 @@ function printOrder(orderId) {
                     <div class="info-section">
                         <h3>معلومات العميل</h3>
                         <p><strong>الاسم:</strong> ${order.customer}</p>
-                        <p><strong>البريد:</strong> ${order.customerEmail || '-'}</p>
-                        <p><strong>الهاتف:</strong> ${order.customerPhone || order.shipping?.phone || '-'}</p>
+                        <p><strong>البريد:</strong> ${order.customerEmail || "-"}</p>
+                        <p><strong>الهاتف:</strong> ${order.customerPhone || order.shipping?.phone || "-"}</p>
                     </div>
                     
                     <div class="info-section">
@@ -11286,19 +12886,22 @@ function printOrder(orderId) {
                     </div>
                 </div>
                 
-                ${order.shipping ? `
+                ${order.shipping
+            ? `
                     <div class="info-section" style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-right: 4px solid #e74c3c;">
                         <h3 style="color: #e74c3c; margin-bottom: 15px;">
                             <i class="fas fa-map-marker-alt"></i> عنوان الشحن
                         </h3>
-                        ${order.shipping.details ? `<p style="margin: 5px 0;"><strong>التفاصيل:</strong> ${order.shipping.details}</p>` : ''}
-                        ${order.shipping.zoneName ? `<p style="margin: 5px 0;"><strong>منطقة الشحن:</strong> ${order.shipping.zoneName}</p>` : ''}
-                        ${Number.isFinite(order.shipping.shippingRate) ? `<p style="margin: 5px 0;"><strong>تكلفة الشحن:</strong> ${formatCurrency(order.shipping.shippingRate)}</p>` : ''}
-                        ${order.shipping.city ? `<p style="margin: 5px 0;"><strong>المدينة:</strong> ${order.shipping.city}</p>` : ''}
-                        ${order.shipping.postalCode ? `<p style="margin: 5px 0;"><strong>الرمز البريدي:</strong> ${order.shipping.postalCode}</p>` : ''}
-                        ${order.shipping.phone ? `<p style="margin: 5px 0;"><strong>رقم الهاتف:</strong> ${order.shipping.phone}</p>` : ''}
+                        ${order.shipping.details ? `<p style="margin: 5px 0;"><strong>التفاصيل:</strong> ${order.shipping.details}</p>` : ""}
+                        ${order.shipping.zoneName ? `<p style="margin: 5px 0;"><strong>منطقة الشحن:</strong> ${order.shipping.zoneName}</p>` : ""}
+                        ${Number.isFinite(order.shipping.shippingRate) ? `<p style="margin: 5px 0;"><strong>تكلفة الشحن:</strong> ${formatCurrency(order.shipping.shippingRate)}</p>` : ""}
+                        ${order.shipping.city ? `<p style="margin: 5px 0;"><strong>المدينة:</strong> ${order.shipping.city}</p>` : ""}
+                        ${order.shipping.postalCode ? `<p style="margin: 5px 0;"><strong>الرمز البريدي:</strong> ${order.shipping.postalCode}</p>` : ""}
+                        ${order.shipping.phone ? `<p style="margin: 5px 0;"><strong>رقم الهاتف:</strong> ${order.shipping.phone}</p>` : ""}
                     </div>
-                ` : ''}
+                `
+            : ""
+        }
                 
                 <h3 style="color: #e74c3c; margin-top: 30px;">قائمة المنتجات</h3>
                 <table>
@@ -11312,19 +12915,22 @@ function printOrder(orderId) {
                     </thead>
                     <tbody>
                         ${order.itemsDetails && order.itemsDetails.length > 0
-            ? order.itemsDetails.map(item => {
-                const quantity = item.quantity || item.qty || 1;
-                const price = item.price || 0;
-                const total = quantity * price;
-                return `
+            ? order.itemsDetails
+                .map((item) => {
+                    const quantity =
+                        item.quantity || item.qty || 1;
+                    const price = item.price || 0;
+                    const total = quantity * price;
+                    return `
                                     <tr>
-                                        <td>${item.name || item.product?.name || 'منتج'}</td>
+                                        <td>${item.name || item.product?.name || "منتج"}</td>
                                         <td style="text-align: center;">${quantity}</td>
                                         <td>${formatCurrency(price)}</td>
                                         <td><strong>${formatCurrency(total)}</strong></td>
                                     </tr>
                                 `;
-            }).join('')
+                })
+                .join("")
             : '<tr><td colspan="4" style="text-align: center; padding: 20px;">لا توجد تفاصيل المنتجات</td></tr>'
         }
                     </tbody>
@@ -11334,7 +12940,7 @@ function printOrder(orderId) {
                     <p style="margin: 6px 0;"><strong>المجموع الفرعي:</strong> ${formatCurrency(summary.subtotal)}</p>
                     <p style="margin: 6px 0;"><strong>الشحن:</strong> ${formatCurrency(summary.shipping)}</p>
                     <p style="margin: 6px 0;"><strong>التركيب:</strong> ${formatCurrency(summary.installation)}</p>
-                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ''}
+                    ${summary.discount ? `<p style="margin: 6px 0;"><strong>الخصم:</strong> ${formatCurrency(summary.discount)}</p>` : ""}
                     <div class="total">
                         <strong>الإجمالي الكلي:</strong> ${formatCurrency(summary.total)}
                     </div>
@@ -11355,30 +12961,34 @@ function printOrder(orderId) {
         win.print();
     };
 
-    showToast('success', 'طباعة الفاتورة', `تم إرسال فاتورة الطلب ${order.id} للطباعة`);
+    showToast(
+        "success",
+        "طباعة الفاتورة",
+        `تم إرسال فاتورة الطلب ${order.id} للطباعة`,
+    );
 }
 
 // ===== Filters Setup =====
 function setupOrderFilters() {
-    const searchInput = document.getElementById('orderSearchInput');
+    const searchInput = document.getElementById("orderSearchInput");
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
+        searchInput.addEventListener("input", (e) => {
             state.filters.orderSearch = e.target.value;
             renderOrders();
         });
     }
 
-    const statusFilter = document.getElementById('orderStatusFilter');
+    const statusFilter = document.getElementById("orderStatusFilter");
     if (statusFilter) {
-        statusFilter.addEventListener('change', (e) => {
+        statusFilter.addEventListener("change", (e) => {
             state.filters.orderStatus = e.target.value;
             renderOrders();
         });
     }
 
-    const dateFilter = document.getElementById('orderDateFilter');
+    const dateFilter = document.getElementById("orderDateFilter");
     if (dateFilter) {
-        dateFilter.addEventListener('change', (e) => {
+        dateFilter.addEventListener("change", (e) => {
             state.filters.orderDate = e.target.value;
             renderOrders();
         });
@@ -11395,26 +13005,29 @@ function setupOrderFilters() {
 function createCustomersFromOrders() {
     if (!state.orders || state.orders.length === 0) return;
 
-
     const existingCustomerIds = new Set();
     const existingCustomerEmails = new Set();
 
     // جمع معرفات وإيميلات العملاء الموجودين
-    (state.customers || []).forEach(customer => {
+    (state.customers || []).forEach((customer) => {
         const id = customer._id || customer.id;
         if (id) existingCustomerIds.add(id);
-        if (customer.email) existingCustomerEmails.add(customer.email.toLowerCase());
+        if (customer.email)
+            existingCustomerEmails.add(customer.email.toLowerCase());
     });
 
     const newCustomers = [];
     const processedIds = new Set();
 
     // استخراج العملاء من الطلبات
-    state.orders.forEach(order => {
+    state.orders.forEach((order) => {
         const userId = order.userId || order.user?._id || order.user?.id;
 
         // تخطي إذا كان العميل موجود بالفعل
-        if (userId && (existingCustomerIds.has(userId) || processedIds.has(userId))) {
+        if (
+            userId &&
+            (existingCustomerIds.has(userId) || processedIds.has(userId))
+        ) {
             return;
         }
 
@@ -11426,26 +13039,32 @@ function createCustomersFromOrders() {
         }
 
         // تخطي إذا كان الإيميل موجود بالفعل
-        if (customerInfo.email && existingCustomerEmails.has(customerInfo.email.toLowerCase())) {
+        if (
+            customerInfo.email &&
+            existingCustomerEmails.has(customerInfo.email.toLowerCase())
+        ) {
             return;
         }
 
         // إنشاء عميل جديد
         const newCustomer = {
-            _id: userId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            _id:
+                userId ||
+                `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             id: userId,
-            name: customerInfo.name || 'عميل',
-            email: customerInfo.email || '',
-            phone: customerInfo.phone || '',
-            role: 'user',
+            name: customerInfo.name || "عميل",
+            email: customerInfo.email || "",
+            phone: customerInfo.phone || "",
+            role: "user",
             ordersCount: 0,
-            lastOrder: '-',
+            lastOrder: "-",
             lastOrderTimestamp: null,
-            isFromOrders: true // علامة للتمييز
+            isFromOrders: true, // علامة للتمييز
         };
 
         if (userId) processedIds.add(userId);
-        if (customerInfo.email) existingCustomerEmails.add(customerInfo.email.toLowerCase());
+        if (customerInfo.email)
+            existingCustomerEmails.add(customerInfo.email.toLowerCase());
 
         newCustomers.push(newCustomer);
     });
@@ -11461,27 +13080,31 @@ function createCustomersFromOrders() {
 function updateCustomersOrdersInfo() {
     if (!state.customers || state.customers.length === 0) return;
 
-
-    state.customers = state.customers.map(customer => {
+    state.customers = state.customers.map((customer) => {
         const customerId = customer._id || customer.id;
 
         // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
-        const customerOrders = state.orders?.filter(order => {
-            // محاولة المطابقة بالـ ID أولاً
-            if (order.userId === customerId || order.user?._id === customerId || order.user?.id === customerId) {
-                return true;
-            }
-            // محاولة المطابقة بالبريد الإلكتروني
-            if (customer.email && order.user?.email === customer.email) {
-                return true;
-            }
-            // محاولة المطابقة بالهاتف
-            if (customer.phone && order.user?.phone === customer.phone) {
-                return true;
-            }
-            // استخدام دالة المطابقة المتقدمة
-            return doesOrderBelongToCustomer(order, customer);
-        }) || [];
+        const customerOrders =
+            state.orders?.filter((order) => {
+                // محاولة المطابقة بالـ ID أولاً
+                if (
+                    order.userId === customerId ||
+                    order.user?._id === customerId ||
+                    order.user?.id === customerId
+                ) {
+                    return true;
+                }
+                // محاولة المطابقة بالبريد الإلكتروني
+                if (customer.email && order.user?.email === customer.email) {
+                    return true;
+                }
+                // محاولة المطابقة بالهاتف
+                if (customer.phone && order.user?.phone === customer.phone) {
+                    return true;
+                }
+                // استخدام دالة المطابقة المتقدمة
+                return doesOrderBelongToCustomer(order, customer);
+            }) || [];
 
         // حساب عدد الطلبات (عدد الطلبات وليس عدد المنتجات)
         const ordersCount = customerOrders.length;
@@ -11490,7 +13113,7 @@ function updateCustomersOrdersInfo() {
         }
 
         // إيجاد آخر طلب
-        let lastOrder = '-';
+        let lastOrder = "-";
         let lastOrderTimestamp = null;
         if (customerOrders.length > 0) {
             // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
@@ -11505,7 +13128,7 @@ function updateCustomersOrdersInfo() {
             const orderDate = getOrderDate(latestOrder);
             if (orderDate) {
                 lastOrderTimestamp = orderDate.getTime();
-                lastOrder = orderDate.toLocaleDateString('ar-EG');
+                lastOrder = orderDate.toLocaleDateString("ar-EG");
             }
         }
 
@@ -11513,17 +13136,15 @@ function updateCustomersOrdersInfo() {
             ...customer,
             ordersCount,
             lastOrder,
-            lastOrderTimestamp
+            lastOrderTimestamp,
         };
     });
 
     // إعادة عرض العملاء إذا كان القسم نشطاً
-    const customersSection = document.getElementById('customers');
-    if (customersSection && customersSection.classList.contains('active')) {
+    const customersSection = document.getElementById("customers");
+    if (customersSection && customersSection.classList.contains("active")) {
         renderCustomers();
     }
-
-
 }
 
 /**
@@ -11531,7 +13152,6 @@ function updateCustomersOrdersInfo() {
  * @param {boolean} silent - إذا كان true، لا تظهر رسالة النجاح
  */
 async function fetchCustomers(silent = false) {
-
     state.customersLoading = true;
     state.customersError = null;
     renderCustomers();
@@ -11557,15 +13177,16 @@ async function fetchCustomers(silent = false) {
                         : [];
 
         // تصفية المستخدمين العاديين فقط (إخفاء المدراء)
-        const fetchedCustomers = allUsers.filter(user => user.role !== 'admin');
-
+        const fetchedCustomers = allUsers.filter((user) => user.role !== "admin");
 
         // دمج العملاء الجدد مع الموجودين دون تكرار
-        const existingCustomers = Array.isArray(state.customers) ? state.customers : [];
+        const existingCustomers = Array.isArray(state.customers)
+            ? state.customers
+            : [];
         const seenIds = new Set();
         const seenEmails = new Set();
 
-        existingCustomers.forEach(customer => {
+        existingCustomers.forEach((customer) => {
             const id = customer._id || customer.id;
             if (id) seenIds.add(String(id));
             if (customer.email) {
@@ -11573,13 +13194,13 @@ async function fetchCustomers(silent = false) {
             }
         });
 
-        const mergedCustomers = [
-            ...existingCustomers
-        ];
+        const mergedCustomers = [...existingCustomers];
 
-        fetchedCustomers.forEach(customer => {
+        fetchedCustomers.forEach((customer) => {
             const id = customer._id || customer.id;
-            const email = customer.email ? String(customer.email).toLowerCase() : null;
+            const email = customer.email
+                ? String(customer.email).toLowerCase()
+                : null;
 
             const normalizedId = id ? String(id) : null;
 
@@ -11595,32 +13216,37 @@ async function fetchCustomers(silent = false) {
         });
 
         // إضافة معلومات الطلبات لكل عميل
-        const customersWithOrders = mergedCustomers.map(customer => {
+        const customersWithOrders = mergedCustomers.map((customer) => {
             const customerId = customer._id || customer.id;
 
             // البحث عن طلبات هذا العميل باستخدام المطابقة المرنة
-            const customerOrders = state.orders?.filter(order => {
-                // محاولة المطابقة بالـ ID أولاً
-                if (order.userId === customerId || order.user?._id === customerId || order.user?.id === customerId) {
-                    return true;
-                }
-                // محاولة المطابقة بالبريد الإلكتروني
-                if (customer.email && order.user?.email === customer.email) {
-                    return true;
-                }
-                // محاولة المطابقة بالهاتف
-                if (customer.phone && order.user?.phone === customer.phone) {
-                    return true;
-                }
-                // استخدام دالة المطابقة المتقدمة
-                return doesOrderBelongToCustomer(order, customer);
-            }) || [];
+            const customerOrders =
+                state.orders?.filter((order) => {
+                    // محاولة المطابقة بالـ ID أولاً
+                    if (
+                        order.userId === customerId ||
+                        order.user?._id === customerId ||
+                        order.user?.id === customerId
+                    ) {
+                        return true;
+                    }
+                    // محاولة المطابقة بالبريد الإلكتروني
+                    if (customer.email && order.user?.email === customer.email) {
+                        return true;
+                    }
+                    // محاولة المطابقة بالهاتف
+                    if (customer.phone && order.user?.phone === customer.phone) {
+                        return true;
+                    }
+                    // استخدام دالة المطابقة المتقدمة
+                    return doesOrderBelongToCustomer(order, customer);
+                }) || [];
 
             // حساب عدد الطلبات
             const ordersCount = customerOrders.length;
 
             // إيجاد آخر طلب
-            let lastOrder = '-';
+            let lastOrder = "-";
             let lastOrderTimestamp = null;
             if (customerOrders.length > 0) {
                 // ترتيب الطلبات حسب التاريخ (الأحدث أولاً)
@@ -11635,7 +13261,7 @@ async function fetchCustomers(silent = false) {
                 const orderDate = getOrderDate(latestOrder);
                 if (orderDate) {
                     lastOrderTimestamp = orderDate.getTime();
-                    lastOrder = orderDate.toLocaleDateString('ar-EG');
+                    lastOrder = orderDate.toLocaleDateString("ar-EG");
                 }
             }
 
@@ -11646,10 +13272,9 @@ async function fetchCustomers(silent = false) {
                 ...customer,
                 ordersCount,
                 lastOrder,
-                lastOrderTimestamp
+                lastOrderTimestamp,
             };
         });
-
 
         state.customers = customersWithOrders;
 
@@ -11664,19 +13289,23 @@ async function fetchCustomers(silent = false) {
 
         if (!silent) {
             const filteredCustomers = getCustomersForDisplay();
-            showToast('success', 'تحميل العملاء', `تم تحميل ${filteredCustomers.length} عميل بنجاح`);
+            showToast(
+                "success",
+                "تحميل العملاء",
+                `تم تحميل ${filteredCustomers.length} عميل بنجاح`,
+            );
         }
     } catch (error) {
-        console.error('❌ Failed to fetch customers:', error);
+        console.error("❌ Failed to fetch customers:", error);
         state.customers = [];
-        state.customersError = error.message || 'حدث خطأ أثناء تحميل العملاء';
-        showToast('error', 'خطأ في تحميل العملاء', state.customersError);
+        state.customersError = error.message || "حدث خطأ أثناء تحميل العملاء";
+        showToast("error", "خطأ في تحميل العملاء", state.customersError);
     } finally {
         state.customersLoading = false;
         renderCustomers();
 
         // تحديث إحصائيات نظرة عامة إذا كانت محملة
-        if (state.currentSection === 'overview') {
+        if (state.currentSection === "overview") {
             updateOverviewStats();
         }
     }
@@ -11686,7 +13315,6 @@ async function fetchCustomers(silent = false) {
  * جلب المستخدمين من API
  */
 async function fetchUsers() {
-
     try {
         const response = await authorizedFetch(USERS_ENDPOINT);
 
@@ -11697,13 +13325,25 @@ async function fetchUsers() {
         const payload = await response.json();
 
         // استخراج المستخدمين من الاستجابة
-        const users = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+        const users = Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload)
+                ? payload
+                : [];
 
-        showToast('success', 'تحميل المستخدمين', `تم تحميل ${users.length} مستخدم بنجاح`);
+        showToast(
+            "success",
+            "تحميل المستخدمين",
+            `تم تحميل ${users.length} مستخدم بنجاح`,
+        );
         return users;
     } catch (error) {
-        console.error('❌ Failed to fetch users:', error);
-        showToast('error', 'خطأ في تحميل المستخدمين', error.message || 'حدث خطأ أثناء تحميل المستخدمين');
+        console.error("❌ Failed to fetch users:", error);
+        showToast(
+            "error",
+            "خطأ في تحميل المستخدمين",
+            error.message || "حدث خطأ أثناء تحميل المستخدمين",
+        );
         return [];
     }
 }
@@ -11715,27 +13355,37 @@ async function fetchUsers() {
 async function deleteUser(userId) {
     if (!userId) return;
 
-    confirmPopup('تأكيد حذف المستخدم', 'هل أنت متأكد من حذف هذا المستخدم؟', async () => {
-        try {
-            const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
-                method: 'DELETE'
-            });
+    confirmPopup(
+        "تأكيد حذف المستخدم",
+        "هل أنت متأكد من حذف هذا المستخدم؟",
+        async () => {
+            try {
+                const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}`, {
+                    method: "DELETE",
+                });
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                throw new Error(errorBody?.message || `HTTP ${response.status}`);
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({}));
+                    throw new Error(errorBody?.message || `HTTP ${response.status}`);
+                }
+
+                showToast("success", "حذف المستخدم", "تم حذف المستخدم بنجاح");
+
+                // إعادة تحميل قائمة المستخدمين
+                await fetchUsers();
+            } catch (error) {
+                console.error("❌ Failed to delete user:", error);
+                showToast(
+                    "error",
+                    "خطأ في الحذف",
+                    error.message || "حدث خطأ أثناء حذف المستخدم",
+                );
             }
-
-
-            showToast('success', 'حذف المستخدم', 'تم حذف المستخدم بنجاح');
-
-            // إعادة تحميل قائمة المستخدمين
-            await fetchUsers();
-        } catch (error) {
-            console.error('❌ Failed to delete user:', error);
-            showToast('error', 'خطأ في الحذف', error.message || 'حدث خطأ أثناء حذف المستخدم');
-        }
-    }, null, 'حذف', 'إلغاء');
+        },
+        null,
+        "حذف",
+        "إلغاء",
+    );
 }
 
 /**
@@ -11745,19 +13395,21 @@ async function deleteUser(userId) {
  */
 async function changeUserPassword(userId, newPassword) {
     if (!userId || !newPassword) {
-        showToast('error', 'خطأ', 'يرجى إدخال كلمة المرور الجديدة');
+        showToast("error", "خطأ", "يرجى إدخال كلمة المرور الجديدة");
         return;
     }
 
-
     try {
-        const response = await authorizedFetch(`${USERS_ENDPOINT}/${userId}/change-password`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json'
+        const response = await authorizedFetch(
+            `${USERS_ENDPOINT}/${userId}/change-password`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ newPassword }),
             },
-            body: JSON.stringify({ newPassword })
-        });
+        );
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
@@ -11766,10 +13418,14 @@ async function changeUserPassword(userId, newPassword) {
 
         const result = await response.json();
 
-        showToast('success', 'تغيير كلمة المرور', 'تم تغيير كلمة المرور بنجاح');
+        showToast("success", "تغيير كلمة المرور", "تم تغيير كلمة المرور بنجاح");
     } catch (error) {
-        console.error('❌ Failed to change password:', error);
-        showToast('error', 'خطأ في التغيير', error.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+        console.error("❌ Failed to change password:", error);
+        showToast(
+            "error",
+            "خطأ في التغيير",
+            error.message || "حدث خطأ أثناء تغيير كلمة المرور",
+        );
     }
 }
 
@@ -11778,15 +13434,17 @@ async function changeUserPassword(userId, newPassword) {
  * @param {string} customerId - معرف العميل
  */
 function viewCustomerDetails(customerId) {
-    const existingCustomer = state.customers?.find(c => (c._id || c.id) === customerId);
+    const existingCustomer = state.customers?.find(
+        (c) => (c._id || c.id) === customerId,
+    );
 
     if (!existingCustomer) {
-        showToast('error', 'خطأ', 'لم يتم العثور على العميل');
+        showToast("error", "خطأ", "لم يتم العثور على العميل");
         return;
     }
 
-    const modal = document.createElement('div');
-    modal.className = 'order-details-modal';
+    const modal = document.createElement("div");
+    modal.className = "order-details-modal";
     modal.style.cssText = `
             position: fixed;
             top: 0;
@@ -11802,8 +13460,8 @@ function viewCustomerDetails(customerId) {
             transition: opacity 0.3s ease;
         `;
 
-    const content = document.createElement('div');
-    content.className = 'order-details-content';
+    const content = document.createElement("div");
+    content.className = "order-details-content";
     content.style.cssText = `
             background: var(--bg-base);
             color: var(--text-main);
@@ -11817,10 +13475,10 @@ function viewCustomerDetails(customerId) {
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         `;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'close-btn';
-    closeBtn.type = 'button';
-    closeBtn.textContent = '×';
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "close-btn";
+    closeBtn.type = "button";
+    closeBtn.textContent = "×";
     closeBtn.style.cssText = `
             position: absolute;
             top: 15px;
@@ -11839,13 +13497,20 @@ function viewCustomerDetails(customerId) {
             transition: all 0.3s ease;
         `;
 
-    const bodyWrapper = document.createElement('div');
+    const bodyWrapper = document.createElement("div");
 
     const renderContent = ({ customer, loading = false, error = null }) => {
-        bodyWrapper.innerHTML = buildCustomerDetailsContent({ customer, loading, error, customerId });
-        const ordersBtn = bodyWrapper.querySelector('[data-action="view-customer-orders"]');
+        bodyWrapper.innerHTML = buildCustomerDetailsContent({
+            customer,
+            loading,
+            error,
+            customerId,
+        });
+        const ordersBtn = bodyWrapper.querySelector(
+            '[data-action="view-customer-orders"]',
+        );
         if (ordersBtn) {
-            ordersBtn.addEventListener('click', () => {
+            ordersBtn.addEventListener("click", () => {
                 closeModal();
                 viewCustomerOrders(customerId);
             });
@@ -11853,12 +13518,12 @@ function viewCustomerDetails(customerId) {
     };
 
     const closeModal = () => {
-        modal.style.opacity = '0';
+        modal.style.opacity = "0";
         setTimeout(() => modal.remove(), 300);
     };
 
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (event) => {
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
         if (event.target === modal) {
             closeModal();
         }
@@ -11870,34 +13535,52 @@ function viewCustomerDetails(customerId) {
     document.body.appendChild(modal);
 
     requestAnimationFrame(() => {
-        modal.style.opacity = '1';
+        modal.style.opacity = "1";
     });
 
     renderContent({ customer: existingCustomer, loading: true });
 
     getFreshCustomerData(customerId)
-        .then(freshCustomer => {
+        .then((freshCustomer) => {
             if (freshCustomer) {
-                const customers = Array.isArray(state.customers) ? [...state.customers] : [];
-                const index = customers.findIndex(c => (c._id || c.id) === customerId);
+                const customers = Array.isArray(state.customers)
+                    ? [...state.customers]
+                    : [];
+                const index = customers.findIndex(
+                    (c) => (c._id || c.id) === customerId,
+                );
                 if (index !== -1) {
                     customers[index] = {
                         ...customers[index],
                         ...freshCustomer,
-                        addresses: Array.isArray(freshCustomer.addresses) ? freshCustomer.addresses : []
+                        addresses: Array.isArray(freshCustomer.addresses)
+                            ? freshCustomer.addresses
+                            : [],
                     };
                     state.customers = customers;
                 }
 
                 renderContent({ customer: freshCustomer, loading: false });
             } else {
-                renderContent({ customer: existingCustomer, loading: false, error: 'تعذر تحميل بيانات العميل.' });
+                renderContent({
+                    customer: existingCustomer,
+                    loading: false,
+                    error: "تعذر تحميل بيانات العميل.",
+                });
             }
         })
-        .catch(error => {
-            console.error('❌ فشل جلب بيانات العميل:', error);
-            showToast('error', 'بيانات العميل', error?.message || 'تعذر تحميل بيانات العميل من الخادم.');
-            renderContent({ customer: existingCustomer, loading: false, error: error?.message || 'تعذر تحميل بيانات العميل من الخادم.' });
+        .catch((error) => {
+            console.error("❌ فشل جلب بيانات العميل:", error);
+            showToast(
+                "error",
+                "بيانات العميل",
+                error?.message || "تعذر تحميل بيانات العميل من الخادم.",
+            );
+            renderContent({
+                customer: existingCustomer,
+                loading: false,
+                error: error?.message || "تعذر تحميل بيانات العميل من الخادم.",
+            });
         });
 }
 
@@ -11908,32 +13591,30 @@ function viewCustomerDetails(customerId) {
  * @param {string} customerId - معرف العميل
  */
 function viewCustomerOrders(customerId) {
-    const customer = state.customers?.find(c => (c._id || c.id) === customerId);
+    const customer = state.customers?.find((c) => (c._id || c.id) === customerId);
 
     if (!customer) {
-        showToast('error', 'خطأ', 'لم يتم العثور على العميل');
+        showToast("error", "خطأ", "لم يتم العثور على العميل");
         return;
     }
 
     // تصفية الطلبات الخاصة بهذا العميل فقط
     // استخدام دالة doesOrderBelongToCustomer للتأكد من أن الطلب ينتمي إلى هذا العميل تحديداً
-    const customerOrders = (state.orders || []).filter(order => {
+    const customerOrders = (state.orders || []).filter((order) => {
         const belongs = doesOrderBelongToCustomer(order, customer);
         if (belongs) {
         }
         return belongs;
     });
 
-
-
     // التحقق من أن جميع الطلبات تنتمي لهذا العميل فقط
     if (customerOrders.length === 0) {
-        showToast('info', 'معلومة', `لا توجد طلبات مسجلة للعميل ${customer.name}`);
+        showToast("info", "معلومة", `لا توجد طلبات مسجلة للعميل ${customer.name}`);
     }
 
     // إنشاء النافذة المنبثقة
-    const modal = document.createElement('div');
-    modal.className = 'order-details-modal';
+    const modal = document.createElement("div");
+    modal.className = "order-details-modal";
     modal.style.cssText = `
             position: fixed;
             top: 0;
@@ -11950,10 +13631,14 @@ function viewCustomerOrders(customerId) {
         `;
 
     // حساب إجمالي المبيعات للعميل
-    const totalOrderValue = customerOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalOrderValue = customerOrders.reduce(
+        (sum, order) => sum + (order.total || 0),
+        0,
+    );
 
-    const ordersHTML = customerOrders.length > 0
-        ? `
+    const ordersHTML =
+        customerOrders.length > 0
+            ? `
                 <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                     <thead>
                         <tr style="background: var(--bg-light); color: var(--text-main);">
@@ -11965,10 +13650,12 @@ function viewCustomerOrders(customerId) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${customerOrders.map((order, index) => `
-                            <tr style="color: var(--text-main); ${index % 2 === 0 ? 'background: var(--bg-light);' : ''}">
+                        ${customerOrders
+                .map(
+                    (order, index) => `
+                            <tr style="color: var(--text-main); ${index % 2 === 0 ? "background: var(--bg-light);" : ""}">
                                 <td style="padding: 10px; border: 1px solid var(--border);">${order.id}</td>
-                                <td style="padding: 10px; border: 1px solid var(--border);">${order.date || 'غير محدد'}</td>
+                                <td style="padding: 10px; border: 1px solid var(--border);">${order.date || "غير محدد"}</td>
                                 <td style="padding: 10px; border: 1px solid var(--border);"><strong>${formatCurrency(order.total || 0)}</strong></td>
                                 <td style="padding: 10px; border: 1px solid var(--border);">${getStatusBadge(order.status)}</td>
                                 <td style="padding: 10px; border: 1px solid var(--border);">
@@ -11980,11 +13667,13 @@ function viewCustomerOrders(customerId) {
                                     </button>
                                 </td>
                             </tr>
-                        `).join('')}
+                        `,
+                )
+                .join("")}
                     </tbody>
                 </table>
             `
-        : '<p style="text-align: center; color: var(--text-muted); padding: 40px;"><i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 20px;"></i>لا توجد طلبات لهذا العميل</p>';
+            : '<p style="text-align: center; color: var(--text-muted); padding: 40px;"><i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 20px;"></i>لا توجد طلبات لهذا العميل</p>';
 
     modal.innerHTML = `
             <div class="order-details-content" style="
@@ -12020,7 +13709,7 @@ function viewCustomerOrders(customerId) {
                 
                 <h2 style="text-align: center; margin-bottom: 25px; color: var(--text-main);">
                     <i class="fas fa-shopping-cart" style="margin-left: 10px; color: #e74c3c;"></i>
-                    طلبات العميل: ${escapeHtml(customer.name || 'غير محدد')}
+                    طلبات العميل: ${escapeHtml(customer.name || "غير محدد")}
                 </h2>
                 
                 <div style="background: var(--bg-light); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: var(--text-main); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
@@ -12034,7 +13723,7 @@ function viewCustomerOrders(customerId) {
                     </div>
                     <div>
                         <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">البريد الإلكتروني</p>
-                        <p style="margin: 5px 0; font-size: 0.95rem; word-break: break-all;">${escapeHtml(customer.email || 'غير محدد')}</p>
+                        <p style="margin: 5px 0; font-size: 0.95rem; word-break: break-all;">${escapeHtml(customer.email || "غير محدد")}</p>
                     </div>
                 </div>
                 
@@ -12044,26 +13733,27 @@ function viewCustomerOrders(customerId) {
 
     document.body.appendChild(modal);
     const rootStyles = getComputedStyle(document.documentElement);
-    const sidebarWidth = rootStyles.getPropertyValue('--sidebar-width').trim() || '0px';
+    const sidebarWidth =
+        rootStyles.getPropertyValue("--sidebar-width").trim() || "0px";
 
     const applyModalPadding = () => {
         if (window.innerWidth > 992) {
             modal.style.paddingRight = `calc(${sidebarWidth} + 40px)`;
         } else {
-            modal.style.paddingRight = '20px';
+            modal.style.paddingRight = "20px";
         }
     };
 
     applyModalPadding();
     const handleResize = () => applyModalPadding();
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     const cleanupHandlers = () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('resize', handleResize);
+        document.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("resize", handleResize);
     };
     const fadeOutAndRemove = () => {
-        modal.style.opacity = '0';
+        modal.style.opacity = "0";
         setTimeout(() => {
             cleanupHandlers();
             if (modal.parentNode) {
@@ -12073,37 +13763,37 @@ function viewCustomerOrders(customerId) {
     };
 
     setTimeout(() => {
-        modal.style.opacity = '1';
+        modal.style.opacity = "1";
     }, 10);
 
     // إغلاق النافذة
-    const closeBtn = modal.querySelector('.close-btn');
-    closeBtn.addEventListener('click', fadeOutAndRemove);
+    const closeBtn = modal.querySelector(".close-btn");
+    closeBtn.addEventListener("click", fadeOutAndRemove);
 
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener("click", (e) => {
         if (e.target === modal) {
             fadeOutAndRemove();
         }
     });
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === "Escape") {
             fadeOutAndRemove();
         }
     };
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     // إضافة معالجات للأزرار
-    modal.querySelectorAll('.view-order-details').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    modal.querySelectorAll(".view-order-details").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             const orderId = e.currentTarget.dataset.orderId;
             fadeOutAndRemove();
             viewOrderDetails(orderId);
         });
     });
 
-    modal.querySelectorAll('.print-order').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    modal.querySelectorAll(".print-order").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
             const orderId = e.currentTarget.dataset.orderId;
             printOrder(orderId);
         });
@@ -12120,14 +13810,13 @@ function viewCustomerOrders(customerId) {
  * - ربط الأحداث
  * - جلب البيانات الأولية
  */
-document.addEventListener('DOMContentLoaded', async () => {
-
+document.addEventListener("DOMContentLoaded", async () => {
     // إظهار شاشة التحميل
     dashboardLoader.show();
 
     try {
         // الخطوة 1: تهيئة الواجهة الأساسية
-        dashboardLoader.updateStep(1, 'active');
+        dashboardLoader.updateStep(1, "active");
         dashboardLoader.setProgress(10);
 
         initDescriptionInputs();
@@ -12140,9 +13829,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardLoader.setProgress(25);
 
         // إضافة مستمع حدث لتحديث الفئات الفرعية عند تغيير الفئة الرئيسية
-        const categorySelect = document.getElementById('productCategory');
+        const categorySelect = document.getElementById("productCategory");
         if (categorySelect) {
-            categorySelect.addEventListener('change', (e) => {
+            categorySelect.addEventListener("change", (e) => {
                 const categoryId = e.target.value;
                 populateSubcategoryOptions(categoryId);
             });
@@ -12155,18 +13844,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Brands List
         // ═══════════════════════════════════════════════════════════════
-        const brandsListContainer = document.getElementById('brandsList');
+        const brandsListContainer = document.getElementById("brandsList");
         if (brandsListContainer) {
-            brandsListContainer.addEventListener('click', (e) => {
+            brandsListContainer.addEventListener("click", (e) => {
                 // ⚠️ MUST use .closest() - user may click the icon inside the button
-                const editBtn = e.target.closest('.edit-brand');
+                const editBtn = e.target.closest(".edit-brand");
                 if (editBtn) {
                     const brandId = editBtn.dataset.brandId;
                     if (brandId) handleEditBrand(brandId);
                     return;
                 }
 
-                const deleteBtn = e.target.closest('.delete-brand');
+                const deleteBtn = e.target.closest(".delete-brand");
                 if (deleteBtn) {
                     const brandId = deleteBtn.dataset.brandId;
                     if (brandId) handleDeleteBrand(brandId);
@@ -12178,11 +13867,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Product Image Preview
         // ═══════════════════════════════════════════════════════════════
-        const productImagePreview = document.getElementById('productImagePreview');
+        const productImagePreview = document.getElementById("productImagePreview");
         if (productImagePreview) {
-            productImagePreview.addEventListener('click', (e) => {
+            productImagePreview.addEventListener("click", (e) => {
                 // ⚠️ MUST use .closest() - button contains <i> icon
-                const removeBtn = e.target.closest('.image-remove-btn');
+                const removeBtn = e.target.closest(".image-remove-btn");
                 if (removeBtn) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -12197,11 +13886,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Products Grid
         // ═══════════════════════════════════════════════════════════════
-        const productsGrid = document.getElementById('productsGrid');
+        const productsGrid = document.getElementById("productsGrid");
         if (productsGrid) {
-            productsGrid.addEventListener('click', (e) => {
+            productsGrid.addEventListener("click", (e) => {
                 // Find the product card first
-                const productCard = e.target.closest('.product-card');
+                const productCard = e.target.closest(".product-card");
                 if (!productCard) return;
 
                 const productId = productCard.dataset.productId;
@@ -12211,7 +13900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const editBtn = e.target.closest('[data-action="edit"]');
                 if (editBtn) {
                     populateProductModal(productId);
-                    openModal('addProductModal');
+                    openModal("addProductModal");
                     return;
                 }
 
@@ -12232,11 +13921,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Orders Table
         // ═══════════════════════════════════════════════════════════════
-        const ordersTableBody = document.getElementById('ordersTableBody');
+        const ordersTableBody = document.getElementById("ordersTableBody");
         if (ordersTableBody) {
             // Click delegation for buttons
-            ordersTableBody.addEventListener('click', (e) => {
-                const row = e.target.closest('tr');
+            ordersTableBody.addEventListener("click", (e) => {
+                const row = e.target.closest("tr");
                 if (!row) return;
 
                 const orderId = row.dataset.orderId;
@@ -12257,10 +13946,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             // Change delegation for status dropdown
-            ordersTableBody.addEventListener('change', (e) => {
-                const statusSelect = e.target.closest('.order-status-select');
+            ordersTableBody.addEventListener("change", (e) => {
+                const statusSelect = e.target.closest(".order-status-select");
                 if (statusSelect) {
-                    const row = statusSelect.closest('tr');
+                    const row = statusSelect.closest("tr");
                     const orderId = row?.dataset.orderId;
                     const newStatus = statusSelect.value;
                     if (orderId && newStatus) {
@@ -12273,24 +13962,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Categories List
         // ═══════════════════════════════════════════════════════════════
-        const categoriesList = document.getElementById('categoriesList');
+        const categoriesList = document.getElementById("categoriesList");
         if (categoriesList) {
-            categoriesList.addEventListener('click', (e) => {
-                const categoryCard = e.target.closest('.category-card');
+            categoriesList.addEventListener("click", (e) => {
+                const categoryCard = e.target.closest(".category-card");
                 if (!categoryCard) return;
 
                 const categoryId = categoryCard.dataset.categoryId;
                 if (!categoryId) return;
 
                 // ⚠️ MUST use .closest()
-                const editBtn = e.target.closest('.edit-category');
+                const editBtn = e.target.closest(".edit-category");
                 if (editBtn) {
                     populateCategoryModal(categoryId);
-                    openModal('categoryModal');
+                    openModal("categoryModal");
                     return;
                 }
 
-                const deleteBtn = e.target.closest('.delete-category');
+                const deleteBtn = e.target.closest(".delete-category");
                 if (deleteBtn) {
                     handleDeleteCategory(categoryId);
                     return;
@@ -12301,10 +13990,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Subcategories List
         // ═══════════════════════════════════════════════════════════════
-        const subcategoriesList = document.getElementById('subcategoriesList');
+        const subcategoriesList = document.getElementById("subcategoriesList");
         if (subcategoriesList) {
-            subcategoriesList.addEventListener('click', (e) => {
-                const subcategoryCard = e.target.closest('.subcategory-card');
+            subcategoriesList.addEventListener("click", (e) => {
+                const subcategoryCard = e.target.closest(".subcategory-card");
                 if (!subcategoryCard) return;
 
                 const subcategoryId = subcategoryCard.dataset.subcategoryId;
@@ -12312,14 +14001,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!subcategoryId) return;
 
                 // ⚠️ MUST use .closest()
-                const editBtn = e.target.closest('.edit-subcategory');
+                const editBtn = e.target.closest(".edit-subcategory");
                 if (editBtn) {
                     populateSubcategoryModal(categoryId, subcategoryId);
-                    openModal('subcategoryModal');
+                    openModal("subcategoryModal");
                     return;
                 }
 
-                const deleteBtn = e.target.closest('.delete-subcategory');
+                const deleteBtn = e.target.closest(".delete-subcategory");
                 if (deleteBtn) {
                     handleDeleteSubcategory(categoryId, subcategoryId);
                     return;
@@ -12330,24 +14019,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Banners Grid
         // ═══════════════════════════════════════════════════════════════
-        const bannersGrid = document.getElementById('bannersGrid');
+        const bannersGrid = document.getElementById("bannersGrid");
         if (bannersGrid) {
-            bannersGrid.addEventListener('click', (e) => {
-                const bannerCard = e.target.closest('.banner-card');
+            bannersGrid.addEventListener("click", (e) => {
+                const bannerCard = e.target.closest(".banner-card");
                 if (!bannerCard) return;
 
                 const bannerId = bannerCard.dataset.bannerId;
                 if (!bannerId) return;
 
                 // ⚠️ MUST use .closest()
-                const editBtn = e.target.closest('.edit-banner');
+                const editBtn = e.target.closest(".edit-banner");
                 if (editBtn) {
                     populateBannerModal(bannerId);
-                    openModal('bannerModal');
+                    openModal("bannerModal");
                     return;
                 }
 
-                const deleteBtn = e.target.closest('.delete-banner');
+                const deleteBtn = e.target.closest(".delete-banner");
                 if (deleteBtn) {
                     handleDeleteBanner(bannerId);
                     return;
@@ -12358,10 +14047,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Customers Table
         // ═══════════════════════════════════════════════════════════════
-        const customersTableBody = document.getElementById('customersTableBody');
+        const customersTableBody = document.getElementById("customersTableBody");
         if (customersTableBody) {
-            customersTableBody.addEventListener('click', (e) => {
-                const row = e.target.closest('tr');
+            customersTableBody.addEventListener("click", (e) => {
+                const row = e.target.closest("tr");
                 if (!row) return;
 
                 const customerId = row.dataset.customerId;
@@ -12379,29 +14068,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ═══════════════════════════════════════════════════════════════
         // EVENT DELEGATION: Messages List (if exists)
         // ═══════════════════════════════════════════════════════════════
-        const messagesList = document.getElementById('messagesList');
+        const messagesList = document.getElementById("messagesList");
         if (messagesList) {
-            messagesList.addEventListener('click', (e) => {
-                const messageItem = e.target.closest('.message-item');
+            messagesList.addEventListener("click", (e) => {
+                const messageItem = e.target.closest(".message-item");
                 if (!messageItem) return;
 
                 const messageId = messageItem.dataset.messageId;
                 if (!messageId) return;
 
                 // ⚠️ MUST use .closest()
-                const viewBtn = e.target.closest('.view-message');
+                const viewBtn = e.target.closest(".view-message");
                 if (viewBtn) {
                     viewMessage(messageId);
                     return;
                 }
 
-                const deleteBtn = e.target.closest('.delete-message');
+                const deleteBtn = e.target.closest(".delete-message");
                 if (deleteBtn) {
                     handleDeleteMessage(messageId);
                     return;
                 }
 
-                const replyBtn = e.target.closest('.reply-message');
+                const replyBtn = e.target.closest(".reply-message");
                 if (replyBtn) {
                     handleReplyMessage(messageId);
                     return;
@@ -12410,7 +14099,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // جلب البيانات الأولية من API
-        dashboardLoader.updateStep(2, 'active');
+        dashboardLoader.updateStep(2, "active");
         dashboardLoader.setProgress(40);
 
         await fetchOrders();
@@ -12419,15 +14108,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardLoader.setProgress(80);
 
         // إعداد زر التحديث
-        const refreshBtn = document.getElementById('refreshOrdersBtn');
+        const refreshBtn = document.getElementById("refreshOrdersBtn");
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', fetchOrders);
+            refreshBtn.addEventListener("click", fetchOrders);
         }
 
         // إعداد حقل البحث عن العملاء
-        const customerSearchInput = document.getElementById('customerSearchInput');
+        const customerSearchInput = document.getElementById("customerSearchInput");
         if (customerSearchInput) {
-            customerSearchInput.addEventListener('input', (e) => {
+            customerSearchInput.addEventListener("input", (e) => {
                 if (!state.filters) state.filters = {};
                 state.filters.customerSearch = e.target.value;
                 renderCustomers();
@@ -12437,9 +14126,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupCustomerFilters();
 
         // إعداد فلاتر التحليلات ونطاق التاريخ
-        const analyticsTimeFilter = document.getElementById('analyticsTimeFilter');
-        const analyticsStartInput = document.getElementById('analyticsStartDate');
-        const analyticsEndInput = document.getElementById('analyticsEndDate');
+        const analyticsTimeFilter = document.getElementById("analyticsTimeFilter");
+        const analyticsStartInput = document.getElementById("analyticsStartDate");
+        const analyticsEndInput = document.getElementById("analyticsEndDate");
 
         const ensureFilterState = () => {
             if (!state.filters) {
@@ -12454,43 +14143,79 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (analyticsEndInput) analyticsEndInput.disabled = disabled;
         };
 
-        const setAnalyticsRangeState = (rangeLabel, startDate, endDate, explicitDays = null) => {
+        const setAnalyticsRangeState = (
+            rangeLabel,
+            startDate,
+            endDate,
+            explicitDays = null,
+        ) => {
             ensureFilterState();
             if (!startDate || !endDate) return;
 
-            const normalizedStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-            const normalizedEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+            const normalizedStart = new Date(
+                startDate.getFullYear(),
+                startDate.getMonth(),
+                startDate.getDate(),
+            );
+            const normalizedEnd = new Date(
+                endDate.getFullYear(),
+                endDate.getMonth(),
+                endDate.getDate(),
+                23,
+                59,
+                59,
+                999,
+            );
 
             state.filters.analyticsRange = rangeLabel;
             state.filters.analyticsStart = normalizedStart.toISOString();
             state.filters.analyticsEnd = normalizedEnd.toISOString();
 
-            const daysCount = explicitDays ?? Math.max(1, Math.round((normalizedEnd - normalizedStart) / millisecondsPerDay) + 1);
+            const daysCount =
+                explicitDays ??
+                Math.max(
+                    1,
+                    Math.round((normalizedEnd - normalizedStart) / millisecondsPerDay) +
+                    1,
+                );
             state.filters.analyticsDays = isNaN(daysCount) ? null : daysCount;
 
-            if (analyticsStartInput) analyticsStartInput.value = formatDateInputValue(normalizedStart);
-            if (analyticsEndInput) analyticsEndInput.value = formatDateInputValue(normalizedEnd);
+            if (analyticsStartInput)
+                analyticsStartInput.value = formatDateInputValue(normalizedStart);
+            if (analyticsEndInput)
+                analyticsEndInput.value = formatDateInputValue(normalizedEnd);
         };
 
         const refreshAnalytics = () => {
             try {
                 loadAnalyticsCharts();
             } catch (error) {
-                console.error('⚠️ Failed to refresh analytics charts:', error);
+                console.error("⚠️ Failed to refresh analytics charts:", error);
             }
         };
 
         const applyPresetRange = (days, triggerRefresh = true) => {
             const validDays = Number.isFinite(days) && days > 0 ? days : 30;
             const now = new Date();
-            const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            const endDate = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                23,
+                59,
+                59,
+                999,
+            );
             const startDate = new Date(endDate);
             startDate.setDate(startDate.getDate() - (validDays - 1));
 
             setDateInputsDisabled(false);
             setAnalyticsRangeState(String(validDays), startDate, endDate, validDays);
 
-            if (analyticsTimeFilter && analyticsTimeFilter.value !== String(validDays)) {
+            if (
+                analyticsTimeFilter &&
+                analyticsTimeFilter.value !== String(validDays)
+            ) {
                 analyticsTimeFilter.value = String(validDays);
             }
 
@@ -12501,7 +14226,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const ensureCustomDefaults = () => {
             const now = new Date();
-            const defaultEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            const defaultEnd = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                23,
+                59,
+                59,
+                999,
+            );
             const defaultStart = new Date(defaultEnd);
             defaultStart.setDate(defaultStart.getDate() - 6);
             return { start: defaultStart, end: defaultEnd };
@@ -12510,8 +14243,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const applyCustomRange = (startValue, endValue, triggerRefresh = true) => {
             setDateInputsDisabled(false);
 
-            let startDate = parseDateValue(startValue) || parseDateValue(state.filters?.analyticsStart);
-            let endDate = parseDateValue(endValue) || parseDateValue(state.filters?.analyticsEnd);
+            let startDate =
+                parseDateValue(startValue) ||
+                parseDateValue(state.filters?.analyticsStart);
+            let endDate =
+                parseDateValue(endValue) || parseDateValue(state.filters?.analyticsEnd);
 
             if (!startDate || !endDate) {
                 const defaults = ensureCustomDefaults();
@@ -12525,10 +14261,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 endDate = temp;
             }
 
-            setAnalyticsRangeState('custom', startDate, endDate);
+            setAnalyticsRangeState("custom", startDate, endDate);
 
-            if (analyticsTimeFilter && analyticsTimeFilter.value !== 'custom') {
-                analyticsTimeFilter.value = 'custom';
+            if (analyticsTimeFilter && analyticsTimeFilter.value !== "custom") {
+                analyticsTimeFilter.value = "custom";
             }
 
             if (triggerRefresh) {
@@ -12539,19 +14275,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (analyticsTimeFilter || analyticsStartInput || analyticsEndInput) {
             ensureFilterState();
 
-            const initialValue = analyticsTimeFilter ? analyticsTimeFilter.value : '30';
-            if (initialValue === 'custom') {
-                applyCustomRange(analyticsStartInput?.value, analyticsEndInput?.value, false);
+            const initialValue = analyticsTimeFilter
+                ? analyticsTimeFilter.value
+                : "30";
+            if (initialValue === "custom") {
+                applyCustomRange(
+                    analyticsStartInput?.value,
+                    analyticsEndInput?.value,
+                    false,
+                );
             } else {
                 applyPresetRange(parseInt(initialValue, 10) || 30, false);
             }
         }
 
         if (analyticsTimeFilter) {
-            analyticsTimeFilter.addEventListener('change', (event) => {
+            analyticsTimeFilter.addEventListener("change", (event) => {
                 const value = event.target.value;
-                if (value === 'custom') {
-                    applyCustomRange(analyticsStartInput?.value, analyticsEndInput?.value);
+                if (value === "custom") {
+                    applyCustomRange(
+                        analyticsStartInput?.value,
+                        analyticsEndInput?.value,
+                    );
                 } else {
                     const days = parseInt(value, 10);
                     applyPresetRange(days);
@@ -12560,23 +14305,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (analyticsStartInput) {
-            analyticsStartInput.addEventListener('change', () => {
-                if (analyticsTimeFilter && analyticsTimeFilter.value !== 'custom') {
-                    analyticsTimeFilter.value = 'custom';
+            analyticsStartInput.addEventListener("change", () => {
+                if (analyticsTimeFilter && analyticsTimeFilter.value !== "custom") {
+                    analyticsTimeFilter.value = "custom";
                 }
                 applyCustomRange(analyticsStartInput.value, analyticsEndInput?.value);
             });
         }
 
         if (analyticsEndInput) {
-            analyticsEndInput.addEventListener('change', () => {
-                if (analyticsTimeFilter && analyticsTimeFilter.value !== 'custom') {
-                    analyticsTimeFilter.value = 'custom';
+            analyticsEndInput.addEventListener("change", () => {
+                if (analyticsTimeFilter && analyticsTimeFilter.value !== "custom") {
+                    analyticsTimeFilter.value = "custom";
                 }
                 applyCustomRange(analyticsStartInput?.value, analyticsEndInput.value);
             });
         }
-
 
         // =========================================
         // دالة تشخيصية: مساعدة المسؤول على فهم سبب تعدد الطلبات
@@ -12584,20 +14328,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.debugCustomerOrders = function (customerIndex = 0) {
             const customers = state.customers || [];
             if (customerIndex >= customers.length) {
-                console.error('❌ العميل غير موجود');
+                console.error("❌ العميل غير موجود");
                 return;
             }
 
             const customer = customers[customerIndex];
 
-
             const orders = state.orders || [];
 
             orders.forEach((order, idx) => {
                 const belongs = doesOrderBelongToCustomer(order, customer);
-                const status = belongs ? '✅' : '❌';
-
-
+                const status = belongs ? "✅" : "❌";
             });
         };
 
@@ -12606,8 +14347,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // debugCustomerOrders(1)  // لتشخيص العميل الثاني
 
         // الخطوة 2: تحديث الخطوة الثانية
-        dashboardLoader.updateStep(1, 'completed');
-        dashboardLoader.updateStep(2, 'active');
+        dashboardLoader.updateStep(1, "completed");
+        dashboardLoader.updateStep(2, "active");
         dashboardLoader.setProgress(60);
 
         // جلب البيانات
@@ -12617,12 +14358,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardLoader.setProgress(85);
 
         // الخطوة 3: تحميل الرسوم البيانية
-        dashboardLoader.updateStep(2, 'completed');
-        dashboardLoader.updateStep(3, 'active');
+        dashboardLoader.updateStep(2, "completed");
+        dashboardLoader.updateStep(3, "active");
 
         // تأكد من تحميل الرسوم البيانية
         setTimeout(() => {
-            dashboardLoader.updateStep(3, 'completed');
+            dashboardLoader.updateStep(3, "completed");
             dashboardLoader.setProgress(100);
 
             // إخفاء الـ Loader
@@ -12630,14 +14371,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 dashboardLoader.hide();
             }, 500);
         }, 800);
-
     } catch (error) {
-        console.error('❌ خطأ في تحميل Dashboard:', error);
+        console.error("❌ خطأ في تحميل Dashboard:", error);
         dashboardLoader.setProgress(100);
         setTimeout(() => {
             dashboardLoader.hide();
-            showToast('error', 'خطأ', 'تعذر تحميل لوحة التحكم. حاول مرة أخرى.');
+            showToast("error", "خطأ", "تعذر تحميل لوحة التحكم. حاول مرة أخرى.");
         }, 1000);
     }
-
-}); 
+});
