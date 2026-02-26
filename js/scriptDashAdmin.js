@@ -2532,6 +2532,11 @@ const state = {
     productsLoading: false,
     productsError: null,
     productExtras: {},
+    productsPagination: {
+        currentPage: 1,
+        totalPages: 1,
+        isLoadingMore: false,
+    },
     // العلامات التجارية
     brands: [],
     brandsLoading: false,
@@ -4428,14 +4433,22 @@ async function fetchCategories() {
     }
 }
 
-async function fetchProducts() {
-    state.productsLoading = true;
-    state.productsError = null;
-    renderProducts();
+async function fetchProducts({ page = 1, append = false } = {}) {
+    if (append) {
+        state.productsPagination.isLoadingMore = true;
+    } else {
+        state.productsLoading = true;
+        state.productsError = null;
+    }
+    
+    renderProducts(append);
 
     try {
+        const url = new URL(PRODUCT_ENDPOINT, window.location.origin);
+        url.searchParams.set("page", page);
+        
         const response = handleUnauthorized(
-            await authorizedFetch(PRODUCT_ENDPOINT),
+            await authorizedFetch(url.toString()),
         );
 
         if (!response.ok) {
@@ -4453,6 +4466,14 @@ async function fetchProducts() {
                     : Array.isArray(payload)
                         ? payload
                         : [];
+
+        // Update pagination state
+        if (payload?.data?.currentPage) {
+            state.productsPagination.currentPage = Number(payload.data.currentPage);
+        }
+        if (payload?.data?.totalPages) {
+            state.productsPagination.totalPages = Number(payload.data.totalPages);
+        }
 
         const previousExtras = { ...state.productExtras };
         const normalized = documents
@@ -4473,16 +4494,26 @@ async function fetchProducts() {
                 };
             });
 
-        state.products = normalized;
+        if (append) {
+            state.products = [...state.products, ...normalized];
+        } else {
+            state.products = normalized;
+        }
+        
         syncProductExtras(normalized);
     } catch (error) {
-        state.productsError =
-            error.message || "تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.";
-        state.products = [];
+        if (!append) {
+            state.productsError =
+                error.message || "تعذر تحميل المنتجات. يرجى المحاولة مرة أخرى.";
+            state.products = [];
+        } else {
+            showToast("error", "تحميل المزيد", "تعذر تحميل المزيد من المنتجات");
+        }
     } finally {
         state.productsLoading = false;
+        state.productsPagination.isLoadingMore = false;
         hydrateFilters();
-        renderProducts();
+        renderProducts(append);
         renderTopProducts();
 
         // تحديث إحصائيات نظرة عامة إذا كانت محملة
@@ -8060,11 +8091,12 @@ function renderTodayOrders() {
     body.innerHTML = rows;
 }
 
-function renderProducts() {
+function renderProducts(append = false) {
     const grid = document.getElementById("productsGrid");
     if (!grid) return;
 
-    if (state.productsLoading) {
+    // Handle initial loading
+    if (state.productsLoading && !append) {
         grid.innerHTML = `
                 <div class="loading-state">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -8074,7 +8106,8 @@ function renderProducts() {
         return;
     }
 
-    if (state.productsError) {
+    // Handle error state
+    if (state.productsError && !append) {
         grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -8088,7 +8121,8 @@ function renderProducts() {
 
     const source = getProductsSource();
 
-    if (!source.length) {
+    // Handle empty state
+    if (!source.length && !append) {
         safeHTML(
             grid,
             `
@@ -8099,6 +8133,7 @@ function renderProducts() {
                 </div>
             `,
         );
+        toggleLoadMoreButton(false);
         return;
     }
 
@@ -8112,7 +8147,9 @@ function renderProducts() {
     ];
 
     const filtered = applyFilters(source, filterFns);
-    if (!filtered.length) {
+    
+    // Handle filtered empty state
+    if (!filtered.length && !append) {
         safeHTML(
             grid,
             `<div class="empty-state">
@@ -8121,35 +8158,94 @@ function renderProducts() {
                 <p>حاول تعديل البحث أو الفلاتر</p>
             </div>`,
         );
+        toggleLoadMoreButton(false);
         return;
     }
 
-    safeHTML(
-        grid,
-        filtered
-            .map(
-                (product) => `
-            <div class="product-card" data-id="${product.id}">
-                <div class="product-thumb">
-                    <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
-                </div>
-                <div class="product-info">
-                    <h3>${product.name}</h3>
-                    <p class="product-category">${product.categoryName || getCategoryLabel(product.categorySlug)}</p>
-                    <div class="product-meta">
-                        <span class="meta-item"><i class="fas fa-coins"></i> ${formatCurrency(product.price)}</span>
-                    </div>
-                </div>
-                <div class="product-actions">
-                    <button class="btn-secondary" title="عرض التفاصيل" data-action="preview-product" data-entity-id="${product.id}"><i class="fas fa-eye"></i></button>
-                    <button class="btn-secondary" title="تعديل المنتج" data-open-modal="addProductModal" data-modal-mode="edit" data-entity="product" data-entity-id="${product.id}"><i class="fas fa-edit"></i> تعديل</button>
-                    <button class="btn-danger" title="حذف المنتج" data-action="delete-product" data-entity-id="${product.id}"><i class="fas fa-trash"></i> حذف</button>
+    const productsHtml = filtered
+        .map(
+            (product) => {
+                const hasDiscount = product.priceAfterDiscount && product.priceAfterDiscount > 0;
+                const finalPrice = hasDiscount ? product.priceAfterDiscount : product.price;
+
+                return `
+        <div class="product-card" data-id="${product.id}">
+            <div class="product-thumb">
+                <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
+            </div>
+            <div class="product-info">
+                <h3>${product.name}</h3>
+                <p class="product-category">${product.categoryName || getCategoryLabel(product.categorySlug)}</p>
+                <div class="product-meta">
+                    <span class="meta-item price-container">
+                        <i class="fas fa-coins"></i> 
+                        <span class="final-price">${formatCurrency(finalPrice)}</span>
+                        ${hasDiscount ? `<span class="original-price">${formatCurrency(product.price)}</span>` : ""}
+                    </span>
                 </div>
             </div>
-        `,
-            )
-            .join(""),
-    );
+            <div class="product-actions">
+                <button class="btn-secondary" title="عرض التفاصيل" data-action="preview-product" data-entity-id="${product.id}"><i class="fas fa-eye"></i></button>
+                <button class="btn-secondary" title="تعديل المنتج" data-open-modal="addProductModal" data-modal-mode="edit" data-entity="product" data-entity-id="${product.id}"><i class="fas fa-edit"></i> تعديل</button>
+                <button class="btn-danger" title="حذف المنتج" data-action="delete-product" data-entity-id="${product.id}"><i class="fas fa-trash"></i> حذف</button>
+            </div>
+        </div>
+    `;
+            }
+        )
+        .join("");
+
+    safeHTML(grid, productsHtml);
+
+    // Toggle Load More button based on pagination
+    const hasMore = state.productsPagination.currentPage < state.productsPagination.totalPages;
+    toggleLoadMoreButton(hasMore);
+}
+
+/**
+ * Toggles the visibility and state of the Load More button
+ * @param {boolean} show - Whether to show the button
+ */
+function toggleLoadMoreButton(show) {
+    let btn = document.getElementById("loadMoreProductsBtn");
+    
+    // Create button if it doesn't exist but should be shown
+    if (!btn && show) {
+        const grid = document.getElementById("productsGrid");
+        if (grid) {
+            btn = document.createElement("button");
+            btn.id = "loadMoreProductsBtn";
+            btn.className = "btn-load-more";
+            btn.innerHTML = `<span>تحميل المزيد</span> <i class="fas fa-chevron-down"></i>`;
+            btn.addEventListener("click", handleLoadMoreProducts);
+            grid.after(btn);
+        }
+    }
+
+    if (btn) {
+        btn.style.display = show ? "flex" : "none";
+        
+        // Update loading state
+        if (state.productsPagination.isLoadingMore) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري التحميل...`;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = `<span>تحميل المزيد</span> <i class="fas fa-chevron-down"></i>`;
+        }
+    }
+}
+
+/**
+ * Handles the Load More button click
+ */
+async function handleLoadMoreProducts() {
+    if (state.productsPagination.isLoadingMore) return;
+    
+    const nextPage = state.productsPagination.currentPage + 1;
+    if (nextPage <= state.productsPagination.totalPages) {
+        await fetchProducts({ page: nextPage, append: true });
+    }
 }
 
 function renderCategories() {
@@ -12275,7 +12371,7 @@ function renderOrders() {
     if (!filtered.length) {
         body.innerHTML = `
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: #7a7a7a;">
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #7a7a7a;">
                         <i class="fas fa-inbox" style="font-size: 24px;"></i>
                         <p style="margin-top: 10px;">لا توجد طلبات مطابقة للمعايير الحالية</p>
                     </td>
