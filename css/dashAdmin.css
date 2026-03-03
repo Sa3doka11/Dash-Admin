@@ -446,6 +446,24 @@ i.fa-brands {
   box-shadow: none;
 }
 
+#exportToExcelBtn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+  border: none;
+}
+
+#exportToExcelBtn:hover {
+  background: linear-gradient(135deg, #219150, #27ae60);
+  box-shadow: 0 6px 16px rgba(39, 174, 96, 0.4);
+}
+
+#exportToExcelBtn:disabled {
+  background: #95a5a6;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .user-profile {
   display: flex;
   align-items: center;
@@ -1494,6 +1512,33 @@ body.require-auth > .header {
 .product-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 18px 40px rgba(35, 45, 57, 0.12);
+}
+
+.product-card.out-of-stock {
+  opacity: 0.65;
+  filter: grayscale(0.8);
+  position: relative;
+  transition: var(--transition);
+}
+
+.product-card.out-of-stock:hover {
+  filter: grayscale(0.4);
+  opacity: 0.8;
+}
+
+.out-of-stock-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--primary);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }
 
 .product-card:hover .product-thumb img {

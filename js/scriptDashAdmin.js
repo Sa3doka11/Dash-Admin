@@ -8167,9 +8167,11 @@ function renderProducts(append = false) {
             (product) => {
                 const hasDiscount = product.priceAfterDiscount && product.priceAfterDiscount > 0;
                 const finalPrice = hasDiscount ? product.priceAfterDiscount : product.price;
+                const isOutOfStock = (product.stock ?? product.quantity) === 0;
 
                 return `
-        <div class="product-card" data-id="${product.id}">
+        <div class="product-card ${isOutOfStock ? "out-of-stock" : ""}" data-id="${product.id}">
+            ${isOutOfStock ? '<span class="out-of-stock-badge">غير متوفر</span>' : ""}
             <div class="product-thumb">
                 <img src="${product.image || PRODUCT_PLACEHOLDER_IMAGE}" alt="${product.name}">
             </div>
@@ -11139,6 +11141,150 @@ document.addEventListener("change", function (e) {
     }
 });
 
+/**
+ * Export to Excel Functionality
+ * Uses SheetJS (xlsx) to export Orders, Products, and Customers
+ */
+async function loadSheetJS() {
+    if (window.XLSX) return window.XLSX;
+    return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+        script.onload = () => resolve(window.XLSX);
+        script.onerror = () => reject(new Error("Failed to load SheetJS library"));
+        document.head.appendChild(script);
+    });
+}
+
+async function fetchAllPages(endpoint, dataKey) {
+    let allData = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    try {
+        do {
+            const url = new URL(endpoint, window.location.origin);
+            url.searchParams.set("page", currentPage);
+            url.searchParams.set("limit", 100);
+
+            const response = await authorizedFetch(url.toString());
+            if (!response.ok) throw new Error(`HTTP ${response.status} at ${endpoint}`);
+
+            const payload = await response.json();
+            const data = payload?.data?.[dataKey] || payload?.[dataKey] || payload?.data || payload || [];
+            
+            const documents = Array.isArray(data) ? data : (Array.isArray(data?.documents) ? data.documents : []);
+            allData = allData.concat(documents);
+
+            totalPages = payload?.data?.totalPages || payload?.totalPages || 1;
+            currentPage++;
+        } while (currentPage <= totalPages);
+
+        return allData;
+    } catch (error) {
+        console.error(`Error fetching all pages for ${endpoint}:`, error);
+        throw error;
+    }
+}
+
+async function exportDashboardToExcel() {
+    const btn = document.getElementById("exportToExcelBtn");
+    if (!btn || btn.disabled) return;
+
+    const originalContent = btn.innerHTML;
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحضير...';
+
+        await loadSheetJS();
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري جلب البيانات...';
+
+        const [orders, products, usersResponse] = await Promise.all([
+            fetchAllPages(ORDER_ENDPOINT, "orders"),
+            fetchAllPages(PRODUCT_ENDPOINT, "products"),
+            authorizedFetch(USERS_ENDPOINT).then(res => res.json())
+        ]);
+
+        const users = Array.isArray(usersResponse?.data?.users)
+            ? usersResponse.data.users
+            : Array.isArray(usersResponse?.data?.documents)
+                ? usersResponse.data.documents
+                : Array.isArray(usersResponse?.data)
+                    ? usersResponse.data
+                    : Array.isArray(usersResponse)
+                        ? usersResponse
+                        : [];
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري معالجة الملف...';
+
+        const XLSX = window.XLSX;
+        const workbook = XLSX.utils.book_new();
+
+        // Sheet 1: Orders
+        const ordersData = orders.map(order => ({
+            "رقم الطلب": order._id || order.id,
+            "اسم العميل": order.user?.name || order.customer || "غير معروف",
+            "الهاتف": order.user?.phone || order.shipping?.phone || "-",
+            "المدينة": order.shipping?.city || "-",
+            "المبلغ الإجمالي": order.totalAmount || order.total || 0,
+            "طريقة الدفع": order.paymentMethod || order.payment || "-",
+            "حالة الطلب": order.status || "-",
+            "تاريخ الطلب": order.createdAt ? new Date(order.createdAt).toLocaleDateString("ar-EG") : (order.date || "-")
+        }));
+        const ordersSheet = XLSX.utils.json_to_sheet(ordersData, { origin: "A1" });
+        XLSX.utils.book_append_sheet(workbook, ordersSheet, "Orders");
+
+        // Sheet 2: Products
+        const productsData = products.map(product => {
+            const price = Number(product.price) || 0;
+            const priceAfterDiscount = Number(product.priceAfterDiscount) || price;
+            const sold = Number(product.sold) || 0;
+            return {
+                "اسم المنتج": product.name || product.title || "-",
+                "الفئة": product.category?.name || product.category || "-",
+                "السعر الأصلي": price,
+                "السعر بعد الخصم": priceAfterDiscount,
+                "الكمية المتاحة": product.quantity || 0,
+                "الكمية المباعة": sold,
+                "إجمالي الإيرادات": priceAfterDiscount * sold,
+                "تاريخ الإضافة": product.createdAt ? new Date(product.createdAt).toLocaleDateString("ar-EG") : "-"
+            };
+        });
+        const productsSheet = XLSX.utils.json_to_sheet(productsData);
+        XLSX.utils.book_append_sheet(workbook, productsSheet, "Products");
+
+        // Sheet 3: Customers
+        const customers = users.filter(user => user.role !== "admin");
+        const customersData = customers.map(customer => ({
+            "الاسم": customer.name || "-",
+            "البريد الإلكتروني": customer.email || "-",
+            "رقم الهاتف": customer.phone || "-",
+            "إجمالي الطلبات": customer.ordersCount || 0,
+            "إجمالي الإنفاق": customer.totalSpent || 0,
+            "تاريخ التسجيل": customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("ar-EG") : "-"
+        }));
+        const customersSheet = XLSX.utils.json_to_sheet(customersData);
+        XLSX.utils.book_append_sheet(workbook, customersSheet, "Customers");
+
+        // Set RTL for sheets
+        [ordersSheet, productsSheet, customersSheet].forEach(sheet => {
+            if (!sheet['!views']) sheet['!views'] = [];
+            sheet['!views'].push({ RTL: true });
+        });
+
+        XLSX.writeFile(workbook, `Action_Sports_Dashboard_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        showToast("success", "تم التصدير", "تم إنشاء ملف Excel بنجاح");
+    } catch (error) {
+        console.error("Export Error:", error);
+        showToast("error", "خطأ في التصدير", error.message || "فشل تصدير البيانات");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+}
+
 // ===== Initialize =====
 // نقطة البداية الرئيسية عند تحميل الصفحة
 document.addEventListener("DOMContentLoaded", function () {
@@ -11148,6 +11294,12 @@ document.addEventListener("DOMContentLoaded", function () {
     // استعادة القسم المحفوظ أو الذهاب للنظرة العامة
     const savedSection = loadCurrentSection();
     switchSection(savedSection);
+
+    // ربط حدث تصدير Excel
+    const exportBtn = document.getElementById("exportToExcelBtn");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", exportDashboardToExcel);
+    }
 
     // تحميل الرسوم البيانية الأولية بعد تأخير قصير
     setTimeout(() => {
